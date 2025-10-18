@@ -1,36 +1,95 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { USER_ROLES } from '@/lib/utils/constants';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { doc, setDoc, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
+import { UserRole, Language } from '@/types';
+import toast from 'react-hot-toast';
 
 export default function SelectRolePage() {
   const router = useRouter();
-  const [selectedRole, setSelectedRole] = useState<string>('');
+  const searchParams = useSearchParams();
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<UserRole | ''>('');
+  const [selectedLanguage, setSelectedLanguage] = useState<Language>('en');
 
-  const handleContinue = () => {
-    if (!selectedRole) return;
-    
-    // Store role preference temporarily
-    localStorage.setItem('selectedRole', selectedRole);
-    
-    // Redirect to login
-    router.push('/login');
+  useEffect(() => {
+    // Get language from URL or localStorage
+    const langFromUrl = searchParams.get('lang') as Language;
+    const langFromStorage = localStorage.getItem('selectedLanguage') as Language;
+    setSelectedLanguage(langFromUrl || langFromStorage || 'en');
+  }, [searchParams]);
+
+  const handleContinue = async () => {
+    if (!selectedRole || !user) {
+      toast.error('Please select a role');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Create user document with role and language
+      await setDoc(doc(db, 'users', user.uid), {
+        role: selectedRole,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        emailVerified: user.emailVerified,
+        preferredLanguage: selectedLanguage,
+        active: true,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+        lastLoginAt: Timestamp.now(),
+      });
+
+      toast.success('Welcome to Selvacore!');
+
+      // Redirect based on role
+      const roleDashboards: Record<UserRole, string> = {
+        admin: '/admin',
+        'sub-admin': '/sub-admin',
+        installer: '/installer',
+        customer: '/customer/register',
+      };
+
+      router.push(roleDashboards[selectedRole]);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to save role');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const roleDescriptions: Record<string, string> = {
-    admin: 'Manage products, services, and sub-contractors',
-    'sub-admin': 'Manage your installers and track orders',
-    installer: 'Accept and complete installation orders',
-    customer: 'Order installation services',
-  };
-
-  const roleIcons: Record<string, string> = {
-    admin: '👑',
-    'sub-admin': '🏢',
-    installer: '🔧',
-    customer: '🏠',
-  };
+  const roles: Array<{ value: UserRole; label: string; icon: string; description: string }> = [
+    {
+      value: 'admin',
+      label: 'Administrator',
+      icon: '👑',
+      description: 'Manage products, services, and sub-contractors',
+    },
+    {
+      value: 'sub-admin',
+      label: 'Sub-Contractor',
+      icon: '🏢',
+      description: 'Manage your installers and track orders',
+    },
+    {
+      value: 'installer',
+      label: 'Installer',
+      icon: '🔧',
+      description: 'Accept and complete installation orders',
+    },
+    {
+      value: 'customer',
+      label: 'Customer',
+      icon: '🏠',
+      description: 'Order installation services',
+    },
+  ];
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -38,17 +97,20 @@ export default function SelectRolePage() {
         {/* Header */}
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Select Your Role
+            Welcome! 👋
           </h1>
           <p className="text-lg text-text-secondary">
-            How would you like to use Selvacore?
+            Choose your role to get started
+          </p>
+          <p className="text-sm text-text-tertiary">
+            This is a one-time setup
           </p>
         </div>
 
         {/* Role Selection */}
         <div className="apple-card">
           <div className="space-y-3">
-            {USER_ROLES.map((role) => (
+            {roles.map((role) => (
               <button
                 key={role.value}
                 onClick={() => setSelectedRole(role.value)}
@@ -62,7 +124,7 @@ export default function SelectRolePage() {
                 `}
               >
                 <div className="flex items-center gap-4">
-                  <span className="text-4xl">{roleIcons[role.value]}</span>
+                  <span className="text-4xl">{role.icon}</span>
                   <div className="flex-1">
                     <div className="font-semibold text-lg">{role.label}</div>
                     <div
@@ -72,7 +134,7 @@ export default function SelectRolePage() {
                           : 'text-text-tertiary'
                       }`}
                     >
-                      {roleDescriptions[role.value]}
+                      {role.description}
                     </div>
                   </div>
                   {selectedRole === role.value && (
@@ -98,31 +160,20 @@ export default function SelectRolePage() {
           {/* Continue Button */}
           <button
             onClick={handleContinue}
-            disabled={!selectedRole}
+            disabled={!selectedRole || loading}
             className={`
               w-full mt-6 px-8 py-4 font-semibold rounded-apple transition-all shadow-apple
               ${
-                selectedRole
+                selectedRole && !loading
                   ? 'bg-primary hover:bg-primary-hover text-white hover:scale-[1.02]'
                   : 'bg-surface-secondary text-text-tertiary cursor-not-allowed'
               }
             `}
           >
-            Continue to Sign In
-          </button>
-        </div>
-
-        {/* Back Link */}
-        <div className="text-center">
-          <button
-            onClick={() => router.push('/select-language')}
-            className="text-text-secondary hover:text-text-primary transition-colors text-sm"
-          >
-            ← Back to Language Selection
+            {loading ? 'Setting up...' : 'Continue'}
           </button>
         </div>
       </div>
     </div>
   );
 }
-
