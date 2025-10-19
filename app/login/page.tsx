@@ -34,19 +34,20 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = async () => {
     try {
-      const result = await signInWithGoogle();
+      await signInWithGoogle();
       
-      if (result?.user) {
-        // Check if user already has a role
-        const userDoc = await getDoc(doc(db, 'users', result.user.uid));
-        
-        if (!userDoc.exists() || !userDoc.data()?.role) {
-          // New user - redirect to role selection
-          router.push(`/select-role?lang=${selectedLanguage}`);
-        } else {
-          toast.success('Welcome back!');
+      // The auth state listener will handle the rest
+      // We'll check for new users after sign-in completes
+      setTimeout(async () => {
+        if (user) {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          
+          if (!userDoc.exists() || !userDoc.data()?.role) {
+            // New user - redirect to role selection
+            router.push(`/select-role?lang=${selectedLanguage}`);
+          }
         }
-      }
+      }, 1000);
     } catch (error: any) {
       toast.error(error.message || 'Failed to sign in');
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
@@ -8,7 +8,7 @@ import { db } from '@/lib/firebase/config';
 import { UserRole, Language } from '@/types';
 import toast from 'react-hot-toast';
 
-export default function SelectRolePage() {
+function SelectRoleContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
@@ -163,5 +163,20 @@ export default function SelectRolePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SelectRolePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-text-secondary">Loading...</p>
+        </div>
+      </div>
+    }>
+      <SelectRoleContent />
+    </Suspense>
   );
 }

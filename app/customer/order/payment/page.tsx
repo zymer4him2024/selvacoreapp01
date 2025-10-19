@@ -98,7 +98,7 @@ export default function PaymentPage() {
       const newOrder = {
         orderNumber,
         customerId: user.uid,
-        installerId: null,
+        technicianId: null,
         subContractorId: null,
         
         productId: product.id,
@@ -172,7 +172,7 @@ export default function PaymentPage() {
           whatsapp: userData?.phone || '',
         },
         
-        installerInfo: null,
+        technicianInfo: null,
         rating: null,
         cancellation: null,
         changeHistory: [],

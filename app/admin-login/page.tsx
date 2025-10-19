@@ -27,25 +27,23 @@ export default function AdminLoginPage() {
   const handleAdminSignIn = async () => {
     try {
       setChecking(true);
-      const result = await signInWithGoogle();
+      await signInWithGoogle();
       
-      if (result?.user) {
-        // Check if user is admin
-        const userDoc = await getDoc(doc(db, 'users', result.user.uid));
-        
-        if (userDoc.exists() && userDoc.data()?.role === 'admin') {
-          toast.success('Welcome, Admin!');
-          router.push('/admin');
-        } else {
-          // Not an admin
-          toast.error('Access denied. This portal is for administrators only.');
-          // Sign them out
-          await result.user.auth.signOut();
+      // Wait a moment for auth state to update
+      setTimeout(async () => {
+        // The useEffect will handle the redirect
+        // But we'll do an additional check here
+        if (user) {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          
+          if (!userDoc.exists() || userDoc.data()?.role !== 'admin') {
+            toast.error('Access denied. This portal is for administrators only.');
+            // The useEffect will prevent access
+          }
         }
-      }
+      }, 1000);
     } catch (error: any) {
       toast.error(error.message || 'Failed to sign in');
-    } finally {
       setChecking(false);
     }
   };

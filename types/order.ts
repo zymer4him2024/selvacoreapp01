@@ -12,7 +12,7 @@ export interface Order {
   
   // Participants
   customerId: string;
-  installerId: string | null;
+  technicianId: string | null;
   subContractorId: string | null;
   
   // Product & Service
@@ -59,7 +59,7 @@ export interface Order {
     };
   };
   
-  // Installation Evidence (from installer)
+  // Installation Evidence (from technician)
   installationPhotos: InstallationPhoto[];
   
   // Status & Workflow
@@ -84,8 +84,8 @@ export interface Order {
     whatsapp?: string;
   };
   
-  // Installer Info (when accepted)
-  installerInfo: {
+  // Technician Info (when accepted)
+  technicianInfo: {
     name: string;
     phone: string;
     whatsapp: string;
@@ -95,7 +95,7 @@ export interface Order {
   
   // Notes & Communication
   customerNotes?: string;
-  installerNotes?: string;
+  technicianNotes?: string;
   adminNotes?: string;
   
   // Rating & Review
@@ -108,7 +108,7 @@ export interface Order {
   // Cancellation
   cancellation: {
     reason: string;
-    cancelledBy: 'customer' | 'installer' | 'admin';
+    cancelledBy: 'customer' | 'technician' | 'admin';
     refundIssued: boolean;
     timestamp: Timestamp;
   } | null;

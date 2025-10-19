@@ -89,7 +89,7 @@ export async function updateOrderStatus(
     orderId,
     orderNumber: order.orderNumber,
     customerId: order.customerId,
-    installerId: order.installerId || undefined,
+    technicianId: order.technicianId || undefined,
     subContractorId: order.subContractorId || undefined,
     metadata: {
       previousStatus: order.status,

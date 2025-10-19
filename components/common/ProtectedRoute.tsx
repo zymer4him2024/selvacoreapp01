@@ -29,7 +29,7 @@ export default function ProtectedRoute({
         const roleDashboards: Record<UserRole, string> = {
           admin: '/admin',
           'sub-admin': '/sub-admin',
-          installer: '/installer',
+          technician: '/technician',
           customer: '/customer',
         };
         router.push(roleDashboards[userData.role]);

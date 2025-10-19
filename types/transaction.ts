@@ -27,7 +27,7 @@ export interface Transaction {
   orderId?: string;
   orderNumber?: string;
   customerId?: string;
-  installerId?: string;
+  technicianId?: string;
   subContractorId?: string;
   
   // Financial data

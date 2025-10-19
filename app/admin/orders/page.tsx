@@ -159,16 +159,16 @@ export default function OrdersPage() {
                     </div>
                   </div>
 
-                  {order.installerInfo && (
+                  {order.technicianInfo && (
                     <div className="mt-3 pt-3 border-t border-border">
-                      <p className="text-xs text-text-tertiary mb-1">Installer</p>
+                      <p className="text-xs text-text-tertiary mb-1">Technician</p>
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
                           <span className="text-sm font-semibold text-primary">
-                            {order.installerInfo.name.charAt(0)}
+                            {order.technicianInfo.name.charAt(0)}
                           </span>
                         </div>
-                        <span className="text-sm">{order.installerInfo.name}</span>
+                        <span className="text-sm">{order.technicianInfo.name}</span>
                       </div>
                     </div>
                   )}
