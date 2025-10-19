@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/config';
 import toast from 'react-hot-toast';
 
@@ -14,25 +14,48 @@ export default function AdminLoginPage() {
   const handleAdminSignIn = async () => {
     try {
       setLoading(true);
+      console.log('🔐 Admin login attempt...');
       
-      // Sign in with Google directly (bypassing AuthContext to avoid auto-redirects)
+      // Sign in with Google using popup
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
+      console.log('✅ Popup sign-in successful:', result.user.email);
       
-      // Check if user is admin
+      // Check if user exists in Firestore
       const userDoc = await getDoc(doc(db, 'users', result.user.uid));
       
       if (!userDoc.exists()) {
-        toast.error('No account found. Please sign up at the main site first.');
-        await auth.signOut();
-        setLoading(false);
+        // New user at admin login - Create as ADMIN directly
+        console.log('📝 Creating admin account...');
+        const newAdminUser = {
+          id: result.user.uid,
+          role: 'admin', // Create as admin
+          email: result.user.email || '',
+          displayName: result.user.displayName || '',
+          photoURL: result.user.photoURL || undefined,
+          phone: '',
+          preferredLanguage: 'en',
+          active: true,
+          emailVerified: result.user.emailVerified,
+          roleSelected: true, // Admin role is already selected
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+          lastLoginAt: Timestamp.now(),
+        };
+        
+        await setDoc(doc(db, 'users', result.user.uid), newAdminUser);
+        toast.success('Admin account created! Welcome!');
+        console.log('✅ Admin account created successfully');
+        router.push('/admin');
         return;
       }
       
       const userData = userDoc.data();
+      console.log('👤 User role:', userData.role);
       
       if (userData.role === 'admin') {
         toast.success('Welcome, Admin!');
+        console.log('✅ Admin access granted!');
         router.push('/admin');
       } else {
         toast.error(`Access denied. Your role is: ${userData.role}. Admin access only.`);
@@ -40,8 +63,10 @@ export default function AdminLoginPage() {
         setLoading(false);
       }
     } catch (error: any) {
-      console.error('Admin sign-in error:', error);
-      toast.error(error.message || 'Failed to sign in');
+      console.error('❌ Admin sign-in error:', error);
+      if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+        toast.error(error.message || 'Failed to sign in');
+      }
       setLoading(false);
     }
   };

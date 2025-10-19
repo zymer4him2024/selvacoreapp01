@@ -28,9 +28,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userData, setUserData] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Listen to auth state changes
+  // Listen to auth state changes - SIMPLE VERSION
   useEffect(() => {
+    console.log('👂 Setting up auth state listener...');
+    
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log('🔔 Auth state changed:', firebaseUser?.email || 'signed out');
       setUser(firebaseUser);
       
       if (firebaseUser) {
@@ -38,12 +41,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
         if (userDoc.exists()) {
           setUserData(userDoc.data() as User);
+          console.log('✅ User data loaded:', userDoc.data());
+        } else {
+          console.log('ℹ️ No user data in Firestore yet');
         }
       } else {
         setUserData(null);
       }
       
       setLoading(false);
+      console.log('✅ Auth loading complete');
     });
 
     return () => unsubscribe();
@@ -51,18 +58,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
+      console.log('🚀 Starting Google sign-in with POPUP...');
       const provider = new GoogleAuthProvider();
+      console.log('📝 Opening Google sign-in popup...');
+      
       const result = await signInWithPopup(auth, provider);
       const firebaseUser = result.user;
+      console.log('✅ Popup sign-in successful:', firebaseUser.email);
 
       // Check if user exists in Firestore
       const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
       
       if (!userDoc.exists()) {
-        // New user - create basic profile
+        console.log('📝 Creating new user profile...');
+        // New user - create basic profile (role will be selected later)
         const newUser: User = {
           id: firebaseUser.uid,
-          role: 'customer', // Default role, can be changed during registration
+          role: 'customer', // Temporary default - user will select actual role
           email: firebaseUser.email || '',
           displayName: firebaseUser.displayName || '',
           photoURL: firebaseUser.photoURL || undefined,
@@ -70,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           preferredLanguage: 'en',
           active: true,
           emailVerified: firebaseUser.emailVerified,
+          roleSelected: false, // User needs to select their role
           createdAt: Timestamp.now(),
           updatedAt: Timestamp.now(),
           lastLoginAt: Timestamp.now(),
@@ -77,7 +90,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
         setUserData(newUser);
+        console.log('✅ New user created successfully (role selection pending)');
       } else {
+        console.log('✅ Existing user found, updating last login...');
         // Existing user - update last login
         const existingUser = userDoc.data() as User;
         await setDoc(
@@ -87,9 +102,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         );
         setUserData({ ...existingUser, lastLoginAt: Timestamp.now() });
       }
-    } catch (error) {
-      console.error('Error signing in with Google:', error);
-      throw error;
+      
+      console.log('🎉 Sign-in complete!');
+    } catch (error: any) {
+      console.error('❌ Error signing in with Google:', error);
+      // Ignore popup_closed_by_user errors - user cancelled
+      if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+        throw error;
+      }
     }
   };
 

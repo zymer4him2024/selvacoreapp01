@@ -32,7 +32,7 @@ function SelectRoleContent() {
     try {
       setLoading(true);
 
-      // Create user document with role and language
+      // Update user document with selected role and language
       await setDoc(doc(db, 'users', user.uid), {
         role: selectedRole,
         email: user.email,
@@ -41,6 +41,7 @@ function SelectRoleContent() {
         emailVerified: user.emailVerified,
         preferredLanguage: selectedLanguage,
         active: true,
+        roleSelected: true, // Mark role as confirmed
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
         lastLoginAt: Timestamp.now(),

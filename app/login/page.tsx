@@ -22,34 +22,37 @@ export default function LoginPage() {
   useEffect(() => {
     // Redirect if already logged in
     if (user && userData) {
-      const roleDashboards: Record<string, string> = {
-        'admin': '/admin',
-        'sub-admin': '/sub-admin',
-        'technician': '/technician',
-        'customer': '/customer',
-      };
-      router.push(roleDashboards[userData.role] || '/');
+      // Check if user has completed role selection
+      if (userData.roleSelected === false) {
+        // New user who hasn't selected their role yet
+        console.log('🎯 New user - redirecting to role selection...');
+        router.push(`/select-role?lang=${selectedLanguage}`);
+      } else if (userData.role) {
+        // Existing user with confirmed role - redirect to their dashboard
+        const roleDashboards: Record<string, string> = {
+          'admin': '/admin',
+          'sub-admin': '/sub-admin',
+          'technician': '/technician',
+          'customer': '/customer',
+        };
+        console.log('✅ Existing user - redirecting to dashboard:', userData.role);
+        router.push(roleDashboards[userData.role] || '/');
+      }
     }
-  }, [user, userData, router]);
+  }, [user, userData, router, selectedLanguage]);
 
   const handleGoogleSignIn = async () => {
+    console.log('🖱️ Google Sign-In button clicked!');
     try {
+      console.log('📞 Calling signInWithGoogle from AuthContext...');
       await signInWithGoogle();
-      
-      // The auth state listener will handle the rest
-      // We'll check for new users after sign-in completes
-      setTimeout(async () => {
-        if (user) {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          
-          if (!userDoc.exists() || !userDoc.data()?.role) {
-            // New user - redirect to role selection
-            router.push(`/select-role?lang=${selectedLanguage}`);
-          }
-        }
-      }, 1000);
+      console.log('🎉 Sign-in successful! User will be redirected automatically.');
+      // The useEffect above will handle automatic redirect to dashboard
     } catch (error: any) {
-      toast.error(error.message || 'Failed to sign in');
+      console.error('❌ Error in handleGoogleSignIn:', error);
+      if (error) {
+        toast.error(error.message || 'Failed to sign in');
+      }
     }
   };
 

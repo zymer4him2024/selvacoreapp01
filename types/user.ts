@@ -15,6 +15,7 @@ export interface User {
   subContractorId?: string | null;
   active: boolean;
   emailVerified: boolean;
+  roleSelected?: boolean; // Track if user has chosen their role
   createdAt: Timestamp;
   updatedAt: Timestamp;
   lastLoginAt?: Timestamp;
