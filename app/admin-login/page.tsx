@@ -1,33 +1,48 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase/config';
 import toast from 'react-hot-toast';
 
 export default function AdminLoginPage() {
-  const { user, userData, signInWithGoogle, loading } = useAuth();
   const router = useRouter();
-
-  useEffect(() => {
-    // Check if user is already logged in
-    if (user && userData) {
-      if (userData.role === 'admin') {
-        // User is admin, redirect to dashboard
-        router.push('/admin');
-      } else {
-        // User is not admin, show error
-        toast.error('Access denied. This portal is for administrators only.');
-      }
-    }
-  }, [user, userData, router]);
+  const [loading, setLoading] = useState(false);
 
   const handleAdminSignIn = async () => {
     try {
-      await signInWithGoogle();
-      // The useEffect above will handle the redirect after auth state updates
+      setLoading(true);
+      
+      // Sign in with Google directly (bypassing AuthContext to avoid auto-redirects)
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      
+      // Check if user is admin
+      const userDoc = await getDoc(doc(db, 'users', result.user.uid));
+      
+      if (!userDoc.exists()) {
+        toast.error('No account found. Please sign up at the main site first.');
+        await auth.signOut();
+        setLoading(false);
+        return;
+      }
+      
+      const userData = userDoc.data();
+      
+      if (userData.role === 'admin') {
+        toast.success('Welcome, Admin!');
+        router.push('/admin');
+      } else {
+        toast.error(`Access denied. Your role is: ${userData.role}. Admin access only.`);
+        await auth.signOut();
+        setLoading(false);
+      }
     } catch (error: any) {
+      console.error('Admin sign-in error:', error);
       toast.error(error.message || 'Failed to sign in');
+      setLoading(false);
     }
   };
 
@@ -36,44 +51,7 @@ export default function AdminLoginPage() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // If user is logged in but not admin, show message
-  if (user && userData && userData.role !== 'admin') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <div className="w-full max-w-md space-y-8 animate-fade-in">
-          <div className="apple-card space-y-6 bg-error/10 border-error/30">
-            <div className="text-center space-y-4">
-              <div className="text-6xl">🚫</div>
-              <h1 className="text-3xl font-bold text-error">Access Denied</h1>
-              <p className="text-text-secondary">
-                This portal is for administrators only.
-              </p>
-              <p className="text-sm text-text-tertiary">
-                You are signed in as: {userData.role}
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <button
-                onClick={() => router.push('/customer')}
-                className="w-full px-6 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all"
-              >
-                Go to Main Site
-              </button>
-              <button
-                onClick={() => router.push('/')}
-                className="w-full px-6 py-3 bg-surface hover:bg-surface-elevated text-text-primary font-medium rounded-apple transition-all border border-border"
-              >
-                Sign Out & Try Different Account
-              </button>
-            </div>
-          </div>
+          <p className="text-text-secondary">Verifying admin access...</p>
         </div>
       </div>
     );
@@ -107,7 +85,8 @@ export default function AdminLoginPage() {
           {/* Google Sign In Button */}
           <button
             onClick={handleAdminSignIn}
-            className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white hover:bg-gray-100 text-gray-900 font-medium rounded-apple transition-all hover:scale-[1.02] shadow-apple"
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 font-medium rounded-apple transition-all hover:scale-[1.02] shadow-apple"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -127,7 +106,7 @@ export default function AdminLoginPage() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            Continue with Google
+            {loading ? 'Verifying...' : 'Continue with Google'}
           </button>
 
           {/* Warning */}
