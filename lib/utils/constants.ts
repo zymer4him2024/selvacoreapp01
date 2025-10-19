@@ -34,7 +34,7 @@ export const ORDER_STATUSES = [
 export const USER_ROLES = [
   { value: 'admin', label: 'Admin' },
   { value: 'sub-admin', label: 'Sub-Admin' },
-  { value: 'installer', label: 'Installer' },
+  { value: 'technician', label: 'Technician' },
   { value: 'customer', label: 'Customer' },
 ] as const;
 

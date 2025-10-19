@@ -52,7 +52,7 @@ export default function SelectRolePage() {
       const roleDashboards: Record<UserRole, string> = {
         admin: '/admin',
         'sub-admin': '/sub-admin',
-        installer: '/installer',
+        technician: '/technician',
         customer: '/customer/register',
       };
 
@@ -66,20 +66,8 @@ export default function SelectRolePage() {
 
   const roles: Array<{ value: UserRole; label: string; icon: string; description: string }> = [
     {
-      value: 'admin',
-      label: 'Administrator',
-      icon: '👑',
-      description: 'Manage products, services, and sub-contractors',
-    },
-    {
-      value: 'sub-admin',
-      label: 'Sub-Contractor',
-      icon: '🏢',
-      description: 'Manage your installers and track orders',
-    },
-    {
-      value: 'installer',
-      label: 'Installer',
+      value: 'technician',
+      label: 'Technician',
       icon: '🔧',
       description: 'Accept and complete installation orders',
     },

@@ -5,78 +5,76 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { SUPPORTED_LANGUAGES } from '@/lib/utils/constants';
 import toast from 'react-hot-toast';
 
-export default function LoginPage() {
+export default function AdminLoginPage() {
   const { user, userData, signInWithGoogle, loading } = useAuth();
   const router = useRouter();
-  const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [checking, setChecking] = useState(false);
 
   useEffect(() => {
-    // Get selected language
-    const savedLanguage = localStorage.getItem('selectedLanguage') || 'en';
-    setSelectedLanguage(savedLanguage);
-  }, []);
-
-  useEffect(() => {
-    // Redirect if already logged in
+    // Redirect if already logged in as admin
     if (user && userData) {
-      const roleDashboards: Record<string, string> = {
-        'admin': '/admin',
-        'sub-admin': '/sub-admin',
-        'technician': '/technician',
-        'customer': '/customer',
-      };
-      router.push(roleDashboards[userData.role] || '/');
+      if (userData.role === 'admin') {
+        router.push('/admin');
+      } else {
+        toast.error('Access denied. Admin access only.');
+        // Don't redirect, let them try different account
+      }
     }
   }, [user, userData, router]);
 
-  const handleGoogleSignIn = async () => {
+  const handleAdminSignIn = async () => {
     try {
+      setChecking(true);
       const result = await signInWithGoogle();
       
       if (result?.user) {
-        // Check if user already has a role
+        // Check if user is admin
         const userDoc = await getDoc(doc(db, 'users', result.user.uid));
         
-        if (!userDoc.exists() || !userDoc.data()?.role) {
-          // New user - redirect to role selection
-          router.push(`/select-role?lang=${selectedLanguage}`);
+        if (userDoc.exists() && userDoc.data()?.role === 'admin') {
+          toast.success('Welcome, Admin!');
+          router.push('/admin');
         } else {
-          toast.success('Welcome back!');
+          // Not an admin
+          toast.error('Access denied. This portal is for administrators only.');
+          // Sign them out
+          await result.user.auth.signOut();
         }
       }
     } catch (error: any) {
       toast.error(error.message || 'Failed to sign in');
+    } finally {
+      setChecking(false);
     }
   };
 
-  if (loading) {
+  if (loading || checking) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading...</p>
+          <p className="text-text-secondary">
+            {checking ? 'Verifying admin access...' : 'Loading...'}
+          </p>
         </div>
       </div>
     );
   }
 
-  const selectedLang = SUPPORTED_LANGUAGES.find(l => l.code === selectedLanguage);
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-8 animate-fade-in">
-        {/* Language Display */}
+        {/* Header */}
         <div className="text-center space-y-4">
-          <div className="text-7xl">{selectedLang?.flag || '🌍'}</div>
+          <div className="text-6xl mb-4">👑</div>
           <div className="space-y-2">
             <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Welcome
+              Admin Portal
             </h1>
             <p className="text-lg text-text-secondary">
-              Continue in {selectedLang?.name || 'English'}
+              Administrators Only
             </p>
           </div>
         </div>
@@ -86,14 +84,15 @@ export default function LoginPage() {
           <div className="text-center space-y-2">
             <h2 className="text-2xl font-semibold">Sign In</h2>
             <p className="text-text-secondary text-sm">
-              Use your Google account to continue
+              Use your authorized admin Google account
             </p>
           </div>
 
           {/* Google Sign In Button */}
           <button
-            onClick={handleGoogleSignIn}
-            className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white hover:bg-gray-100 text-gray-900 font-medium rounded-apple transition-all hover:scale-[1.02] shadow-apple"
+            onClick={handleAdminSignIn}
+            disabled={checking}
+            className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 font-medium rounded-apple transition-all hover:scale-[1.02] shadow-apple"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -113,24 +112,28 @@ export default function LoginPage() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            Continue with Google
+            {checking ? 'Verifying...' : 'Continue with Google'}
           </button>
 
-          <div className="text-center text-xs text-text-tertiary">
-            By signing in, you agree to our Terms of Service and Privacy Policy
+          {/* Warning */}
+          <div className="p-4 bg-warning/10 border border-warning/30 rounded-apple">
+            <p className="text-sm text-warning text-center">
+              ⚠️ Authorized administrators only. Access is restricted.
+            </p>
           </div>
         </div>
 
-        {/* Change Language */}
+        {/* Back to Main Site */}
         <div className="text-center">
           <button
             onClick={() => router.push('/')}
             className="text-sm text-text-secondary hover:text-text-primary transition-colors"
           >
-            ← Change Language
+            ← Back to Main Site
           </button>
         </div>
       </div>
     </div>
   );
 }
+

@@ -50,15 +50,15 @@ export default function OrderDetailPage() {
   };
 
   const handleWhatsAppContact = () => {
-    if (!order?.installerInfo) {
-      toast.error('Installer information not available yet');
+    if (!order?.technicianInfo) {
+      toast.error('Technician information not available yet');
       return;
     }
 
     const whatsappLink = generateWhatsAppLink(
       {
-        name: order.installerInfo.name,
-        phone: order.installerInfo.whatsapp,
+        name: order.technicianInfo.name,
+        phone: order.technicianInfo.whatsapp,
       },
       {
         orderNumber: order.orderNumber,
@@ -123,7 +123,7 @@ export default function OrderDetailPage() {
                 <div>
                   <h3 className="font-semibold text-success mb-1">Order Placed Successfully!</h3>
                   <p className="text-sm text-text-secondary">
-                    Your order has been received. An installer will accept it soon. You'll be notified once it's accepted.
+                    Your order has been received. A technician will accept it soon. You'll be notified once it's accepted.
                   </p>
                 </div>
               </div>
@@ -215,45 +215,45 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
-          {/* Installer Info (if accepted) */}
-          {order.installerInfo ? (
+          {/* Technician Info (if accepted) */}
+          {order.technicianInfo ? (
             <div className="apple-card bg-primary/5 border-primary/30">
-              <h2 className="text-xl font-semibold mb-4">Your Installer</h2>
+              <h2 className="text-xl font-semibold mb-4">Your Technician</h2>
               
               <div className="flex items-start gap-4 mb-6">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-2xl font-bold flex-shrink-0">
-                  {order.installerInfo.name.charAt(0)}
+                  {order.technicianInfo.name.charAt(0)}
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold text-lg">{order.installerInfo.name}</p>
+                  <p className="font-semibold text-lg">{order.technicianInfo.name}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <Star className="w-4 h-4 text-warning fill-warning" />
-                    <span className="font-medium">{order.installerInfo.rating.toFixed(1)}</span>
+                    <span className="font-medium">{order.technicianInfo.rating.toFixed(1)}</span>
                     <span className="text-sm text-text-secondary">rating</span>
                   </div>
                   <div className="flex items-center gap-2 mt-2 text-sm text-text-secondary">
                     <Phone className="w-4 h-4" />
-                    <span>{order.installerInfo.phone}</span>
+                    <span>{order.technicianInfo.phone}</span>
                   </div>
                 </div>
               </div>
 
               {/* WhatsApp Button */}
-              <button
-                onClick={handleWhatsAppContact}
-                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-success hover:bg-success/90 text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
-              >
-                <MessageCircle className="w-5 h-5" />
-                Contact Installer on WhatsApp
-              </button>
+            <button
+              onClick={handleWhatsAppContact}
+              className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-success hover:bg-success/90 text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
+            >
+              <MessageCircle className="w-5 h-5" />
+              Contact Technician on WhatsApp
+            </button>
             </div>
           ) : (
             <div className="apple-card bg-warning/5 border-warning/30">
               <div className="text-center py-8">
                 <Clock className="w-12 h-12 mx-auto mb-3 text-warning" />
-                <h3 className="font-semibold mb-1">Waiting for Installer</h3>
+                <h3 className="font-semibold mb-1">Waiting for Technician</h3>
                 <p className="text-sm text-text-secondary">
-                  Your order is pending. An installer will accept it soon and you'll be notified.
+                  Your order is pending. A technician will accept it soon and you'll be notified.
                 </p>
               </div>
             </div>

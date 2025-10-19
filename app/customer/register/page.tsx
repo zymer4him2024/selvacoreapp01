@@ -164,7 +164,7 @@ export default function CustomerRegistrationPage() {
                   className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
                 />
                 <p className="text-xs text-text-tertiary mt-1">
-                  For installer to contact you directly
+                  For technician to contact you directly
                 </p>
               </div>
             </div>
@@ -276,7 +276,7 @@ export default function CustomerRegistrationPage() {
                   className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
                 />
                 <p className="text-xs text-text-tertiary mt-1">
-                  Help installers find your location easily
+                  Help technicians find your location easily
                 </p>
               </div>
             </div>

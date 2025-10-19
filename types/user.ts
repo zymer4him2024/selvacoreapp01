@@ -1,6 +1,6 @@
 import { Timestamp } from 'firebase/firestore';
 
-export type UserRole = 'admin' | 'sub-admin' | 'installer' | 'customer';
+export type UserRole = 'admin' | 'sub-admin' | 'technician' | 'customer';
 
 export type Language = 'en' | 'es' | 'fr' | 'pt' | 'ar' | 'zh';
 
