@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Plus, Search, Edit, Trash2, Eye, Package } from 'lucide-react';
 import { Product } from '@/types';
-import { getAllProducts, deleteProduct } from '@/lib/services/productService';
+import { getAllProducts, deleteProduct, updateProduct } from '@/lib/services/productService';
 import { formatCurrency } from '@/lib/utils/formatters';
 import toast from 'react-hot-toast';
 
@@ -38,6 +38,16 @@ export default function ProductsPage() {
       loadProducts();
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete product');
+    }
+  };
+
+  const handleToggleActive = async (id: string, currentActive: boolean, name: string) => {
+    try {
+      await updateProduct(id, { active: !currentActive });
+      toast.success(`Product ${!currentActive ? 'activated' : 'deactivated'} successfully`);
+      loadProducts();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update product');
     }
   };
 
@@ -181,6 +191,17 @@ export default function ProductsPage() {
                     <Edit className="w-4 h-4" />
                     Edit
                   </Link>
+                  <button
+                    onClick={() => handleToggleActive(product.id, product.active, product.name.en)}
+                    className={`flex items-center justify-center gap-2 px-4 py-2 rounded-apple text-sm font-medium transition-all ${
+                      product.active
+                        ? 'bg-warning/20 hover:bg-warning/30 text-warning'
+                        : 'bg-success/20 hover:bg-success/30 text-success'
+                    }`}
+                    title={product.active ? 'Deactivate product' : 'Activate product'}
+                  >
+                    {product.active ? 'Hide' : 'Show'}
+                  </button>
                   <button
                     onClick={() => handleDelete(product.id, product.name.en)}
                     className="flex items-center justify-center gap-2 px-4 py-2 bg-surface-elevated hover:bg-error/20 hover:text-error rounded-apple text-sm font-medium transition-all"

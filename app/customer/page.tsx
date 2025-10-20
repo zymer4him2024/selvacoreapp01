@@ -7,7 +7,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { Package, Search, ShoppingCart, Filter } from 'lucide-react';
 import { Product } from '@/types';
-import { getActiveProducts } from '@/lib/services/productService';
+import { getActiveProducts, getAllProducts } from '@/lib/services/productService';
 import { formatCurrency } from '@/lib/utils/formatters';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
@@ -44,9 +44,27 @@ export default function CustomerHomePage() {
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const data = await getActiveProducts();
-      setProducts(data);
+      console.log('🔍 Loading products...');
+      
+      // First try to get active products
+      const activeData = await getActiveProducts();
+      console.log('📦 Active products found:', activeData.length);
+      console.log('📋 Active products data:', activeData);
+      
+      // If no active products, get all products for debugging
+      if (activeData.length === 0) {
+        console.log('⚠️ No active products found, checking all products...');
+        const allData = await getAllProducts();
+        console.log('📦 All products found:', allData.length);
+        console.log('📋 All products data:', allData);
+        
+        // Show all products if no active ones (for debugging)
+        setProducts(allData);
+      } else {
+        setProducts(activeData);
+      }
     } catch (error: any) {
+      console.error('❌ Error loading products:', error);
       toast.error('Failed to load products');
     } finally {
       setLoading(false);
