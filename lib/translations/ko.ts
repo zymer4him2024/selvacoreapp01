@@ -60,6 +60,13 @@ export const ko = {
     myOrders: '내 주문',
     featured: '추천',
     inactive: '비활성',
+    profile: '프로필',
+    settings: '설정',
+    language: '언어',
+    logout: '로그아웃',
+    addresses: '내 주소',
+    notifications: '알림',
+    help: '도움말 및 지원',
   },
   orders: {
     title: '내 주문',

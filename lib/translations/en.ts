@@ -60,6 +60,13 @@ export const en = {
     myOrders: 'My Orders',
     featured: 'Featured',
     inactive: 'Inactive',
+    profile: 'Profile',
+    settings: 'Settings',
+    language: 'Language',
+    logout: 'Log Out',
+    addresses: 'My Addresses',
+    notifications: 'Notifications',
+    help: 'Help & Support',
   },
   orders: {
     title: 'My Orders',

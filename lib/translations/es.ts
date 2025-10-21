@@ -60,6 +60,13 @@ export const es = {
     myOrders: 'Mis Pedidos',
     featured: 'Destacado',
     inactive: 'Inactivo',
+    profile: 'Perfil',
+    settings: 'Configuración',
+    language: 'Idioma',
+    logout: 'Cerrar Sesión',
+    addresses: 'Mis Direcciones',
+    notifications: 'Notificaciones',
+    help: 'Ayuda y Soporte',
   },
   orders: {
     title: 'Mis Pedidos',
