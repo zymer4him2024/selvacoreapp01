@@ -149,9 +149,9 @@ export default function EditProductPage() {
               <input
                 type="number"
                 step="0.01"
-                value={product.basePrice}
-                onChange={(e) => setProduct({ ...product, basePrice: parseFloat(e.target.value) })}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                value={product.basePrice || 0}
+                onChange={(e) => setProduct({ ...product, basePrice: parseFloat(e.target.value) || 0 })}
+                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:outline-none transition-all"
               />
             </div>
 

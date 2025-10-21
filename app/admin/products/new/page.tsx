@@ -135,7 +135,7 @@ export default function NewProductPage() {
         description,
         category,
         brand,
-        basePrice: parseFloat(basePrice),
+        basePrice: parseFloat(basePrice) || 0,
         currency,
         variations,
         images: [],
@@ -156,12 +156,12 @@ export default function NewProductPage() {
       // Update product with image URLs
       if (imageUrls.length > 0) {
         await createProduct({
-          ...{
+          ...          {
             name,
             description,
             category,
             brand,
-            basePrice: parseFloat(basePrice),
+            basePrice: parseFloat(basePrice) || 0,
             currency,
             variations,
             images: imageUrls,
@@ -564,14 +564,14 @@ export default function NewProductPage() {
                       type="number"
                       step="0.01"
                       value={variation.price || ''}
-                      onChange={(e) => updateVariation(variation.id, 'price', parseFloat(e.target.value))}
+                      onChange={(e) => updateVariation(variation.id, 'price', parseFloat(e.target.value) || 0)}
                       placeholder="Price"
                       className="px-4 py-2 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
                     />
                     <input
                       type="number"
                       value={variation.stock || ''}
-                      onChange={(e) => updateVariation(variation.id, 'stock', parseInt(e.target.value))}
+                      onChange={(e) => updateVariation(variation.id, 'stock', parseInt(e.target.value) || 0)}
                       placeholder="Stock quantity"
                       className="px-4 py-2 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
                     />
