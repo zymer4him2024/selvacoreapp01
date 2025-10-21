@@ -13,6 +13,11 @@ export const pt = {
     continue: 'Continuar',
     submit: 'Enviar',
     close: 'Fechar',
+    takePhoto: 'Tirar Foto',
+    chooseFile: 'Escolher Arquivo',
+    retake: 'Tirar Novamente',
+    usePhoto: 'Usar Foto',
+    cropImage: 'Cortar Imagem',
   },
   home: {
     title: 'Selvacore',
@@ -67,6 +72,12 @@ export const pt = {
     addresses: 'Meus Endereços',
     notifications: 'Notificações',
     help: 'Ajuda e Suporte',
+    orderSteps: {
+      product: 'Produto',
+      details: 'Detalhes',
+      photos: 'Fotos',
+      payment: 'Pagamento',
+    },
   },
   orders: {
     title: 'Meus Pedidos',

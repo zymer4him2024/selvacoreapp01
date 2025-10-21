@@ -13,6 +13,11 @@ export const ko = {
     continue: '계속',
     submit: '제출',
     close: '닫기',
+    takePhoto: '사진 찍기',
+    chooseFile: '파일 선택',
+    retake: '다시 찍기',
+    usePhoto: '사진 사용',
+    cropImage: '이미지 자르기',
   },
   home: {
     title: 'Selvacore',
@@ -67,6 +72,12 @@ export const ko = {
     addresses: '내 주소',
     notifications: '알림',
     help: '도움말 및 지원',
+    orderSteps: {
+      product: '제품',
+      details: '상세 정보',
+      photos: '사진',
+      payment: '결제',
+    },
   },
   orders: {
     title: '내 주문',
