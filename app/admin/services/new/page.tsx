@@ -13,8 +13,8 @@ export default function NewServicePage() {
   const [loading, setLoading] = useState(false);
 
   // Form state
-  const [name, setName] = useState<MultiLanguageText>({ en: '', es: '', fr: '', pt: '', ar: '' });
-  const [description, setDescription] = useState<MultiLanguageText>({ en: '', es: '', fr: '', pt: '', ar: '' });
+  const [name, setName] = useState<MultiLanguageText>({ en: '', pt: '', es: '', ko: '' });
+  const [description, setDescription] = useState<MultiLanguageText>({ en: '', pt: '', es: '', ko: '' });
   const [price, setPrice] = useState('');
   const [currency, setCurrency] = useState('USD');
   const [duration, setDuration] = useState('');
