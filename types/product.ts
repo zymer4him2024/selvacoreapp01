@@ -2,9 +2,9 @@ import { Timestamp } from 'firebase/firestore';
 
 export interface MultiLanguageText {
   en: string;
+  pt: string;
   es: string;
-  fr: string;
-  ar: string;
+  ko: string;
   [key: string]: string;
 }
 

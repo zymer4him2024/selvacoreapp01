@@ -6,10 +6,9 @@ export const APP_DESCRIPTION = 'Professional Installation Management Platform';
 // Supported languages
 export const SUPPORTED_LANGUAGES = [
   { code: 'en', name: 'English', flag: '🇺🇸' },
-  { code: 'es', name: 'Español', flag: '🇪🇸' },
-  { code: 'fr', name: 'Français', flag: '🇫🇷' },
   { code: 'pt', name: 'Português', flag: '🇵🇹' },
-  { code: 'ar', name: 'العربية', flag: '🇸🇦' },
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
+  { code: 'ko', name: '한국어', flag: '🇰🇷' },
 ] as const;
 
 // Time slots for installation

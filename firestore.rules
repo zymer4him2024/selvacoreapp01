@@ -13,10 +13,52 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
     
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
     // Users collection - users can read/write their own data
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow write: if isOwner(userId);
+      allow write: if isOwner(userId) || isAdmin();
+    }
+    
+    // Products collection - everyone can read, only admins can write
+    match /products/{productId} {
+      allow read: if true;  // Allow everyone to read products (public catalog)
+      allow write: if isAdmin();  // Only admins can create/update/delete
+    }
+    
+    // Customers collection - customers can read/write their own data
+    match /customers/{customerId} {
+      allow read: if isOwner(customerId) || isAdmin();
+      allow write: if isOwner(customerId) || isAdmin();
+    }
+    
+    // Orders collection - users can read their own orders, admins can read all
+    match /orders/{orderId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
+    }
+    
+    // Sub-contractors collection - authenticated users can read, admins can write
+    match /subContractors/{contractorId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Transactions collection - only admins can access
+    match /transactions/{transactionId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Services collection - everyone can read, admins can write
+    match /services/{serviceId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
     
     // Student data - only authenticated users can access their own data
@@ -28,15 +70,13 @@ service cloud.firestore {
     // Lessons - authenticated users can read, admins can write
     match /lessons/{lessonId} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && 
-                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow write: if isAdmin();
     }
     
     // Problem sets - authenticated users can read
     match /problemSets/{problemSetId} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && 
-                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow write: if isAdmin();
     }
     
     // User progress - users can only access their own progress

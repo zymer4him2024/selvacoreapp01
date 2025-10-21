@@ -71,9 +71,18 @@ export default function CustomerHomePage() {
     }
   };
 
+  // Helper function to get translated text safely
+  const getTranslation = (text: any, lang?: string): string => {
+    if (!text) return '';
+    const language = lang || userData?.preferredLanguage || 'en';
+    // Try requested language, fallback to English, then any available language
+    return text[language] || text.en || text.pt || text.es || text.ko || Object.values(text)[0] || '';
+  };
+
   const filteredProducts = products.filter((product) => {
+    const productName = getTranslation(product.name);
     const matchesSearch =
-      product.name.en.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.brand.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
     return matchesSearch && matchesCategory;
@@ -187,7 +196,7 @@ export default function CustomerHomePage() {
                     {product.images && product.images.length > 0 ? (
                       <img
                         src={product.images[0]}
-                        alt={product.name[userData?.preferredLanguage || 'en']}
+                        alt={getTranslation(product.name)}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                       />
                     ) : (
@@ -206,10 +215,10 @@ export default function CustomerHomePage() {
                   <div className="space-y-3">
                     <div>
                       <h3 className="font-semibold text-lg mb-1 line-clamp-2">
-                        {product.name[userData?.preferredLanguage || 'en']}
+                        {getTranslation(product.name)}
                       </h3>
                       <p className="text-sm text-text-secondary line-clamp-2">
-                        {product.description[userData?.preferredLanguage || 'en']}
+                        {getTranslation(product.description)}
                       </p>
                     </div>
 

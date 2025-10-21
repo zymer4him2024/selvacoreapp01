@@ -14,8 +14,8 @@ export default function NewProductPage() {
   const [loading, setLoading] = useState(false);
   
   // Form state
-  const [name, setName] = useState<MultiLanguageText>({ en: '', es: '', fr: '', pt: '', ar: '' });
-  const [description, setDescription] = useState<MultiLanguageText>({ en: '', es: '', fr: '', pt: '', ar: '' });
+  const [name, setName] = useState<MultiLanguageText>({ en: '', pt: '', es: '', ko: '' });
+  const [description, setDescription] = useState<MultiLanguageText>({ en: '', pt: '', es: '', ko: '' });
   const [category, setCategory] = useState('');
   const [brand, setBrand] = useState('');
   const [basePrice, setBasePrice] = useState('');
