@@ -22,13 +22,20 @@ import { v4 as uuidv4 } from 'uuid';
  */
 export async function getAllProducts(): Promise<Product[]> {
   const productsRef = collection(db, 'products');
-  const q = query(productsRef, orderBy('createdAt', 'desc'));
-  const snapshot = await getDocs(q);
+  // Remove orderBy to avoid index requirement - sort in JavaScript instead
+  const snapshot = await getDocs(productsRef);
   
-  return snapshot.docs.map(doc => ({
+  const products = snapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data(),
   } as Product));
+  
+  // Sort by createdAt in JavaScript (newest first)
+  return products.sort((a, b) => {
+    const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+    const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+    return bTime - aTime;
+  });
 }
 
 /**
@@ -120,13 +127,21 @@ export async function deleteProductImage(imageUrl: string): Promise<void> {
  */
 export async function getActiveProducts(): Promise<Product[]> {
   const productsRef = collection(db, 'products');
-  const q = query(productsRef, where('active', '==', true), orderBy('createdAt', 'desc'));
+  // Remove orderBy to avoid composite index requirement - sort in JavaScript instead
+  const q = query(productsRef, where('active', '==', true));
   const snapshot = await getDocs(q);
   
-  return snapshot.docs.map(doc => ({
+  const products = snapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data(),
   } as Product));
+  
+  // Sort by createdAt in JavaScript (newest first)
+  return products.sort((a, b) => {
+    const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+    const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+    return bTime - aTime;
+  });
 }
 
 /**
