@@ -9,12 +9,14 @@ import { Package, Search, ShoppingCart, Filter } from 'lucide-react';
 import { Product } from '@/types';
 import { getActiveProducts, getAllProducts } from '@/lib/services/productService';
 import { formatCurrency } from '@/lib/utils/formatters';
+import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
 export default function CustomerHomePage() {
   const router = useRouter();
   const { user, userData } = useAuth();
+  const { t } = useTranslation();
   const [hasProfile, setHasProfile] = useState<boolean | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,7 +101,7 @@ export default function CustomerHomePage() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading products...</p>
+          <p className="text-text-secondary">{t.common.loading}</p>
         </div>
       </div>
     );
@@ -124,7 +126,7 @@ export default function CustomerHomePage() {
               className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-apple transition-all"
             >
               <ShoppingCart className="w-5 h-5" />
-              <span className="hidden sm:inline">My Orders</span>
+              <span className="hidden sm:inline">{t.customer.myOrders}</span>
             </Link>
           </div>
         </div>
@@ -135,10 +137,10 @@ export default function CustomerHomePage() {
           {/* Welcome Message */}
           <div>
             <h2 className="text-2xl font-bold mb-2">
-              Welcome back, {userData?.displayName?.split(' ')[0]}! 👋
+              {t.customer.welcome}, {userData?.displayName?.split(' ')[0]}! 👋
             </h2>
             <p className="text-text-secondary">
-              Browse our products and schedule your installation
+              {t.customer.browseProducts}
             </p>
           </div>
 
@@ -148,7 +150,7 @@ export default function CustomerHomePage() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
               <input
                 type="text"
-                placeholder="Search products..."
+                placeholder={t.customer.searchPlaceholder}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
@@ -162,7 +164,7 @@ export default function CustomerHomePage() {
                 onChange={(e) => setCategoryFilter(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none transition-all appearance-none"
               >
-                <option value="all">All Categories</option>
+                <option value="all">{t.customer.allCategories}</option>
                 {categories.map((cat) => (
                   <option key={cat} value={cat}>
                     {cat}
@@ -176,11 +178,11 @@ export default function CustomerHomePage() {
           {filteredProducts.length === 0 ? (
             <div className="apple-card text-center py-16">
               <Package className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
-              <h3 className="text-xl font-semibold mb-2">No products found</h3>
+              <h3 className="text-xl font-semibold mb-2">{t.customer.noProductsFound}</h3>
               <p className="text-text-secondary">
                 {searchTerm || categoryFilter !== 'all'
-                  ? 'Try adjusting your filters'
-                  : 'Products will appear here soon'}
+                  ? t.customer.tryAdjustFilters
+                  : t.customer.productsWillAppear}
               </p>
             </div>
           ) : (
@@ -206,7 +208,7 @@ export default function CustomerHomePage() {
                     )}
                     {product.featured && (
                       <div className="absolute top-3 right-3 px-3 py-1 bg-warning text-black text-xs font-bold rounded-full">
-                        ⭐ Featured
+                        ⭐ {t.customer.featured}
                       </div>
                     )}
                   </div>
@@ -232,21 +234,21 @@ export default function CustomerHomePage() {
                     <div className="pt-3 border-t border-border">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-text-tertiary">Starting from</p>
+                          <p className="text-sm text-text-tertiary">{t.customer.startingFrom}</p>
                           <p className="text-2xl font-bold text-primary">
                             {formatCurrency(product.basePrice, product.currency)}
                           </p>
                         </div>
                         {product.variations && product.variations.length > 0 && (
                           <div className="text-right">
-                            <p className="text-xs text-text-tertiary">{product.variations.length} options</p>
+                            <p className="text-xs text-text-tertiary">{product.variations.length} {t.customer.options}</p>
                           </div>
                         )}
                       </div>
                     </div>
 
                     <div className="flex items-center justify-center gap-2 px-4 py-3 bg-primary/10 text-primary rounded-apple font-medium group-hover:bg-primary group-hover:text-white transition-all">
-                      View Details
+                      {t.customer.viewDetails}
                       <span className="group-hover:translate-x-1 transition-transform">→</span>
                     </div>
                   </div>
@@ -258,7 +260,7 @@ export default function CustomerHomePage() {
           {/* Summary */}
           {filteredProducts.length > 0 && (
             <div className="text-center text-sm text-text-tertiary">
-              Showing {filteredProducts.length} of {products.length} products
+              {t.customer.showing} {filteredProducts.length} {t.customer.of} {products.length} {t.customer.products}
             </div>
           )}
         </div>

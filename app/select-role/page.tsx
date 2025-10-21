@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { UserRole, Language } from '@/types';
+import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
 function SelectRoleContent() {
@@ -15,6 +16,7 @@ function SelectRoleContent() {
   const [loading, setLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole | ''>('');
   const [selectedLanguage, setSelectedLanguage] = useState<Language>('en');
+  const { t } = useTranslation();
 
   useEffect(() => {
     // Get language from URL or localStorage
@@ -68,15 +70,15 @@ function SelectRoleContent() {
   const roles: Array<{ value: UserRole; label: string; icon: string; description: string }> = [
     {
       value: 'technician',
-      label: 'Technician',
+      label: t.selectRole.technician.label,
       icon: '🔧',
-      description: 'Accept and complete installation orders',
+      description: t.selectRole.technician.description,
     },
     {
       value: 'customer',
-      label: 'Customer',
+      label: t.selectRole.customer.label,
       icon: '🏠',
-      description: 'Order installation services',
+      description: t.selectRole.customer.description,
     },
   ];
 
@@ -86,13 +88,10 @@ function SelectRoleContent() {
         {/* Header */}
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Welcome! 👋
+            {t.selectRole.title}
           </h1>
           <p className="text-lg text-text-secondary">
-            Choose your role to get started
-          </p>
-          <p className="text-sm text-text-tertiary">
-            This is a one-time setup
+            {t.selectRole.subtitle}
           </p>
         </div>
 
@@ -159,7 +158,7 @@ function SelectRoleContent() {
               }
             `}
           >
-            {loading ? 'Setting up...' : 'Continue'}
+            {loading ? t.common.loading : t.selectRole.continue}
           </button>
         </div>
       </div>

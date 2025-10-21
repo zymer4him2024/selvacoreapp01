@@ -6,17 +6,26 @@ import { useAuth } from '@/contexts/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { SUPPORTED_LANGUAGES } from '@/lib/utils/constants';
+import { useTranslation } from '@/hooks/useTranslation';
+import { translations, Language } from '@/lib/translations';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
   const { user, userData, signInWithGoogle, loading } = useAuth();
   const router = useRouter();
   const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [showLanguageSelection, setShowLanguageSelection] = useState(false);
+  const { t, changeLanguage } = useTranslation();
 
   useEffect(() => {
-    // Get selected language
-    const savedLanguage = localStorage.getItem('selectedLanguage') || 'en';
-    setSelectedLanguage(savedLanguage);
+    // Check if language is already selected
+    const savedLanguage = localStorage.getItem('selectedLanguage');
+    if (!savedLanguage) {
+      setShowLanguageSelection(true);
+    } else {
+      setSelectedLanguage(savedLanguage);
+      changeLanguage(savedLanguage as Language);
+    }
   }, []);
 
   useEffect(() => {
@@ -61,13 +70,68 @@ export default function LoginPage() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading...</p>
+          <p className="text-text-secondary">{t.common.loading}</p>
         </div>
       </div>
     );
   }
 
+  const handleLanguageSelect = (languageCode: string) => {
+    setSelectedLanguage(languageCode);
+    changeLanguage(languageCode as Language);
+    localStorage.setItem('selectedLanguage', languageCode);
+    setShowLanguageSelection(false);
+  };
+
   const selectedLang = SUPPORTED_LANGUAGES.find(l => l.code === selectedLanguage);
+
+  // Show language selection if not selected yet
+  if (showLanguageSelection) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-8 bg-background">
+        <div className="w-full max-w-4xl space-y-12 animate-fade-in">
+          {/* Header */}
+          <div className="text-center space-y-4">
+            <h1 className="text-6xl font-bold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              Selvacore
+            </h1>
+            <p className="text-2xl text-text-secondary">
+              {translations.en.home.subtitle}
+            </p>
+            <p className="text-lg text-text-tertiary mt-4">
+              {translations.en.home.selectLanguage}
+            </p>
+          </div>
+          
+          {/* Language Selection */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {SUPPORTED_LANGUAGES.map((lang) => {
+              const langTranslations = translations[lang.code as Language].home;
+              return (
+                <button
+                  key={lang.code}
+                  onClick={() => handleLanguageSelect(lang.code)}
+                  className="apple-card hover:scale-[1.05] transition-all p-8 text-center group cursor-pointer"
+                >
+                  <div className="text-6xl mb-4">{lang.flag}</div>
+                  <h3 className="text-2xl font-semibold mb-2 group-hover:text-primary transition-colors">
+                    {lang.name}
+                  </h3>
+                  <p className="text-sm text-text-tertiary">
+                    {langTranslations.clickToContinue}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+
+          <p className="text-center text-xs text-text-tertiary">
+            {translations.en.home.footer}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -77,10 +141,10 @@ export default function LoginPage() {
           <div className="text-7xl">{selectedLang?.flag || '🌍'}</div>
           <div className="space-y-2">
             <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Welcome
+              {t.login.title}
             </h1>
             <p className="text-lg text-text-secondary">
-              Continue in {selectedLang?.name || 'English'}
+              {selectedLang?.name || 'English'}
             </p>
           </div>
         </div>
@@ -88,10 +152,7 @@ export default function LoginPage() {
         {/* Login Card */}
         <div className="apple-card space-y-6 animate-slide-up">
           <div className="text-center space-y-2">
-            <h2 className="text-2xl font-semibold">Sign In</h2>
-            <p className="text-text-secondary text-sm">
-              Use your Google account to continue
-            </p>
+            <h2 className="text-2xl font-semibold">{t.login.subtitle}</h2>
           </div>
 
           {/* Google Sign In Button */}
@@ -117,21 +178,17 @@ export default function LoginPage() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            Continue with Google
+            {t.login.signInWithGoogle}
           </button>
-
-          <div className="text-center text-xs text-text-tertiary">
-            By signing in, you agree to our Terms of Service and Privacy Policy
-          </div>
         </div>
 
         {/* Change Language */}
         <div className="text-center">
           <button
-            onClick={() => router.push('/')}
+            onClick={() => setShowLanguageSelection(true)}
             className="text-sm text-text-secondary hover:text-text-primary transition-colors"
           >
-            ← Change Language
+            ← {t.home.selectLanguage}
           </button>
         </div>
       </div>
