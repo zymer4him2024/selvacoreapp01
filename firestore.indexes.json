@@ -1,25 +1,11 @@
 {
   "indexes": [
     {
-      "collectionGroup": "lessons",
+      "collectionGroup": "services",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "grade",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "order",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "problemSets",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "lessonId",
+          "fieldPath": "active",
           "order": "ASCENDING"
         },
         {
@@ -29,15 +15,15 @@
       ]
     },
     {
-      "collectionGroup": "progress",
+      "collectionGroup": "customerHistory",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "userId",
+          "fieldPath": "customerId",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "lastUpdated",
+          "fieldPath": "timestamp",
           "order": "DESCENDING"
         }
       ]
@@ -45,4 +31,3 @@
   ],
   "fieldOverrides": []
 }
-

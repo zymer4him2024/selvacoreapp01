@@ -12,6 +12,7 @@ import { db } from '@/lib/firebase/config';
 import { TIME_SLOTS } from '@/lib/utils/constants';
 import { formatCurrency } from '@/lib/utils/formatters';
 import { useTranslation } from '@/hooks/useTranslation';
+import { getFallbackAddresses, saveFallbackAddress } from '@/lib/services/fallbackAddressService';
 import toast from 'react-hot-toast';
 
 export default function OrderDetailsPage() {
@@ -27,6 +28,19 @@ export default function OrderDetailsPage() {
   const [selectedAddressId, setSelectedAddressId] = useState('');
   const [installationDate, setInstallationDate] = useState('');
   const [timeSlot, setTimeSlot] = useState('');
+  
+  // Inline address addition
+  const [showAddAddress, setShowAddAddress] = useState(false);
+  const [newAddress, setNewAddress] = useState({
+    label: 'home' as 'home' | 'office' | 'other',
+    street: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    country: 'US',
+    landmark: '',
+    isDefault: true
+  });
 
   useEffect(() => {
     loadOrderData();
@@ -63,15 +77,41 @@ export default function OrderDetailsPage() {
 
       // Load customer addresses
       if (user) {
-        const customerDoc = await getDoc(doc(db, 'customers', user.uid));
-        if (customerDoc.exists()) {
-          const customerData = customerDoc.data();
-          setAddresses(customerData.addresses || []);
+        try {
+          const customerDoc = await getDoc(doc(db, 'customers', user.uid));
+          if (customerDoc.exists()) {
+            const customerData = customerDoc.data();
+            const firestoreAddresses = customerData.addresses || [];
+            setAddresses(firestoreAddresses);
+            
+            // Pre-select default address
+            const defaultAddress = firestoreAddresses.find((a: Address) => a.isDefault);
+            if (defaultAddress) {
+              setSelectedAddressId(defaultAddress.id);
+            }
+            
+            console.log('✅ Loaded addresses from Firestore:', firestoreAddresses.length);
+          } else {
+            console.warn('⚠️ No customer document found, using fallback addresses');
+            throw new Error('No customer document found');
+          }
+        } catch (firestoreError: any) {
+          console.warn('⚠️ Firestore address loading failed, using fallback:', firestoreError.message);
           
-          // Pre-select default address
-          const defaultAddress = customerData.addresses?.find((a: Address) => a.isDefault);
+          // Use fallback addresses
+          const fallbackAddresses = getFallbackAddresses();
+          setAddresses(fallbackAddresses);
+          
+          // Pre-select default address from fallback
+          const defaultAddress = fallbackAddresses.find((a: Address) => a.isDefault);
           if (defaultAddress) {
             setSelectedAddressId(defaultAddress.id);
+          }
+          
+          if (fallbackAddresses.length > 0) {
+            toast.success('Using saved addresses. Will sync to server when possible.');
+          } else {
+            toast.success('No addresses found. Please add an address below.');
           }
         }
       }
@@ -79,6 +119,45 @@ export default function OrderDetailsPage() {
       toast.error('Failed to load order details');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddAddress = async () => {
+    if (!newAddress.street.trim() || !newAddress.city.trim()) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      const address: Address = {
+        id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        ...newAddress
+      };
+
+      // Save to fallback storage
+      saveFallbackAddress(address);
+      
+      // Add to current addresses list
+      setAddresses(prev => [...prev, address]);
+      setSelectedAddressId(address.id);
+      setShowAddAddress(false);
+      
+      // Reset form
+      setNewAddress({
+        label: 'home',
+        street: '',
+        city: '',
+        state: '',
+        postalCode: '',
+        country: 'US',
+        landmark: '',
+        isDefault: true
+      });
+      
+      toast.success('Address added successfully!');
+    } catch (error: any) {
+      console.error('Error adding address:', error);
+      toast.error('Failed to add address');
     }
   };
 
@@ -252,9 +331,126 @@ export default function OrderDetailsPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-text-secondary text-center py-4">
-                No addresses found. Please add an address in your profile.
-              </p>
+              <div className="space-y-4">
+                <p className="text-text-secondary text-center py-4">
+                  No addresses found. Add an address below to continue.
+                </p>
+                
+                {!showAddAddress ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowAddAddress(true)}
+                    className="w-full px-4 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all"
+                  >
+                    + Add Address
+                  </button>
+                ) : (
+                  <div className="space-y-4 p-4 bg-surface-elevated rounded-apple border border-border">
+                    <h3 className="font-semibold text-lg">Add New Address</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Label</label>
+                        <select
+                          value={newAddress.label}
+                          onChange={(e) => setNewAddress(prev => ({ ...prev, label: e.target.value as 'home' | 'office' | 'other' }))}
+                          className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none"
+                        >
+                          <option value="home">Home</option>
+                          <option value="office">Office</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Country</label>
+                        <input
+                          type="text"
+                          value={newAddress.country}
+                          onChange={(e) => setNewAddress(prev => ({ ...prev, country: e.target.value }))}
+                          className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Street Address *</label>
+                      <input
+                        type="text"
+                        value={newAddress.street}
+                        onChange={(e) => setNewAddress(prev => ({ ...prev, street: e.target.value }))}
+                        placeholder="123 Main Street"
+                        className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none"
+                        required
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">City *</label>
+                        <input
+                          type="text"
+                          value={newAddress.city}
+                          onChange={(e) => setNewAddress(prev => ({ ...prev, city: e.target.value }))}
+                          placeholder="New York"
+                          className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none"
+                          required
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2">State</label>
+                        <input
+                          type="text"
+                          value={newAddress.state}
+                          onChange={(e) => setNewAddress(prev => ({ ...prev, state: e.target.value }))}
+                          placeholder="NY"
+                          className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Postal Code</label>
+                        <input
+                          type="text"
+                          value={newAddress.postalCode}
+                          onChange={(e) => setNewAddress(prev => ({ ...prev, postalCode: e.target.value }))}
+                          placeholder="10001"
+                          className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Landmark (optional)</label>
+                      <input
+                        type="text"
+                        value={newAddress.landmark}
+                        onChange={(e) => setNewAddress(prev => ({ ...prev, landmark: e.target.value }))}
+                        placeholder="Near the blue building"
+                        className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none"
+                      />
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={handleAddAddress}
+                        className="flex-1 px-4 py-2 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all"
+                      >
+                        Add Address
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddAddress(false)}
+                        className="flex-1 px-4 py-2 bg-surface hover:bg-surface-elevated text-text border border-border rounded-apple transition-all"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
