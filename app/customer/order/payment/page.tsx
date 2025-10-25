@@ -67,25 +67,55 @@ export default function PaymentPage() {
   };
 
   const handlePayment = async () => {
-    if (!user || !product || !service) return;
+    console.log('🚀 PAYMENT DEBUG - Starting payment process...', {
+      user: !!user,
+      product: !!product,
+      service: !!service,
+      userId: user?.uid,
+      productId: product?.id,
+      serviceId: service?.id
+    });
+
+    if (!user || !product || !service) {
+      console.error('❌ PAYMENT DEBUG - Missing required data:', { user: !!user, product: !!product, service: !!service });
+      return;
+    }
 
     try {
       setProcessing(true);
+      console.log('🔄 PAYMENT DEBUG - Set processing to true');
 
       // Get order data
       const orderDataStr = sessionStorage.getItem('orderData');
-      if (!orderDataStr) throw new Error('No order data');
+      console.log('📋 PAYMENT DEBUG - Order data from session:', orderDataStr);
+      
+      if (!orderDataStr) {
+        console.error('❌ PAYMENT DEBUG - No order data in session storage');
+        throw new Error('No order data');
+      }
 
       const orderData = JSON.parse(orderDataStr);
+      console.log('📋 PAYMENT DEBUG - Parsed order data:', orderData);
 
       // Get customer data
+      console.log('👤 PAYMENT DEBUG - Loading customer data for:', user.uid);
       const customerDoc = await getDoc(doc(db, 'customers', user.uid));
-      if (!customerDoc.exists()) throw new Error('Customer profile not found');
+      
+      if (!customerDoc.exists()) {
+        console.error('❌ PAYMENT DEBUG - Customer profile not found for:', user.uid);
+        throw new Error('Customer profile not found');
+      }
 
       const customerData = customerDoc.data();
+      console.log('👤 PAYMENT DEBUG - Customer data loaded:', customerData);
+      
       const selectedAddress = customerData.addresses.find((a: any) => a.id === orderData.addressId);
+      console.log('🏠 PAYMENT DEBUG - Selected address:', selectedAddress);
 
-      if (!selectedAddress) throw new Error('Address not found');
+      if (!selectedAddress) {
+        console.error('❌ PAYMENT DEBUG - Address not found for ID:', orderData.addressId);
+        throw new Error('Address not found');
+      }
 
       // Calculate total
       const productPrice = product.basePrice;
@@ -94,14 +124,36 @@ export default function PaymentPage() {
       const tax = subtotal * 0.1; // 10% tax
       const total = subtotal + tax;
 
+      console.log('💰 PAYMENT DEBUG - Price calculation:', {
+        productPrice,
+        servicePrice,
+        subtotal,
+        tax,
+        total,
+        currency: product.currency
+      });
+
       // Process payment based on selected method
+      console.log('💳 PAYMENT DEBUG - Processing payment with method:', paymentMethod);
       const paymentResult = paymentMethod === 'amazon' 
         ? await processAmazonPayment(total, product.currency)
         : await processFakePayment(total, product.currency);
+      
+      console.log('✅ PAYMENT DEBUG - Payment result:', paymentResult);
 
       // Create order in Firestore
+      console.log('📦 PAYMENT DEBUG - Creating order...');
       const orderNumber = generateOrderNumber();
       const variation = product.variations?.find((v) => v.id === orderData.variationId);
+      
+      console.log('📦 PAYMENT DEBUG - Order details:', {
+        orderNumber,
+        customerId: user.uid,
+        productId: product.id,
+        serviceId: service.id,
+        variation: variation?.name || 'No variation',
+        total
+      });
 
       const newOrder = {
         orderNumber,
@@ -189,11 +241,12 @@ export default function PaymentPage() {
       let orderRef: any;
       let orderId: string;
       
+      console.log('🔥 PAYMENT DEBUG - Attempting to create order in Firestore...');
       try {
         // Try to create order in Firestore
         orderRef = await addDoc(collection(db, 'orders'), newOrder);
         orderId = orderRef.id;
-        console.log('✅ Order created in Firestore:', orderId);
+        console.log('✅ PAYMENT DEBUG - Order created in Firestore successfully:', orderId);
         
         // Log transaction
         await logTransaction({
@@ -244,9 +297,11 @@ export default function PaymentPage() {
         });
         
       } catch (firestoreError: any) {
-        console.warn('⚠️ Firestore order creation failed, using fallback:', firestoreError.message);
+        console.error('❌ PAYMENT DEBUG - Firestore order creation failed:', firestoreError);
+        console.warn('⚠️ PAYMENT DEBUG - Using fallback system...');
         
         // Use fallback order system
+        console.log('💾 PAYMENT DEBUG - Saving order to local storage...');
         const fallbackOrderId = saveFallbackOrder({
           orderNumber,
           customerId: user.uid,
@@ -263,6 +318,7 @@ export default function PaymentPage() {
           transactionId: paymentResult.transactionId
         });
         
+        console.log('✅ PAYMENT DEBUG - Fallback order saved with ID:', fallbackOrderId);
         orderId = fallbackOrderId;
         orderRef = { id: fallbackOrderId };
         
@@ -270,9 +326,11 @@ export default function PaymentPage() {
       }
 
       // Clear session storage
+      console.log('🧹 PAYMENT DEBUG - Clearing session storage');
       sessionStorage.removeItem('orderData');
 
       // Redirect to confirmation page with payment details
+      console.log('🔄 PAYMENT DEBUG - Redirecting to confirmation page...');
       const confirmationParams = new URLSearchParams({
         orderId: orderRef.id,
         orderNumber,
@@ -281,11 +339,19 @@ export default function PaymentPage() {
         currency: product.currency
       });
       
+      console.log('🔄 PAYMENT DEBUG - Confirmation params:', confirmationParams.toString());
       router.push(`/customer/order/payment/confirmation?${confirmationParams.toString()}`);
+      
     } catch (error: any) {
-      console.error('Error processing payment:', error);
+      console.error('❌ PAYMENT DEBUG - Payment processing failed:', error);
+      console.error('❌ PAYMENT DEBUG - Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
       toast.error(error.message || t.payment.paymentFailed);
     } finally {
+      console.log('🏁 PAYMENT DEBUG - Payment process completed, setting processing to false');
       setProcessing(false);
     }
   };
