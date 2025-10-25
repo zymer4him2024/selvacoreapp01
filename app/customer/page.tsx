@@ -183,29 +183,7 @@ export default function CustomerHomePage() {
           {user && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                {/* Products Grid - Clean Version */}
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold mb-4">🔧 DIRECT PRODUCT TEST</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {products.map((product, index) => (
-                      <div key={product.id || index} className="apple-card p-4 bg-surface border border-border">
-                        <h3 className="font-bold text-lg mb-2">
-                          Product {index + 1}: {getTranslation(product.name) || 'No Name'}
-                        </h3>
-                        <p className="text-sm text-text-secondary mb-2">
-                          Brand: {product.brand || 'No Brand'}
-                        </p>
-                        <p className="text-sm text-text-secondary mb-2">
-                          Category: {product.category || 'No Category'}
-                        </p>
-                        <p className="text-sm text-text-secondary">
-                          Price: {product.basePrice || 'No Price'}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
+                {/* Products Grid */}
                 {filteredProducts.length === 0 ? (
                   <div className="apple-card text-center py-16">
                     <Package className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
