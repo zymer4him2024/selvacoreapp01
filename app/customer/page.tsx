@@ -11,6 +11,7 @@ import { getActiveProducts, getAllProducts } from '@/lib/services/productService
 import { formatCurrency } from '@/lib/utils/formatters';
 import { useTranslation } from '@/hooks/useTranslation';
 import UserProfileDropdown from '@/components/customer/UserProfileDropdown';
+import CustomerHistory from '@/components/customer/CustomerHistory';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
@@ -66,10 +67,14 @@ export default function CustomerHomePage() {
       } else {
         setProducts(activeData);
       }
+      
+      // Debug: Log the products that were set
+      console.log('✅ Products set in state:', activeData.length > 0 ? activeData : activeData);
     } catch (error: any) {
       console.error('❌ Error loading products:', error);
       toast.error('Failed to load products');
     } finally {
+      console.log('🔍 LOADING COMPLETE - Setting loading to false');
       setLoading(false);
     }
   };
@@ -82,14 +87,12 @@ export default function CustomerHomePage() {
     return text[language] || text.en || text.pt || text.es || text.ko || Object.values(text)[0] || '';
   };
 
-  const filteredProducts = products.filter((product) => {
-    const productName = getTranslation(product.name);
-    const matchesSearch =
-      productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.brand.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
-    return matchesSearch && matchesCategory;
-  });
+  // TEMPORARY FIX: Show all products without filtering
+  const filteredProducts = products;
+  
+  console.log('🔍 TEMP DEBUG - Products loaded:', products.length);
+  console.log('🔍 TEMP DEBUG - Products data:', products);
+  console.log('🔍 TEMP DEBUG - Will show products:', filteredProducts.length);
 
   const categories = Array.from(new Set(products.map((p) => p.category)));
 
@@ -97,7 +100,10 @@ export default function CustomerHomePage() {
     return null; // Redirecting to registration
   }
 
+  console.log('🔍 RENDER STATE DEBUG - loading:', loading, 'hasProfile:', hasProfile, 'products.length:', products.length);
+  
   if (loading) {
+    console.log('🔍 SHOWING LOADING STATE');
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
@@ -178,86 +184,121 @@ export default function CustomerHomePage() {
             </div>
           </div>
 
-          {/* Products Grid */}
-          {filteredProducts.length === 0 ? (
-            <div className="apple-card text-center py-16">
-              <Package className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
-              <h3 className="text-xl font-semibold mb-2">{t.customer.noProductsFound}</h3>
-              <p className="text-text-secondary">
-                {searchTerm || categoryFilter !== 'all'
-                  ? t.customer.tryAdjustFilters
-                  : t.customer.productsWillAppear}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProducts.map((product) => (
-                <Link
-                  key={product.id}
-                  href={`/customer/products/${product.id}`}
-                  className="apple-card group hover:scale-[1.02] transition-all cursor-pointer"
-                >
-                  {/* Product Image */}
-                  <div className="relative h-48 bg-surface-elevated rounded-apple mb-4 overflow-hidden">
-                    {product.images && product.images.length > 0 ? (
-                      <img
-                        src={product.images[0]}
-                        alt={getTranslation(product.name)}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Package className="w-16 h-16 text-text-tertiary" />
+          {/* Customer History and Products */}
+          {user && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                {/* Products Grid */}
+                {console.log('🔍 RENDER DEBUG - filteredProducts.length:', filteredProducts.length)}
+                
+                {/* SIMPLE TEST: Show products directly without any logic */}
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold mb-4">🔧 DIRECT PRODUCT TEST</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {products.map((product, index) => (
+                      <div key={product.id || index} className="apple-card p-4 bg-surface border border-border">
+                        <h3 className="font-bold text-lg mb-2">
+                          Product {index + 1}: {product.name?.en || product.name || 'No Name'}
+                        </h3>
+                        <p className="text-sm text-text-secondary mb-2">
+                          Brand: {product.brand || 'No Brand'}
+                        </p>
+                        <p className="text-sm text-text-secondary mb-2">
+                          Category: {product.category || 'No Category'}
+                        </p>
+                        <p className="text-sm text-text-secondary">
+                          Price: {product.basePrice || 'No Price'}
+                        </p>
                       </div>
-                    )}
-                    {product.featured && (
-                      <div className="absolute top-3 right-3 px-3 py-1 bg-warning text-black text-xs font-bold rounded-full">
-                        ⭐ {t.customer.featured}
-                      </div>
-                    )}
+                    ))}
                   </div>
-
-                  {/* Product Info */}
-                  <div className="space-y-3">
-                    <div>
-                      <h3 className="font-semibold text-lg mb-1 line-clamp-2">
-                        {getTranslation(product.name)}
-                      </h3>
-                      <p className="text-sm text-text-secondary line-clamp-2">
-                        {getTranslation(product.description)}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-text-tertiary">{product.brand}</span>
-                      <span className="px-2 py-1 bg-surface-elevated rounded text-xs">
-                        {product.category}
-                      </span>
-                    </div>
-
-                    <div className="pt-3 border-t border-border">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-text-tertiary">{t.customer.startingFrom}</p>
-                          <p className="text-2xl font-bold text-primary">
-                            {formatCurrency(product.basePrice, product.currency)}
-                          </p>
+                </div>
+                
+                {filteredProducts.length === 0 ? (
+                  <div className="apple-card text-center py-16">
+                    <Package className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
+                    <h3 className="text-xl font-semibold mb-2">{t.customer.noProductsFound}</h3>
+                    <p className="text-text-secondary">
+                      {searchTerm || categoryFilter !== 'all'
+                        ? t.customer.tryAdjustFilters
+                        : t.customer.productsWillAppear}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredProducts.map((product) => (
+                      <Link
+                        key={product.id}
+                        href={`/customer/products/${product.id}`}
+                        className="apple-card group hover:scale-[1.02] transition-all cursor-pointer"
+                      >
+                        {/* Product Image */}
+                        <div className="relative h-48 bg-surface-elevated rounded-apple mb-4 overflow-hidden">
+                          {product.images && product.images.length > 0 ? (
+                            <img
+                              src={product.images[0]}
+                              alt={getTranslation(product.name)}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Package className="w-16 h-16 text-text-tertiary" />
+                            </div>
+                          )}
+                          {product.featured && (
+                            <div className="absolute top-3 right-3 px-3 py-1 bg-warning text-black text-xs font-bold rounded-full">
+                              ⭐ {t.customer.featured}
+                            </div>
+                          )}
                         </div>
-                        {product.variations && product.variations.length > 0 && (
-                          <div className="text-right">
-                            <p className="text-xs text-text-tertiary">{product.variations.length} {t.customer.options}</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
 
-                    <div className="flex items-center justify-center gap-2 px-4 py-3 bg-primary/10 text-primary rounded-apple font-medium group-hover:bg-primary group-hover:text-white transition-all">
-                      {t.customer.viewDetails}
-                      <span className="group-hover:translate-x-1 transition-transform">→</span>
-                    </div>
+                        {/* Product Info */}
+                        <div className="space-y-3">
+                          <div>
+                            <h3 className="font-semibold text-lg mb-1 line-clamp-2">
+                              {getTranslation(product.name)}
+                            </h3>
+                            <p className="text-sm text-text-secondary line-clamp-2">
+                              {getTranslation(product.description)}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-text-tertiary">{product.brand}</span>
+                            <span className="px-2 py-1 bg-surface-elevated rounded text-xs">
+                              {product.category}
+                            </span>
+                          </div>
+
+                          <div className="pt-3 border-t border-border">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm text-text-tertiary">{t.customer.startingFrom}</p>
+                                <p className="text-2xl font-bold text-primary">
+                                  {formatCurrency(product.basePrice, product.currency)}
+                                </p>
+                              </div>
+                              {product.variations && product.variations.length > 0 && (
+                                <div className="text-right">
+                                  <p className="text-xs text-text-tertiary">{product.variations.length} {t.customer.options}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-center gap-2 px-4 py-3 bg-primary/10 text-primary rounded-apple font-medium group-hover:bg-primary group-hover:text-white transition-all">
+                            {t.customer.viewDetails}
+                            <span className="group-hover:translate-x-1 transition-transform">→</span>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
                   </div>
-                </Link>
-              ))}
+                )}
+              </div>
+              <div className="lg:col-span-1">
+                <CustomerHistory customerId={user.uid} limit={5} />
+              </div>
             </div>
           )}
 

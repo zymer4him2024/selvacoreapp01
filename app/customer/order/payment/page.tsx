@@ -12,6 +12,7 @@ import { db } from '@/lib/firebase/config';
 import { formatCurrency, generateOrderNumber } from '@/lib/utils/formatters';
 import { processFakePayment } from '@/lib/services/fakePaymentService';
 import { logTransaction } from '@/lib/services/transactionService';
+import { addCustomerHistoryRecord } from '@/lib/services/customerHistoryService';
 import toast from 'react-hot-toast';
 
 export default function PaymentPage() {
@@ -211,11 +212,36 @@ export default function PaymentPage() {
         performedByRole: 'customer',
       });
 
+      // Add to customer history
+      await addCustomerHistoryRecord({
+        customerId: user.uid,
+        type: 'payment_made',
+        title: 'Payment Successful',
+        description: `Payment of ${formatCurrency(total, product.currency)} for Order ${orderNumber}`,
+        amount: total,
+        currency: product.currency,
+        orderId: orderRef.id,
+        transactionId: paymentResult.transactionId,
+        metadata: {
+          productName: product.name[userData?.preferredLanguage || 'en'],
+          serviceName: service.name[userData?.preferredLanguage || 'en'],
+          paymentMethod: paymentResult.method
+        }
+      });
+
       // Clear session storage
       sessionStorage.removeItem('orderData');
 
-      toast.success('Order placed successfully!');
-      router.push(`/customer/orders/${orderRef.id}?success=true`);
+      // Redirect to confirmation page with payment details
+      const confirmationParams = new URLSearchParams({
+        orderId: orderRef.id,
+        orderNumber,
+        transactionId: paymentResult.transactionId,
+        amount: total.toString(),
+        currency: product.currency
+      });
+      
+      router.push(`/customer/order/payment/confirmation?${confirmationParams.toString()}`);
     } catch (error: any) {
       console.error('Error processing payment:', error);
       toast.error(error.message || 'Payment failed. Please try again.');

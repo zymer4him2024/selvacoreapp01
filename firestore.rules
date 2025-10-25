@@ -50,15 +50,24 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
-    // Transactions collection - only admins can access
+    // Transactions collection - customers can create, admins can read/update/delete
     match /transactions/{transactionId} {
-      allow read, write: if isAdmin();
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();  // Allow customers to log transactions
+      allow update, delete: if isAdmin();
     }
     
     // Services collection - everyone can read, admins can write
     match /services/{serviceId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+    
+    // Customer History collection - customers can read/write their own history
+    match /customerHistory/{historyId} {
+      allow read: if isOwner(resource.data.customerId);
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.customerId;
+      allow update, delete: if isAdmin();
     }
     
     // Student data - only authenticated users can access their own data

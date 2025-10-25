@@ -16,6 +16,11 @@ export default function ProductDetailPage() {
   const { userData } = useAuth();
   const productId = params.id as string;
 
+  console.log('🎬 Product detail component started');
+  console.log('🎬 Product ID:', productId);
+  console.log('🎬 User data:', userData);
+  console.log('🎬 Params:', params);
+
   const [product, setProduct] = useState<Product | null>(null);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,31 +30,54 @@ export default function ProductDetailPage() {
   const [selectedImage, setSelectedImage] = useState(0);
 
   useEffect(() => {
+    console.log('🚀 Product detail page useEffect triggered');
+    console.log('🚀 Product ID from params:', productId);
+    console.log('🚀 User data:', userData);
     loadData();
   }, [productId]);
 
   const loadData = async () => {
     try {
+      console.log('🔍 Loading product with ID:', productId);
       setLoading(true);
-      const [productData, servicesData] = await Promise.all([
-        getProductById(productId),
-        getActiveServices(),
-      ]);
+      
+      // Load product first (required)
+      console.log('📦 Getting product data...');
+      const productData = await getProductById(productId);
+      console.log('📦 Product data result:', productData);
 
       if (!productData) {
+        console.log('❌ Product not found');
         toast.error('Product not found');
         router.push('/customer');
         return;
       }
 
+      console.log('✅ Setting product data');
       setProduct(productData);
-      setServices(servicesData);
 
       // Pre-select first variation if available
       if (productData.variations && productData.variations.length > 0) {
         setSelectedVariationId(productData.variations[0].id);
       }
+
+      // Load services separately (optional)
+      console.log('🔧 Getting services data...');
+      try {
+        const servicesData = await getActiveServices();
+        console.log('🔧 Services data result:', servicesData);
+        setServices(servicesData);
+        console.log('✅ Services loaded successfully');
+      } catch (serviceError: any) {
+        console.warn('⚠️ Services failed to load, continuing without services:', serviceError);
+        setServices([]); // Empty services array - product can still be viewed
+      }
+      
+      console.log('✅ Product detail page loaded successfully');
     } catch (error: any) {
+      console.error('❌ Product loading failed:', error);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error code:', error.code);
       toast.error('Failed to load product');
     } finally {
       setLoading(false);
@@ -57,6 +85,11 @@ export default function ProductDetailPage() {
   };
 
   const handleOrder = () => {
+    if (services.length === 0) {
+      toast.error('No installation services available. Please contact support.');
+      return;
+    }
+
     if (!selectedServiceId) {
       toast.error('Please select a service');
       return;
@@ -218,10 +251,22 @@ export default function ProductDetailPage() {
             {/* Services */}
             <div>
               <label className="block text-sm font-medium mb-3">
-                Select Installation Service <span className="text-error">*</span>
+                Select Installation Service {services.length > 0 && <span className="text-error">*</span>}
               </label>
-              <div className="space-y-2">
-                {services.map((service) => (
+              {services.length === 0 ? (
+                <div className="p-6 bg-surface rounded-apple text-center">
+                  <Clock className="w-12 h-12 mx-auto mb-3 text-text-tertiary" />
+                  <h3 className="text-lg font-semibold mb-2">No Installation Services Available</h3>
+                  <p className="text-text-secondary mb-4">
+                    Installation services are currently unavailable. You can still view product details.
+                  </p>
+                  <p className="text-sm text-text-tertiary">
+                    Please contact support for installation options.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {services.map((service) => (
                   <button
                     key={service.id}
                     type="button"
@@ -253,7 +298,8 @@ export default function ProductDetailPage() {
                     </div>
                   </button>
                 ))}
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Specifications */}
@@ -300,10 +346,15 @@ export default function ProductDetailPage() {
 
               <button
                 onClick={handleOrder}
-                disabled={!selectedServiceId}
+                disabled={services.length === 0 || !selectedServiceId}
                 className="w-full px-8 py-4 bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
               >
-                {selectedServiceId ? 'Continue to Order Details' : 'Select a service to continue'}
+                {services.length === 0 
+                  ? 'No Services Available' 
+                  : selectedServiceId 
+                    ? 'Continue to Order Details' 
+                    : 'Select a service to continue'
+                }
               </button>
             </div>
           </div>
