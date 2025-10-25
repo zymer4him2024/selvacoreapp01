@@ -11,6 +11,7 @@ import { collection, doc, addDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { formatCurrency, generateOrderNumber } from '@/lib/utils/formatters';
 import { processFakePayment } from '@/lib/services/fakePaymentService';
+import { processAmazonPayment } from '@/lib/services/amazonPaymentService';
 import { logTransaction } from '@/lib/services/transactionService';
 import { addCustomerHistoryRecord } from '@/lib/services/customerHistoryService';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -25,6 +26,7 @@ export default function PaymentPage() {
   const [service, setService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'fake' | 'amazon'>('amazon');
 
   useEffect(() => {
     loadOrderSummary();
@@ -91,8 +93,10 @@ export default function PaymentPage() {
       const tax = subtotal * 0.1; // 10% tax
       const total = subtotal + tax;
 
-      // Process payment (fake)
-      const paymentResult = await processFakePayment(total, product.currency);
+      // Process payment based on selected method
+      const paymentResult = paymentMethod === 'amazon' 
+        ? await processAmazonPayment(total, product.currency)
+        : await processFakePayment(total, product.currency);
 
       // Create order in Firestore
       const orderNumber = generateOrderNumber();
@@ -364,7 +368,7 @@ export default function PaymentPage() {
                 <div>
                   <p className="font-medium text-warning mb-1">Development Mode</p>
                   <p className="text-sm text-text-secondary">
-                    Using fake payment gateway for testing. This is a simulated payment that will always succeed.
+                    Choose your preferred payment method for testing.
                   </p>
                 </div>
               </div>
