@@ -90,9 +90,7 @@ export default function CustomerHomePage() {
   // TEMPORARY FIX: Show all products without filtering
   const filteredProducts = products;
   
-  console.log('🔍 TEMP DEBUG - Products loaded:', products.length);
-  console.log('🔍 TEMP DEBUG - Products data:', products);
-  console.log('🔍 TEMP DEBUG - Will show products:', filteredProducts.length);
+  // Debug logs removed for production
 
   const categories = Array.from(new Set(products.map((p) => p.category)));
 
@@ -100,10 +98,7 @@ export default function CustomerHomePage() {
     return null; // Redirecting to registration
   }
 
-  console.log('🔍 RENDER STATE DEBUG - loading:', loading, 'hasProfile:', hasProfile, 'products.length:', products.length);
-  
   if (loading) {
-    console.log('🔍 SHOWING LOADING STATE');
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
@@ -189,16 +184,13 @@ export default function CustomerHomePage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 {/* Products Grid */}
-                {console.log('🔍 RENDER DEBUG - filteredProducts.length:', filteredProducts.length)}
-                
-                {/* SIMPLE TEST: Show products directly without any logic */}
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold mb-4">🔧 DIRECT PRODUCT TEST</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {products.map((product, index) => (
                       <div key={product.id || index} className="apple-card p-4 bg-surface border border-border">
                         <h3 className="font-bold text-lg mb-2">
-                          Product {index + 1}: {product.name?.en || product.name || 'No Name'}
+                          Product {index + 1}: {getTranslation(product.name) || 'No Name'}
                         </h3>
                         <p className="text-sm text-text-secondary mb-2">
                           Brand: {product.brand || 'No Brand'}

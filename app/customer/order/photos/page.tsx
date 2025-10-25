@@ -151,7 +151,7 @@ export default function SitePhotosPage() {
     setDragging(null);
   };
 
-  const handleDrop = (e: React.DragEvent, type: 'waterSource' | 'productLocation' | 'waterRunning') => {
+  const handleDrop = (e: React.DragEvent, type: 'waterSource' | 'productLocation' | 'fullShot' | 'waterRunning') => {
     e.preventDefault();
     e.stopPropagation();
     setDragging(null);
