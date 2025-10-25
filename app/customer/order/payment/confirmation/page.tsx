@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle, Download, ArrowLeft, Clock, CreditCard, Shield, MapPin } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency, formatDateTime } from '@/lib/utils/formatters';
+import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
 interface PaymentConfirmationData {
@@ -26,6 +27,7 @@ export default function PaymentConfirmationPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { userData } = useAuth();
+  const { t } = useTranslation();
   
   const [confirmationData, setConfirmationData] = useState<PaymentConfirmationData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -74,7 +76,7 @@ export default function PaymentConfirmationPage() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading confirmation...</p>
+          <p className="text-text-secondary">{t.common.loading}</p>
         </div>
       </div>
     );
@@ -119,9 +121,9 @@ export default function PaymentConfirmationPage() {
             <div className="w-20 h-20 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="w-12 h-12 text-success" />
             </div>
-            <h1 className="text-3xl font-bold mb-2">Payment Successful!</h1>
+            <h1 className="text-3xl font-bold mb-2">{t.payment.paymentSuccessful}</h1>
             <p className="text-text-secondary text-lg">
-              Your order has been placed and payment has been processed.
+              {t.payment.orderPlaced}
             </p>
           </div>
 

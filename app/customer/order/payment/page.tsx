@@ -13,11 +13,13 @@ import { formatCurrency, generateOrderNumber } from '@/lib/utils/formatters';
 import { processFakePayment } from '@/lib/services/fakePaymentService';
 import { logTransaction } from '@/lib/services/transactionService';
 import { addCustomerHistoryRecord } from '@/lib/services/customerHistoryService';
+import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
 export default function PaymentPage() {
   const router = useRouter();
   const { user, userData } = useAuth();
+  const { t } = useTranslation();
   
   const [product, setProduct] = useState<Product | null>(null);
   const [service, setService] = useState<Service | null>(null);
@@ -244,7 +246,7 @@ export default function PaymentPage() {
       router.push(`/customer/order/payment/confirmation?${confirmationParams.toString()}`);
     } catch (error: any) {
       console.error('Error processing payment:', error);
-      toast.error(error.message || 'Payment failed. Please try again.');
+      toast.error(error.message || t.payment.paymentFailed);
     } finally {
       setProcessing(false);
     }
@@ -255,7 +257,7 @@ export default function PaymentPage() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading...</p>
+          <p className="text-text-secondary">{t.common.loading}</p>
         </div>
       </div>
     );

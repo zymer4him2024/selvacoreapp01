@@ -88,6 +88,9 @@ export const ko = {
     status: '상태',
     total: '총액',
     date: '날짜',
+    selectAddress: '주소를 선택해주세요',
+    selectDate: '설치 날짜를 선택해주세요',
+    selectTimeSlot: '시간대를 선택해주세요',
   },
   admin: {
     dashboard: '대시보드',
@@ -99,6 +102,11 @@ export const ko = {
     analytics: '분석',
     settings: '설정',
     signOut: '로그아웃',
+  },
+  payment: {
+    paymentFailed: '결제에 실패했습니다. 다시 시도해주세요.',
+    paymentSuccessful: '결제 성공!',
+    orderPlaced: '주문이 완료되었고 결제가 처리되었습니다.',
   },
   messages: {
     success: '성공!',

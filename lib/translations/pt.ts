@@ -88,6 +88,9 @@ export const pt = {
     status: 'Status',
     total: 'Total',
     date: 'Data',
+    selectAddress: 'Por favor, selecione um endereço',
+    selectDate: 'Por favor, selecione a data de instalação',
+    selectTimeSlot: 'Por favor, selecione o horário',
   },
   admin: {
     dashboard: 'Painel',
@@ -99,6 +102,11 @@ export const pt = {
     analytics: 'Análises',
     settings: 'Configurações',
     signOut: 'Sair',
+  },
+  payment: {
+    paymentFailed: 'Pagamento falhou. Tente novamente.',
+    paymentSuccessful: 'Pagamento Realizado com Sucesso!',
+    orderPlaced: 'Seu pedido foi realizado e o pagamento foi processado.',
   },
   messages: {
     success: 'Sucesso!',

@@ -88,6 +88,9 @@ export const en = {
     status: 'Status',
     total: 'Total',
     date: 'Date',
+    selectAddress: 'Please select an address',
+    selectDate: 'Please select installation date',
+    selectTimeSlot: 'Please select time slot',
   },
   admin: {
     dashboard: 'Dashboard',
@@ -99,6 +102,11 @@ export const en = {
     analytics: 'Analytics',
     settings: 'Settings',
     signOut: 'Sign Out',
+  },
+  payment: {
+    paymentFailed: 'Payment failed. Please try again.',
+    paymentSuccessful: 'Payment Successful!',
+    orderPlaced: 'Your order has been placed and payment has been processed.',
   },
   messages: {
     success: 'Success!',

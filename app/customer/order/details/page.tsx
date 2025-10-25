@@ -11,11 +11,13 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { TIME_SLOTS } from '@/lib/utils/constants';
 import { formatCurrency } from '@/lib/utils/formatters';
+import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
 export default function OrderDetailsPage() {
   const router = useRouter();
   const { user, userData } = useAuth();
+  const { t } = useTranslation();
   
   const [product, setProduct] = useState<Product | null>(null);
   const [service, setService] = useState<Service | null>(null);
@@ -82,17 +84,17 @@ export default function OrderDetailsPage() {
 
   const handleContinue = () => {
     if (!selectedAddressId) {
-      toast.error('Please select an address');
+      toast.error(t.orders.selectAddress);
       return;
     }
 
     if (!installationDate) {
-      toast.error('Please select installation date');
+      toast.error(t.orders.selectDate);
       return;
     }
 
     if (!timeSlot) {
-      toast.error('Please select time slot');
+      toast.error(t.orders.selectTimeSlot);
       return;
     }
 
@@ -113,7 +115,7 @@ export default function OrderDetailsPage() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading...</p>
+          <p className="text-text-secondary">{t.common.loading}</p>
         </div>
       </div>
     );
