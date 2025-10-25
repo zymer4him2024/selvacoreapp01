@@ -21,14 +21,17 @@ export default function SitePhotosPage() {
   
   const [waterSourceFile, setWaterSourceFile] = useState<File | null>(null);
   const [productLocationFile, setProductLocationFile] = useState<File | null>(null);
+  const [fullShotFile, setFullShotFile] = useState<File | null>(null);
   const [waterRunningFile, setWaterRunningFile] = useState<File | null>(null);
   
   const [waterSourcePreview, setWaterSourcePreview] = useState('');
   const [productLocationPreview, setProductLocationPreview] = useState('');
+  const [fullShotPreview, setFullShotPreview] = useState('');
   const [waterRunningPreview, setWaterRunningPreview] = useState('');
   
   const [waterSourceQuality, setWaterSourceQuality] = useState<PhotoQuality | null>(null);
   const [productLocationQuality, setProductLocationQuality] = useState<PhotoQuality | null>(null);
+  const [fullShotQuality, setFullShotQuality] = useState<PhotoQuality | null>(null);
   
   const [uploadingPhoto, setUploadingPhoto] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -38,7 +41,7 @@ export default function SitePhotosPage() {
 
   const handleFileChange = async (
     file: File | null,
-    type: 'waterSource' | 'productLocation' | 'waterRunning'
+    type: 'waterSource' | 'productLocation' | 'fullShot' | 'waterRunning'
   ) => {
     if (!file) return;
 
@@ -80,6 +83,8 @@ export default function SitePhotosPage() {
           setWaterSourceQuality(quality);
         } else if (type === 'productLocation') {
           setProductLocationQuality(quality);
+        } else if (type === 'fullShot') {
+          setFullShotQuality(quality);
         }
         
         if (quality.score === 'poor') {
@@ -99,6 +104,9 @@ export default function SitePhotosPage() {
         } else if (type === 'productLocation') {
           setProductLocationFile(processedFile);
           setProductLocationPreview(preview);
+        } else if (type === 'fullShot') {
+          setFullShotFile(processedFile);
+          setFullShotPreview(preview);
         } else {
           setWaterRunningFile(processedFile);
           setWaterRunningPreview(preview);
@@ -111,7 +119,7 @@ export default function SitePhotosPage() {
     }
   };
 
-  const removeFile = (type: 'waterSource' | 'productLocation' | 'waterRunning') => {
+  const removeFile = (type: 'waterSource' | 'productLocation' | 'fullShot' | 'waterRunning') => {
     if (type === 'waterSource') {
       setWaterSourceFile(null);
       setWaterSourcePreview('');
@@ -120,6 +128,10 @@ export default function SitePhotosPage() {
       setProductLocationFile(null);
       setProductLocationPreview('');
       setProductLocationQuality(null);
+    } else if (type === 'fullShot') {
+      setFullShotFile(null);
+      setFullShotPreview('');
+      setFullShotQuality(null);
     } else {
       setWaterRunningFile(null);
       setWaterRunningPreview('');
@@ -159,7 +171,7 @@ export default function SitePhotosPage() {
 
   const handleContinue = async () => {
     // Validation
-    if (!waterSourceFile || !productLocationFile || !waterRunningFile) {
+    if (!waterSourceFile || !productLocationFile || !fullShotFile || !waterRunningFile) {
       toast.error('Please upload all required photos and video');
       return;
     }
@@ -172,9 +184,10 @@ export default function SitePhotosPage() {
       const basePath = `orders/${tempOrderId}/site-photos`;
 
       // Upload files in parallel
-      const [waterSourceUrl, productLocationUrl, waterRunningUrl] = await Promise.all([
+      const [waterSourceUrl, productLocationUrl, fullShotUrl, waterRunningUrl] = await Promise.all([
         uploadFile(waterSourceFile, basePath),
         uploadFile(productLocationFile, basePath),
+        uploadFile(fullShotFile, basePath),
         uploadFile(waterRunningFile, basePath),
       ]);
 
@@ -185,6 +198,7 @@ export default function SitePhotosPage() {
         sitePhotos: {
           waterSource: waterSourceUrl,
           productLocation: productLocationUrl,
+          fullShot: fullShotUrl,
           waterRunning: waterRunningUrl,
         },
       }));
@@ -330,7 +344,7 @@ export default function SitePhotosPage() {
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <h3 className="font-semibold mb-1">
-                    2. Installation Location <span className="text-error">*</span>
+                    2. Place for equipment <span className="text-error">*</span>
                   </h3>
                   <p className="text-sm text-text-secondary mb-2">
                     Photo of where the product will be installed
@@ -414,12 +428,101 @@ export default function SitePhotosPage() {
               )}
             </div>
 
-            {/* 3. Water Running Video */}
+            {/* 3. Full Shot Photo */}
             <div className="apple-card">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <h3 className="font-semibold mb-1">
-                    3. Water Running Video <span className="text-error">*</span>
+                    3. Full Shot Photo <span className="text-error">*</span>
+                  </h3>
+                  <p className="text-sm text-text-secondary mb-2">
+                    Wide photo showing both water source and installation area
+                  </p>
+                  <PhotoGuide type="fullShot" />
+                </div>
+                {fullShotFile && (
+                  <div className="flex items-center gap-2 text-success">
+                    <Check className="w-5 h-5" />
+                    <span className="text-sm font-medium">Uploaded</span>
+                  </div>
+                )}
+              </div>
+
+              {fullShotPreview ? (
+                <div className="space-y-3">
+                  <div className="relative">
+                    <img
+                      src={fullShotPreview}
+                      alt="Full shot"
+                      className="w-full h-64 object-cover rounded-apple"
+                    />
+                    <button
+                      onClick={() => removeFile('fullShot')}
+                      className="absolute top-3 right-3 p-2 bg-error rounded-full hover:bg-error/80 transition-colors shadow-apple"
+                    >
+                      <X className="w-4 h-4 text-white" />
+                    </button>
+                  </div>
+                  
+                  {/* Quality Indicator */}
+                  {fullShotQuality && (
+                    <div className={`p-3 rounded-apple ${getQualityColor(fullShotQuality.score)}`}>
+                      <p className="text-sm font-medium mb-1">{getQualityLabel(fullShotQuality.score)}</p>
+                      <p className="text-xs">{fullShotQuality.suggestions[0]}</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {/* Camera & Upload Buttons */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setShowPhotoCapture('fullShot')}
+                      className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-border rounded-apple hover:border-primary hover:bg-primary/5 transition-all"
+                    >
+                      <Camera className="w-8 h-8 text-primary mb-2" />
+                      <span className="text-sm font-medium">{t.common.takePhoto}</span>
+                    </button>
+                    <label className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-border rounded-apple hover:border-primary hover:bg-primary/5 transition-all cursor-pointer">
+                      <Upload className="w-8 h-8 text-primary mb-2" />
+                      <span className="text-sm font-medium">{t.common.chooseFile}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileChange(e.target.files?.[0] || null, 'fullShot')}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  
+                  {/* Drag & Drop Zone */}
+                  <div
+                    onDragEnter={(e) => handleDragEnter(e, 'fullShot')}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, 'fullShot')}
+                    className={`
+                      p-8 border-2 border-dashed rounded-apple text-center transition-all
+                      ${dragging === 'fullShot' 
+                        ? 'border-primary bg-primary/10 scale-105' 
+                        : 'border-border/50 bg-surface-elevated/50'
+                      }
+                    `}
+                  >
+                    <p className="text-sm text-text-tertiary">
+                      Or drag and drop your photo here
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 4. Water Running Video */}
+            <div className="apple-card">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1">
+                    4. Water Running Video <span className="text-error">*</span>
                   </h3>
                   <p className="text-sm text-text-secondary mb-2">
                     Short video showing water flow from your tap
@@ -467,7 +570,7 @@ export default function SitePhotosPage() {
           {/* Continue Button */}
           <button
             onClick={handleContinue}
-            disabled={!waterSourceFile || !productLocationFile || !waterRunningFile || uploading}
+            disabled={!waterSourceFile || !productLocationFile || !fullShotFile || !waterRunningFile || uploading}
             className="w-full px-8 py-4 bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
           >
             {uploading ? 'Uploading...' : 'Continue to Payment'}
@@ -482,14 +585,18 @@ export default function SitePhotosPage() {
             showPhotoCapture === 'waterSource'
               ? '1. Water Source'
               : showPhotoCapture === 'productLocation'
-              ? '2. Installation Location'
-              : '3. Water Running'
+              ? '2. Place for equipment'
+              : showPhotoCapture === 'fullShot'
+              ? '3. Full Shot Photo'
+              : '4. Water Running'
           }
           description={
             showPhotoCapture === 'waterSource'
               ? 'Photo of your main water supply connection'
               : showPhotoCapture === 'productLocation'
               ? 'Photo of where the product will be installed'
+              : showPhotoCapture === 'fullShot'
+              ? 'Wide photo showing both water source and installation area'
               : 'Video showing water flow from your tap'
           }
           onCapture={(file) => {

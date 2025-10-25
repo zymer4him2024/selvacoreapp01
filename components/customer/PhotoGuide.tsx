@@ -5,7 +5,7 @@ import { HelpCircle, X, Check, XCircle, Lightbulb } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 
 interface PhotoGuideProps {
-  type: 'waterSource' | 'productLocation' | 'waterRunning';
+  type: 'waterSource' | 'productLocation' | 'waterRunning' | 'fullShot';
 }
 
 export default function PhotoGuide({ type }: PhotoGuideProps) {
@@ -77,6 +77,28 @@ export default function PhotoGuide({ type }: PhotoGuideProps) {
         'Turn on a faucet fully',
         'Keep recording for 15-20 seconds',
         'Show water pressure and flow rate',
+      ],
+    },
+    fullShot: {
+      title: 'Full Shot Photo Guide',
+      description: 'Take a wide photo showing both water source and installation area',
+      dos: [
+        'Include both water source and installation area in one shot',
+        'Show the relationship between the two areas',
+        'Capture the overall space layout',
+        'Ensure both areas are clearly visible',
+      ],
+      donts: [
+        'Don\'t focus on just one area',
+        'Avoid extreme close-ups',
+        'Don\'t cut off important parts',
+        'Avoid poor lighting that hides details',
+      ],
+      tips: [
+        'Stand back to capture the full scene',
+        'Position yourself to show both areas clearly',
+        'Use good lighting to illuminate both areas',
+        'Show the distance and connection between areas',
       ],
     },
   };
