@@ -5,16 +5,37 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Package as PackageIcon, Calendar, MapPin } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Order } from '@/types';
+import { Order, OrderStatus } from '@/types';
+
+// Simple display type for fallback orders
+interface FallbackOrderDisplay {
+  id: string;
+  orderNumber: string;
+  customerId: string;
+  total: number;
+  currency: string;
+  status: OrderStatus;
+  createdAt: Date;
+  isFallback: boolean;
+  installationDate?: Date;
+  timeSlot?: string;
+  productSnapshot?: {
+    name: { en: string };
+    variation: string;
+    price: number;
+    image: string;
+  };
+}
 import { collection, query, where, orderBy as firestoreOrderBy, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { formatCurrency, formatDate } from '@/lib/utils/formatters';
+import { getFallbackOrders } from '@/lib/services/fallbackOrderService';
 import toast from 'react-hot-toast';
 
 export default function CustomerOrdersPage() {
   const router = useRouter();
   const { user, userData } = useAuth();
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<(Order | FallbackOrderDisplay)[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,21 +49,69 @@ export default function CustomerOrdersPage() {
 
     try {
       setLoading(true);
-      const ordersRef = collection(db, 'orders');
-      const q = query(
-        ordersRef,
-        where('customerId', '==', user.uid),
-        firestoreOrderBy('createdAt', 'desc')
-      );
-      const snapshot = await getDocs(q);
+      
+      // Try to load from Firestore
+      let firestoreOrders: Order[] = [];
+      try {
+        const ordersRef = collection(db, 'orders');
+        const q = query(
+          ordersRef,
+          where('customerId', '==', user.uid),
+          firestoreOrderBy('createdAt', 'desc')
+        );
+        const snapshot = await getDocs(q);
 
-      const ordersData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      } as Order));
-
-      setOrders(ordersData);
+        firestoreOrders = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        } as Order));
+        
+        console.log('✅ Loaded orders from Firestore:', firestoreOrders.length);
+      } catch (firestoreError: any) {
+        console.warn('⚠️ Failed to load orders from Firestore:', firestoreError.message);
+      }
+      
+      // Load fallback orders
+      const fallbackOrders = getFallbackOrders(user.uid);
+      console.log('✅ Loaded fallback orders:', fallbackOrders.length);
+      
+      // Convert fallback orders to display format
+      const convertedFallbackOrders: FallbackOrderDisplay[] = fallbackOrders.map(order => ({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        customerId: order.customerId,
+        total: order.total,
+        currency: order.currency,
+        status: order.status as OrderStatus,
+        createdAt: order.createdAt,
+        isFallback: true,
+        installationDate: new Date(order.installationDate),
+        timeSlot: order.timeSlot,
+        // Add minimal product info for display
+        productSnapshot: {
+          name: { en: 'Product' },
+          variation: '',
+          price: order.total,
+          image: ''
+        }
+      }));
+      
+      // Combine and sort orders
+      const allOrders = [...firestoreOrders, ...convertedFallbackOrders]
+        .sort((a, b) => {
+          const dateA = a.createdAt instanceof Date ? a.createdAt : a.createdAt.toDate();
+          const dateB = b.createdAt instanceof Date ? b.createdAt : b.createdAt.toDate();
+          return dateB.getTime() - dateA.getTime();
+        });
+      
+      setOrders(allOrders);
+      
+      if (fallbackOrders.length > 0) {
+        toast.success(`${fallbackOrders.length} orders saved locally. Will sync when possible.`);
+      }
+      
     } catch (error: any) {
+      console.error('❌ Failed to load orders:', error);
       toast.error('Failed to load orders');
     } finally {
       setLoading(false);
@@ -156,12 +225,19 @@ export default function CustomerOrdersPage() {
                     className="apple-card hover:scale-[1.01] transition-all block"
                   >
                     <div className="flex items-start gap-4">
+                      {/* Fallback Indicator */}
+                      {'isFallback' in order && order.isFallback && (
+                        <div className="absolute top-3 right-3 bg-warning/20 text-warning px-2 py-1 rounded-full text-xs font-medium">
+                          Local
+                        </div>
+                      )}
+                      
                       {/* Product Image */}
                       <div className="w-20 h-20 bg-surface-elevated rounded-apple overflow-hidden flex-shrink-0">
-                        {order.productSnapshot.image ? (
+                        {order.productSnapshot?.image ? (
                           <img
                             src={order.productSnapshot.image}
-                            alt={order.productSnapshot.name[lang]}
+                            alt={order.productSnapshot.name?.en || 'Product'}
                             className="w-full h-full object-cover"
                           />
                         ) : (
@@ -176,7 +252,7 @@ export default function CustomerOrdersPage() {
                         <div className="flex items-start justify-between mb-2">
                           <div>
                             <h3 className="font-semibold text-lg mb-1">
-                              {order.productSnapshot.name[lang]}
+                              {order.productSnapshot?.name?.en || 'Product'}
                             </h3>
                             <p className="text-sm text-text-secondary">
                               Order {order.orderNumber}
@@ -190,14 +266,14 @@ export default function CustomerOrdersPage() {
                         <div className="flex flex-wrap items-center gap-4 text-sm text-text-secondary mt-3">
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4" />
-                            <span>{formatDate(order.installationDate, 'short')}</span>
+                            <span>{order.installationDate ? formatDate(order.installationDate, 'short') : 'TBD'}</span>
                             <span className="px-2 py-0.5 bg-surface-elevated rounded text-xs">
                               {order.timeSlot}
                             </span>
                           </div>
                         </div>
 
-                        {order.technicianInfo && (
+                        {'technicianInfo' in order && order.technicianInfo && (
                           <div className="mt-3 pt-3 border-t border-border">
                             <p className="text-xs text-text-tertiary mb-1">Technician</p>
                             <div className="flex items-center gap-2">
@@ -213,7 +289,12 @@ export default function CustomerOrdersPage() {
 
                         <div className="flex items-center justify-between mt-4">
                           <p className="text-xl font-bold text-primary">
-                            {formatCurrency(order.payment.amount, order.payment.currency)}
+                            {'payment' in order && order.payment 
+                              ? formatCurrency(order.payment.amount, order.payment.currency)
+                              : 'total' in order 
+                                ? formatCurrency(order.total, order.currency)
+                                : 'N/A'
+                            }
                           </p>
                           <span className="text-sm text-text-secondary">
                             View Details →

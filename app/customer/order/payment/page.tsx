@@ -14,6 +14,7 @@ import { processFakePayment } from '@/lib/services/fakePaymentService';
 import { processAmazonPayment } from '@/lib/services/amazonPaymentService';
 import { logTransaction } from '@/lib/services/transactionService';
 import { addCustomerHistoryRecord } from '@/lib/services/customerHistoryService';
+import { saveFallbackOrder } from '@/lib/services/fallbackOrderService';
 import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
@@ -185,55 +186,88 @@ export default function PaymentPage() {
         changeHistory: [],
       };
 
-      const orderRef = await addDoc(collection(db, 'orders'), newOrder);
+      let orderRef: any;
+      let orderId: string;
+      
+      try {
+        // Try to create order in Firestore
+        orderRef = await addDoc(collection(db, 'orders'), newOrder);
+        orderId = orderRef.id;
+        console.log('✅ Order created in Firestore:', orderId);
+        
+        // Log transaction
+        await logTransaction({
+          type: 'order_created',
+          orderId: orderRef.id,
+          orderNumber,
+          customerId: user.uid,
+          amount: total,
+          currency: product.currency,
+          metadata: {
+            productId: product.id,
+            serviceId: service.id,
+          },
+          performedBy: user.uid,
+          performedByRole: 'customer',
+        });
 
-      // Log transaction
-      await logTransaction({
-        type: 'order_created',
-        orderId: orderRef.id,
-        orderNumber,
-        customerId: user.uid,
-        amount: total,
-        currency: product.currency,
-        metadata: {
+        await logTransaction({
+          type: 'payment_received',
+          orderId: orderRef.id,
+          orderNumber,
+          customerId: user.uid,
+          amount: total,
+          currency: product.currency,
+          metadata: {
+            transactionId: paymentResult.transactionId,
+            method: paymentResult.method,
+          },
+          performedBy: user.uid,
+          performedByRole: 'customer',
+        });
+
+        // Add to customer history
+        await addCustomerHistoryRecord({
+          customerId: user.uid,
+          type: 'payment_made',
+          title: 'Payment Successful',
+          description: `Payment of ${formatCurrency(total, product.currency)} for Order ${orderNumber}`,
+          amount: total,
+          currency: product.currency,
+          orderId: orderRef.id,
+          transactionId: paymentResult.transactionId,
+          metadata: {
+            productName: product.name[userData?.preferredLanguage || 'en'],
+            serviceName: service.name[userData?.preferredLanguage || 'en'],
+            paymentMethod: paymentResult.method
+          }
+        });
+        
+      } catch (firestoreError: any) {
+        console.warn('⚠️ Firestore order creation failed, using fallback:', firestoreError.message);
+        
+        // Use fallback order system
+        const fallbackOrderId = saveFallbackOrder({
+          orderNumber,
+          customerId: user.uid,
           productId: product.id,
           serviceId: service.id,
-        },
-        performedBy: user.uid,
-        performedByRole: 'customer',
-      });
-
-      await logTransaction({
-        type: 'payment_received',
-        orderId: orderRef.id,
-        orderNumber,
-        customerId: user.uid,
-        amount: total,
-        currency: product.currency,
-        metadata: {
-          transactionId: paymentResult.transactionId,
-          method: 'fake_payment',
-        },
-        performedBy: user.uid,
-        performedByRole: 'customer',
-      });
-
-      // Add to customer history
-      await addCustomerHistoryRecord({
-        customerId: user.uid,
-        type: 'payment_made',
-        title: 'Payment Successful',
-        description: `Payment of ${formatCurrency(total, product.currency)} for Order ${orderNumber}`,
-        amount: total,
-        currency: product.currency,
-        orderId: orderRef.id,
-        transactionId: paymentResult.transactionId,
-        metadata: {
-          productName: product.name[userData?.preferredLanguage || 'en'],
-          serviceName: service.name[userData?.preferredLanguage || 'en'],
-          paymentMethod: paymentResult.method
-        }
-      });
+          variationId: orderData.variationId,
+          addressId: orderData.addressId,
+          installationDate: orderData.installationDate,
+          timeSlot: orderData.timeSlot,
+          total,
+          currency: product.currency,
+          status: 'confirmed',
+          paymentMethod: paymentResult.method,
+          transactionId: paymentResult.transactionId
+        });
+        
+        orderId = fallbackOrderId;
+        orderRef = { id: fallbackOrderId };
+        
+        toast.success('Order saved locally! Will sync to server when possible.');
+      }
 
       // Clear session storage
       sessionStorage.removeItem('orderData');
