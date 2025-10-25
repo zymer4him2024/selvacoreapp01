@@ -132,7 +132,7 @@ export default function ProductsPage() {
                   <img
                     src={product.images[0]}
                     alt={product.name.en}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover object-center"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">

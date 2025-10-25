@@ -276,7 +276,7 @@ export default function SitePhotosPage() {
                     <img
                       src={waterSourcePreview}
                       alt="Water source"
-                      className="w-full h-64 object-cover rounded-apple"
+                      className="w-full h-80 object-cover object-center rounded-apple"
                     />
                     <button
                       onClick={() => removeFile('waterSource')}
@@ -365,7 +365,7 @@ export default function SitePhotosPage() {
                     <img
                       src={productLocationPreview}
                       alt="Product location"
-                      className="w-full h-64 object-cover rounded-apple"
+                      className="w-full h-80 object-cover object-center rounded-apple"
                     />
                     <button
                       onClick={() => removeFile('productLocation')}
@@ -454,7 +454,7 @@ export default function SitePhotosPage() {
                     <img
                       src={fullShotPreview}
                       alt="Full shot"
-                      className="w-full h-64 object-cover rounded-apple"
+                      className="w-full h-80 object-cover object-center rounded-apple"
                     />
                     <button
                       onClick={() => removeFile('fullShot')}

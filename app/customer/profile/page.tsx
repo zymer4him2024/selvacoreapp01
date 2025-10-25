@@ -125,7 +125,7 @@ export default function CustomerProfilePage() {
                 <img
                   src={userData.photoURL}
                   alt={userData.displayName || 'User'}
-                  className="w-24 h-24 rounded-full object-cover border-4 border-border"
+                  className="w-24 h-24 rounded-full object-cover object-center border-4 border-border"
                 />
               ) : (
                 <div className="w-24 h-24 rounded-full bg-primary text-white flex items-center justify-center text-3xl font-bold">

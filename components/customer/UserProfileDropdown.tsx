@@ -86,7 +86,7 @@ export default function UserProfileDropdown() {
             <img
               src={userData.photoURL}
               alt={userData.displayName || 'User'}
-              className="w-10 h-10 rounded-full object-cover border-2 border-border"
+              className="w-10 h-10 rounded-full object-cover object-center border-2 border-border"
             />
           ) : (
             <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-semibold text-sm">
@@ -120,7 +120,7 @@ export default function UserProfileDropdown() {
                 <img
                   src={userData.photoURL}
                   alt={userData.displayName || 'User'}
-                  className="w-12 h-12 rounded-full object-cover"
+                  className="w-12 h-12 rounded-full object-cover object-center"
                 />
               ) : (
                 <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-semibold">
