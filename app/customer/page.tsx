@@ -183,7 +183,7 @@ export default function CustomerHomePage() {
           {user && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                {/* Products Grid */}
+                {/* Products Grid - Clean Version */}
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold mb-4">🔧 DIRECT PRODUCT TEST</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
