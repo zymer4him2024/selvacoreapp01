@@ -58,8 +58,12 @@ export default function CustomerHomePage() {
 
     try {
       const orderIds = createMultipleTestOrders(user.uid);
-      toast.success(`Creating ${orderIds.length} test orders...`);
-      console.log('🧪 Multiple test orders created:', orderIds);
+      if (orderIds.length > 0) {
+        toast.success(`Created ${orderIds.length} test orders successfully!`);
+        console.log('🧪 Multiple test orders created:', orderIds);
+      } else {
+        toast.error('Failed to create any test orders');
+      }
     } catch (error) {
       console.error('❌ Failed to create test orders:', error);
       toast.error('Failed to create test orders');

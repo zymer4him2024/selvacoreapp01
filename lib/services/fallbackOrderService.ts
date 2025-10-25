@@ -27,8 +27,18 @@ const FALLBACK_ORDERS_KEY = 'selvacore_fallback_orders';
 export function saveFallbackOrder(order: Omit<FallbackOrder, 'id' | 'createdAt'>): string {
   try {
     const orders = getFallbackOrders();
+    
+    // Check for duplicate order numbers and generate unique one if needed
+    let orderNumber = order.orderNumber;
+    let counter = 1;
+    while (orders.some(o => o.orderNumber === orderNumber)) {
+      orderNumber = `${order.orderNumber}-${counter}`;
+      counter++;
+    }
+    
     const newOrder: FallbackOrder = {
       ...order,
+      orderNumber, // Use the unique order number
       id: `fallback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       createdAt: new Date()
     };
@@ -37,6 +47,7 @@ export function saveFallbackOrder(order: Omit<FallbackOrder, 'id' | 'createdAt'>
     localStorage.setItem(FALLBACK_ORDERS_KEY, JSON.stringify(orders));
     
     console.log('✅ Order saved to fallback storage:', newOrder.id);
+    console.log('📋 Total fallback orders:', orders.length);
     return newOrder.id;
   } catch (error) {
     console.error('❌ Failed to save fallback order:', error);

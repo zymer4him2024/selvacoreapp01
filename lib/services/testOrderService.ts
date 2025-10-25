@@ -15,22 +15,24 @@ export interface TestOrderData {
  * Create a test order for immediate testing
  */
 export function createTestOrder(data: TestOrderData): string {
-  const orderNumber = `TEST-${Date.now()}`;
+  const timestamp = Date.now();
+  const randomSuffix = Math.random().toString(36).substr(2, 9);
+  const orderNumber = `TEST-${timestamp}-${randomSuffix}`;
   
   const testOrder: Omit<FallbackOrder, 'id' | 'createdAt'> = {
     orderNumber,
     customerId: data.customerId,
-    productId: 'test-product-123',
-    serviceId: 'test-service-456',
-    variationId: 'test-variation-789',
-    addressId: 'test-address-101',
+    productId: `test-product-${timestamp}`,
+    serviceId: `test-service-${timestamp}`,
+    variationId: `test-variation-${timestamp}`,
+    addressId: `test-address-${timestamp}`,
     installationDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
     timeSlot: 'Morning (9:00 AM - 12:00 PM)',
     total: data.total,
     currency: data.currency,
     status: 'pending',
     paymentMethod: 'test_payment',
-    transactionId: `TEST_TXN_${Date.now()}`
+    transactionId: `TEST_TXN_${timestamp}_${randomSuffix}`
   };
 
   console.log('🧪 Creating test order:', testOrder);
@@ -67,13 +69,15 @@ export function createMultipleTestOrders(customerId: string): string[] {
 
   const orderIds: string[] = [];
   
+  // Create orders immediately without setTimeout
   testOrders.forEach((orderData, index) => {
-    // Stagger creation times to test sorting
-    setTimeout(() => {
+    try {
       const orderId = createTestOrder(orderData);
       orderIds.push(orderId);
       console.log(`✅ Test order ${index + 1} created:`, orderId);
-    }, index * 1000); // 1 second delay between orders
+    } catch (error) {
+      console.error(`❌ Failed to create test order ${index + 1}:`, error);
+    }
   });
 
   return orderIds;
