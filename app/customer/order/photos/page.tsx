@@ -138,7 +138,7 @@ export default function SitePhotosPage() {
     }
   };
 
-  // Drag and Drop handlers
+  // Drag and Drop handlers - Updated for fullShot support
   const handleDragEnter = (e: React.DragEvent, type: string) => {
     e.preventDefault();
     e.stopPropagation();
