@@ -170,9 +170,21 @@ export default function SitePhotosPage() {
   };
 
   const handleContinue = async () => {
-    // Validation
-    if (!waterSourceFile || !productLocationFile || !fullShotFile || !waterRunningFile) {
-      toast.error('Please upload all required photos and video');
+    console.log('🔍 PHOTO UPLOAD DEBUG - Starting handleContinue...');
+    console.log('🔍 PHOTO UPLOAD DEBUG - Files status:', {
+      waterSourceFile: !!waterSourceFile,
+      productLocationFile: !!productLocationFile,
+      fullShotFile: !!fullShotFile,
+      waterRunningFile: !!waterRunningFile
+    });
+
+    // Validation - make it more flexible since installation service is optional
+    const uploadedFiles = [waterSourceFile, productLocationFile, fullShotFile, waterRunningFile].filter(Boolean);
+    console.log('🔍 PHOTO UPLOAD DEBUG - Uploaded files count:', uploadedFiles.length);
+    
+    if (uploadedFiles.length === 0) {
+      console.error('❌ PHOTO UPLOAD DEBUG - No files uploaded');
+      toast.error('Please upload at least one photo or video');
       return;
     }
 
@@ -183,15 +195,32 @@ export default function SitePhotosPage() {
       const tempOrderId = uuidv4();
       const basePath = `orders/${tempOrderId}/site-photos`;
 
-      // Upload files in parallel
-      const [waterSourceUrl, productLocationUrl, fullShotUrl, waterRunningUrl] = await Promise.all([
-        uploadFile(waterSourceFile, basePath),
-        uploadFile(productLocationFile, basePath),
-        uploadFile(fullShotFile, basePath),
-        uploadFile(waterRunningFile, basePath),
-      ]);
+      // Upload files in parallel (only upload files that exist)
+      console.log('🔍 PHOTO UPLOAD DEBUG - Starting file uploads...');
+      const uploadPromises = [];
+      const fileKeys = ['waterSourceFile', 'productLocationFile', 'fullShotFile', 'waterRunningFile'];
+      const files = [waterSourceFile, productLocationFile, fullShotFile, waterRunningFile];
+      
+      for (let i = 0; i < files.length; i++) {
+        if (files[i]) {
+          console.log(`🔍 PHOTO UPLOAD DEBUG - Uploading ${fileKeys[i]}`);
+          uploadPromises.push(uploadFile(files[i], basePath));
+        } else {
+          console.log(`🔍 PHOTO UPLOAD DEBUG - Skipping ${fileKeys[i]} (no file)`);
+          uploadPromises.push(Promise.resolve(null));
+        }
+      }
+      
+      const [waterSourceUrl, productLocationUrl, fullShotUrl, waterRunningUrl] = await Promise.all(uploadPromises);
 
       // Store URLs in sessionStorage
+      console.log('🔍 PHOTO UPLOAD DEBUG - Storing URLs in sessionStorage:', {
+        waterSource: waterSourceUrl,
+        productLocation: productLocationUrl,
+        fullShot: fullShotUrl,
+        waterRunning: waterRunningUrl
+      });
+      
       const orderData = JSON.parse(sessionStorage.getItem('orderData') || '{}');
       sessionStorage.setItem('orderData', JSON.stringify({
         ...orderData,
@@ -203,12 +232,16 @@ export default function SitePhotosPage() {
         },
       }));
 
+      console.log('🔍 PHOTO UPLOAD DEBUG - Photos uploaded successfully, navigating to payment...');
       toast.success('Photos uploaded successfully!');
       router.push('/customer/order/payment');
     } catch (error: any) {
-      console.error('Error uploading photos:', error);
+      console.error('❌ PHOTO UPLOAD DEBUG - Error uploading photos:', error);
+      console.error('❌ PHOTO UPLOAD DEBUG - Error message:', error.message);
+      console.error('❌ PHOTO UPLOAD DEBUG - Error stack:', error.stack);
       toast.error(error.message || 'Failed to upload photos');
     } finally {
+      console.log('🔍 PHOTO UPLOAD DEBUG - Setting uploading to false');
       setUploading(false);
     }
   };
