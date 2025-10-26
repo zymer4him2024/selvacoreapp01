@@ -114,8 +114,26 @@ export default function CustomerOrdersPage() {
       console.log('🔄 ORDERS DEBUG - Combining orders...');
       const allOrders = [...firestoreOrders, ...convertedFallbackOrders]
         .sort((a, b) => {
-          const dateA = a.createdAt instanceof Date ? a.createdAt : a.createdAt.toDate();
-          const dateB = b.createdAt instanceof Date ? b.createdAt : b.createdAt.toDate();
+          // Handle both Date objects and Firestore Timestamps
+          let dateA: Date;
+          let dateB: Date;
+          
+          if (a.createdAt instanceof Date) {
+            dateA = a.createdAt;
+          } else if (a.createdAt && typeof a.createdAt.toDate === 'function') {
+            dateA = a.createdAt.toDate();
+          } else {
+            dateA = new Date(a.createdAt);
+          }
+          
+          if (b.createdAt instanceof Date) {
+            dateB = b.createdAt;
+          } else if (b.createdAt && typeof b.createdAt.toDate === 'function') {
+            dateB = b.createdAt.toDate();
+          } else {
+            dateB = new Date(b.createdAt);
+          }
+          
           return dateB.getTime() - dateA.getTime();
         });
       
