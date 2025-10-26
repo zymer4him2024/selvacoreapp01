@@ -124,7 +124,7 @@ export default function CustomerOrdersPage() {
             dateA = a.createdAt.toDate();
           } else if (a.createdAt) {
             // Handle string or number timestamps
-            dateA = new Date(a.createdAt as string | number);
+            dateA = new Date(a.createdAt as unknown as string | number);
           } else {
             dateA = new Date(0); // Fallback to epoch
           }
@@ -135,7 +135,7 @@ export default function CustomerOrdersPage() {
             dateB = b.createdAt.toDate();
           } else if (b.createdAt) {
             // Handle string or number timestamps
-            dateB = new Date(b.createdAt as string | number);
+            dateB = new Date(b.createdAt as unknown as string | number);
           } else {
             dateB = new Date(0); // Fallback to epoch
           }
