@@ -585,17 +585,47 @@ export default function SitePhotosPage() {
                   </button>
                 </div>
               ) : (
-                <label className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-border rounded-apple hover:border-primary transition-all cursor-pointer bg-surface-elevated hover:bg-surface-secondary">
-                  <Upload className="w-12 h-12 text-text-tertiary mb-3" />
-                  <span className="text-sm font-medium">Click to upload video</span>
-                  <span className="text-xs text-text-tertiary mt-1">MP4, WebM (max 50MB)</span>
-                  <input
-                    type="file"
-                    accept="video/*"
-                    onChange={(e) => handleFileChange(e.target.files?.[0] || null, 'waterRunning')}
-                    className="hidden"
-                  />
-                </label>
+                <div className="space-y-3">
+                  {/* Camera & Upload Buttons */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setShowPhotoCapture('waterRunning')}
+                      className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-border rounded-apple hover:border-primary hover:bg-primary/5 transition-all"
+                    >
+                      <Camera className="w-8 h-8 text-primary mb-2" />
+                      <span className="text-sm font-medium">Take Video</span>
+                    </button>
+                    <label className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-border rounded-apple hover:border-primary hover:bg-primary/5 transition-all cursor-pointer">
+                      <Upload className="w-8 h-8 text-primary mb-2" />
+                      <span className="text-sm font-medium">Choose File</span>
+                      <input
+                        type="file"
+                        accept="video/*"
+                        onChange={(e) => handleFileChange(e.target.files?.[0] || null, 'waterRunning')}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  
+                  {/* Drag & Drop Zone */}
+                  <div
+                    onDragEnter={(e) => handleDragEnter(e, 'waterRunning')}
+                    onDragOver={(e) => handleDragOver(e, 'waterRunning')}
+                    onDragLeave={(e) => handleDragLeave(e, 'waterRunning')}
+                    onDrop={(e) => handleDrop(e, 'waterRunning')}
+                    className={`h-32 border-2 border-dashed rounded-apple transition-all cursor-pointer flex items-center justify-center ${
+                      dragging === 'waterRunning'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary hover:bg-surface-elevated'
+                    }`}
+                  >
+                    <div className="text-center">
+                      <Upload className="w-8 h-8 text-text-tertiary mx-auto mb-2" />
+                      <span className="text-sm text-text-secondary">Or drag & drop video here</span>
+                      <span className="text-xs text-text-tertiary block mt-1">MP4, WebM (max 50MB)</span>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           </div>
