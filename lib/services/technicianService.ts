@@ -38,6 +38,7 @@ export interface TechnicianStats {
  */
 export async function getAvailableJobs(): Promise<Order[]> {
   try {
+    console.log('🔍 TECHNICIAN SERVICE - Fetching available jobs...');
     const ordersRef = collection(db, 'orders');
     const q = query(
       ordersRef,
@@ -45,14 +46,21 @@ export async function getAvailableJobs(): Promise<Order[]> {
       orderBy('createdAt', 'desc')
     );
     
+    console.log('🔍 TECHNICIAN SERVICE - Executing query...');
     const snapshot = await getDocs(q);
+    console.log('🔍 TECHNICIAN SERVICE - Query result:', snapshot.size, 'orders found');
     
-    return snapshot.docs.map(doc => ({
+    const orders = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
     } as Order));
-  } catch (error) {
-    console.error('Error fetching available jobs:', error);
+    
+    console.log('🔍 TECHNICIAN SERVICE - Returning', orders.length, 'orders');
+    return orders;
+  } catch (error: any) {
+    console.error('❌ TECHNICIAN SERVICE - Error fetching available jobs:', error);
+    console.error('❌ Error code:', error.code);
+    console.error('❌ Error message:', error.message);
     throw error;
   }
 }
