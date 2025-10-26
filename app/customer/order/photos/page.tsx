@@ -610,8 +610,8 @@ export default function SitePhotosPage() {
                   {/* Drag & Drop Zone */}
                   <div
                     onDragEnter={(e) => handleDragEnter(e, 'waterRunning')}
-                    onDragOver={(e) => handleDragOver(e, 'waterRunning')}
-                    onDragLeave={(e) => handleDragLeave(e, 'waterRunning')}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDragLeave={handleDragLeave}
                     onDrop={(e) => handleDrop(e, 'waterRunning')}
                     className={`h-32 border-2 border-dashed rounded-apple transition-all cursor-pointer flex items-center justify-center ${
                       dragging === 'waterRunning'
