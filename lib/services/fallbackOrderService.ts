@@ -6,7 +6,7 @@ export interface FallbackOrder {
   orderNumber: string;
   customerId: string;
   productId: string;
-  serviceId: string;
+  serviceId: string | null;
   variationId?: string;
   addressId: string;
   installationDate: string;
