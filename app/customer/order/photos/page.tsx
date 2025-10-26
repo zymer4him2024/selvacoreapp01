@@ -602,8 +602,11 @@ export default function SitePhotosPage() {
 
           {/* Continue Button */}
           <button
-            onClick={handleContinue}
-            disabled={!waterSourceFile || !productLocationFile || !fullShotFile || !waterRunningFile || uploading}
+            onClick={() => {
+              console.log('🔍 PHOTO UPLOAD DEBUG - Continue button clicked');
+              handleContinue();
+            }}
+            disabled={(!waterSourceFile && !productLocationFile && !fullShotFile && !waterRunningFile) || uploading}
             className="w-full px-8 py-4 bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
           >
             {uploading ? 'Uploading...' : 'Continue to Payment'}
