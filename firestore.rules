@@ -41,7 +41,15 @@ service cloud.firestore {
     match /orders/{orderId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
+      
+      // Admins can always update/delete
       allow update, delete: if isAdmin();
+      
+      // Technicians can update pending orders (to accept them) or their own accepted orders
+      allow update: if isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'technician' &&
+        (resource.data.status == 'pending' || 
+         resource.data.technicianId == request.auth.uid);
     }
     
     // Sub-contractors collection - authenticated users can read, admins can write

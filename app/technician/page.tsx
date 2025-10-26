@@ -160,7 +160,7 @@ export default function TechnicianDashboard() {
                 {/* Product Image */}
                 <div className="aspect-video bg-surface-elevated rounded-apple overflow-hidden mb-4">
                   <img
-                    src={job.productSnapshot.image || '/placeholder.png'}
+                    src={job.productSnapshot.image || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect width="400" height="400" fill="%23f3f4f6"/%3E%3Ctext x="50%25" y="50%25" font-family="Arial" font-size="24" fill="%239ca3af" text-anchor="middle" dominant-baseline="middle"%3ENo Image%3C/text%3E%3C/svg%3E'}
                     alt={job.productSnapshot.name.en}
                     className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                   />
