@@ -11,6 +11,7 @@ export interface User {
   displayName: string;
   photoURL?: string;
   phone: string;
+  whatsapp?: string; // WhatsApp number for communication (can be different from phone)
   preferredLanguage: Language;
   subContractorId?: string | null;
   active: boolean;
