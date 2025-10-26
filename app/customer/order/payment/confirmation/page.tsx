@@ -48,7 +48,7 @@ export default function PaymentConfirmationPage() {
         amount,
         currency,
         productName: 'Water Purifier System', // This should come from order data
-        serviceName: 'Professional Installation',
+        serviceName: 'Self Installation',
         installationDate: '2024-01-15',
         timeSlot: '10:00 AM - 12:00 PM',
         address: '123 Main Street, City, State',

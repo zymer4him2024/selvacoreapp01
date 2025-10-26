@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Check, Clock, Package } from 'lucide-react';
+import { ArrowLeft, Package } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Product, Service } from '@/types';
+import { Product } from '@/types';
 import { getProductById } from '@/lib/services/productService';
-import { getActiveServices } from '@/lib/services/serviceService';
 import { formatCurrency } from '@/lib/utils/formatters';
 import toast from 'react-hot-toast';
 
@@ -22,11 +21,9 @@ export default function ProductDetailPage() {
   console.log('🎬 Params:', params);
 
   const [product, setProduct] = useState<Product | null>(null);
-  const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [selectedVariationId, setSelectedVariationId] = useState<string>('');
-  const [selectedServiceId, setSelectedServiceId] = useState<string>('');
   const [selectedImage, setSelectedImage] = useState(0);
 
   useEffect(() => {
@@ -60,18 +57,6 @@ export default function ProductDetailPage() {
       if (productData.variations && productData.variations.length > 0) {
         setSelectedVariationId(productData.variations[0].id);
       }
-
-      // Load services separately (optional)
-      console.log('🔧 Getting services data...');
-      try {
-        const servicesData = await getActiveServices();
-        console.log('🔧 Services data result:', servicesData);
-        setServices(servicesData);
-        console.log('✅ Services loaded successfully');
-      } catch (serviceError: any) {
-        console.warn('⚠️ Services failed to load, continuing without services:', serviceError);
-        setServices([]); // Empty services array - product can still be viewed
-      }
       
       console.log('✅ Product detail page loaded successfully');
     } catch (error: any) {
@@ -85,21 +70,10 @@ export default function ProductDetailPage() {
   };
 
   const handleOrder = () => {
-    if (services.length === 0) {
-      toast.error('No installation services available. Please contact support.');
-      return;
-    }
-
-    if (!selectedServiceId) {
-      toast.error('Please select a service');
-      return;
-    }
-
     // Store selection in sessionStorage
     sessionStorage.setItem('orderData', JSON.stringify({
       productId: product!.id,
       variationId: selectedVariationId,
-      serviceId: selectedServiceId,
     }));
 
     router.push('/customer/order/details');
@@ -120,9 +94,8 @@ export default function ProductDetailPage() {
 
   const lang = userData?.preferredLanguage || 'en';
   const selectedVariation = product.variations?.find((v) => v.id === selectedVariationId);
-  const selectedService = services.find((s) => s.id === selectedServiceId);
   
-  const totalPrice = (selectedVariation?.price || product.basePrice) + (selectedService?.price || 0);
+  const totalPrice = selectedVariation?.price || product.basePrice;
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -248,60 +221,6 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Services */}
-            <div>
-              <label className="block text-sm font-medium mb-3">
-                Select Installation Service {services.length > 0 && <span className="text-error">*</span>}
-              </label>
-              {services.length === 0 ? (
-                <div className="p-6 bg-surface rounded-apple text-center">
-                  <Clock className="w-12 h-12 mx-auto mb-3 text-text-tertiary" />
-                  <h3 className="text-lg font-semibold mb-2">No Installation Services Available</h3>
-                  <p className="text-text-secondary mb-4">
-                    Installation services are currently unavailable. You can still view product details.
-                  </p>
-                  <p className="text-sm text-text-tertiary">
-                    Please contact support for installation options.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {services.map((service) => (
-                  <button
-                    key={service.id}
-                    type="button"
-                    onClick={() => setSelectedServiceId(service.id)}
-                    className={`w-full p-4 rounded-apple text-left transition-all ${
-                      selectedServiceId === service.id
-                        ? 'bg-secondary text-white shadow-apple'
-                        : 'bg-surface hover:bg-surface-elevated border border-border'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <p className="font-medium">{service.name[lang]}</p>
-                        <p className={`text-sm mt-1 line-clamp-2 ${
-                          selectedServiceId === service.id ? 'text-white/80' : 'text-text-secondary'
-                        }`}>
-                          {service.description[lang]}
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Clock className="w-4 h-4" />
-                          <span className="text-sm">{service.duration}h installation</span>
-                        </div>
-                      </div>
-                      <div className="text-right ml-4">
-                        <p className="font-bold">
-                          {formatCurrency(service.price, service.currency)}
-                        </p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-                </div>
-              )}
-            </div>
-
             {/* Specifications */}
             {product.specifications && Object.keys(product.specifications).length > 0 && (
               <div className="p-6 bg-surface rounded-apple">
@@ -320,41 +239,19 @@ export default function ProductDetailPage() {
             {/* Total and Order Button */}
             <div className="sticky bottom-0 pt-6 pb-6 bg-background/80 backdrop-blur-lg border-t border-border -mx-4 px-4 lg:mx-0 lg:px-0">
               <div className="p-6 bg-surface rounded-apple mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-text-secondary">Product</span>
-                  <span className="font-semibold">
-                    {formatCurrency(selectedVariation?.price || product.basePrice, product.currency)}
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-semibold">Total</span>
+                  <span className="text-2xl font-bold text-primary">
+                    {formatCurrency(totalPrice, product.currency)}
                   </span>
-                </div>
-                {selectedService && (
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-text-secondary">Installation</span>
-                    <span className="font-semibold">
-                      {formatCurrency(selectedService.price, selectedService.currency)}
-                    </span>
-                  </div>
-                )}
-                <div className="pt-3 border-t border-border mt-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg font-semibold">Total</span>
-                    <span className="text-2xl font-bold text-primary">
-                      {formatCurrency(totalPrice, product.currency)}
-                    </span>
-                  </div>
                 </div>
               </div>
 
               <button
                 onClick={handleOrder}
-                disabled={services.length === 0 || !selectedServiceId}
-                className="w-full px-8 py-4 bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
+                className="w-full px-8 py-4 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
               >
-                {services.length === 0 
-                  ? 'No Services Available' 
-                  : selectedServiceId 
-                    ? 'Continue to Order Details' 
-                    : 'Select a service to continue'
-                }
+                Continue to Order Details
               </button>
             </div>
           </div>

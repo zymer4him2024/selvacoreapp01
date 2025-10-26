@@ -60,20 +60,29 @@ export default function OrderDetailsPage() {
 
       const orderData = JSON.parse(orderDataStr);
 
-      // Load product and service
-      const [productData, serviceData] = await Promise.all([
-        getProductById(orderData.productId),
-        getServiceById(orderData.serviceId),
-      ]);
-
-      if (!productData || !serviceData) {
-        toast.error('Product or service not found');
+      // Load product (service is optional)
+      const productData = await getProductById(orderData.productId);
+      
+      if (!productData) {
+        toast.error('Product not found');
         router.push('/customer');
         return;
       }
 
       setProduct(productData);
-      setService(serviceData);
+      
+      // Load service only if serviceId exists
+      if (orderData.serviceId) {
+        try {
+          const serviceData = await getServiceById(orderData.serviceId);
+          setService(serviceData);
+        } catch (error) {
+          console.warn('Service not found, continuing without service:', error);
+          setService(null);
+        }
+      } else {
+        setService(null);
+      }
 
       // Load customer addresses
       if (user) {
@@ -260,15 +269,17 @@ export default function OrderDetailsPage() {
                 <span className="text-text-secondary">Product</span>
                 <span className="font-medium">{product.name[lang]}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-text-secondary">Service</span>
-                <span className="font-medium">{service.name[lang]}</span>
-              </div>
+              {service && (
+                <div className="flex justify-between">
+                  <span className="text-text-secondary">Service</span>
+                  <span className="font-medium">{service.name[lang]}</span>
+                </div>
+              )}
               <div className="pt-3 border-t border-border">
                 <div className="flex justify-between">
                   <span className="text-lg font-semibold">Total</span>
                   <span className="text-2xl font-bold text-primary">
-                    {formatCurrency(product.basePrice + service.price, product.currency)}
+                    {formatCurrency(product.basePrice + (service?.price || 0), product.currency)}
                   </span>
                 </div>
               </div>

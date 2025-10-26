@@ -46,19 +46,28 @@ export default function PaymentPage() {
 
       const orderData = JSON.parse(orderDataStr);
 
-      const [productData, serviceData] = await Promise.all([
-        getProductById(orderData.productId),
-        getServiceById(orderData.serviceId),
-      ]);
-
-      if (!productData || !serviceData) {
-        toast.error('Order data invalid');
+      const productData = await getProductById(orderData.productId);
+      
+      if (!productData) {
+        toast.error('Product not found');
         router.push('/customer');
         return;
       }
 
       setProduct(productData);
-      setService(serviceData);
+      
+      // Load service only if serviceId exists
+      if (orderData.serviceId) {
+        try {
+          const serviceData = await getServiceById(orderData.serviceId);
+          setService(serviceData);
+        } catch (error) {
+          console.warn('Service not found, continuing without service:', error);
+          setService(null);
+        }
+      } else {
+        setService(null);
+      }
     } catch (error: any) {
       toast.error('Failed to load order summary');
     } finally {
@@ -119,7 +128,7 @@ export default function PaymentPage() {
 
       // Calculate total
       const productPrice = product.basePrice;
-      const servicePrice = service.price;
+      const servicePrice = service?.price || 0;
       const subtotal = productPrice + servicePrice;
       const tax = subtotal * 0.1; // 10% tax
       const total = subtotal + tax;
@@ -431,13 +440,15 @@ export default function PaymentPage() {
                 <p className="font-semibold">{formatCurrency(productPrice, product.currency)}</p>
               </div>
 
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-medium">{service.name[lang]}</p>
-                  <p className="text-sm text-text-secondary">{service.duration}h installation</p>
+              {service && (
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-medium">{service.name[lang]}</p>
+                    <p className="text-sm text-text-secondary">{service.duration}h installation</p>
+                  </div>
+                  <p className="font-semibold">{formatCurrency(servicePrice, service.currency)}</p>
                 </div>
-                <p className="font-semibold">{formatCurrency(servicePrice, service.currency)}</p>
-              </div>
+              )}
 
               <div className="pt-4 border-t border-border space-y-2">
                 <div className="flex justify-between text-sm">
