@@ -357,9 +357,9 @@ export async function getTechnicianJobById(
     // Technicians can view pending jobs or their own jobs
     if (order.status === 'pending' || order.technicianId === technicianId) {
       return {
-        id: orderSnap.id,
         ...order,
-      };
+        id: orderSnap.id,
+      } as Order;
     }
     
     return null;
