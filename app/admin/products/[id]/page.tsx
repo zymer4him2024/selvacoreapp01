@@ -4,7 +4,14 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Save } from 'lucide-react';
 import { Product } from '@/types';
-import { getProductById, updateProduct } from '@/lib/services/productService';
+import { 
+  getProductById, 
+  updateProduct, 
+  addProductImages, 
+  removeProductImage,
+  reorderProductImages 
+} from '@/lib/services/productService';
+import ImageGalleryManager from '@/components/admin/ImageGalleryManager';
 import toast from 'react-hot-toast';
 
 export default function EditProductPage() {
@@ -15,6 +22,8 @@ export default function EditProductPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [deletingImage, setDeletingImage] = useState<string | null>(null);
 
   useEffect(() => {
     loadProduct();
@@ -52,6 +61,63 @@ export default function EditProductPage() {
       toast.error(error.message || 'Failed to update product');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleAddImages = async (files: File[]) => {
+    try {
+      setUploadingImages(true);
+      const uploadedUrls = await addProductImages(productId, files);
+      
+      // Update local state
+      setProduct(prev => prev ? {
+        ...prev,
+        images: [...(prev.images || []), ...uploadedUrls]
+      } : null);
+      
+      toast.success(`${files.length} image(s) uploaded successfully!`);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to upload images');
+      throw error;
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const handleDeleteImage = async (imageUrl: string) => {
+    try {
+      setDeletingImage(imageUrl);
+      await removeProductImage(productId, imageUrl);
+      
+      // Update local state
+      setProduct(prev => prev ? {
+        ...prev,
+        images: (prev.images || []).filter(url => url !== imageUrl)
+      } : null);
+      
+      toast.success('Image deleted successfully!');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete image');
+      throw error;
+    } finally {
+      setDeletingImage(null);
+    }
+  };
+
+  const handleImagesReorder = async (newImageOrder: string[]) => {
+    try {
+      // Update local state immediately for smooth UX
+      setProduct(prev => prev ? {
+        ...prev,
+        images: newImageOrder
+      } : null);
+      
+      // Update in Firestore
+      await reorderProductImages(productId, newImageOrder);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to reorder images');
+      // Reload product to restore correct order
+      loadProduct();
     }
   };
 
@@ -185,6 +251,21 @@ export default function EditProductPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Image Gallery Manager */}
+      <div className="apple-card">
+        <h2 className="text-2xl font-bold mb-6">Product Images</h2>
+        <ImageGalleryManager
+          images={product.images || []}
+          onImagesChange={handleImagesReorder}
+          onAddImages={handleAddImages}
+          onDeleteImage={handleDeleteImage}
+          productId={productId}
+          uploadingImages={uploadingImages}
+          deletingImage={deletingImage}
+          maxImages={10}
+        />
       </div>
     </div>
   );

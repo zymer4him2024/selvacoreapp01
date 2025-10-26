@@ -157,3 +157,74 @@ export async function searchProducts(searchTerm: string): Promise<Product[]> {
   );
 }
 
+/**
+ * Add multiple images to a product
+ */
+export async function addProductImages(
+  productId: string,
+  files: File[]
+): Promise<string[]> {
+  const uploadedUrls: string[] = [];
+  
+  for (const file of files) {
+    try {
+      const url = await uploadProductImage(productId, file, 'main');
+      uploadedUrls.push(url);
+    } catch (error) {
+      console.error('Failed to upload image:', error);
+      throw error;
+    }
+  }
+  
+  // Get current product
+  const product = await getProductById(productId);
+  if (!product) throw new Error('Product not found');
+  
+  // Update product with new images
+  const updatedImages = [...(product.images || []), ...uploadedUrls];
+  await updateProduct(productId, { images: updatedImages });
+  
+  return uploadedUrls;
+}
+
+/**
+ * Remove an image from a product
+ */
+export async function removeProductImage(
+  productId: string,
+  imageUrl: string
+): Promise<void> {
+  // Get current product
+  const product = await getProductById(productId);
+  if (!product) throw new Error('Product not found');
+  
+  // Remove image from array
+  const updatedImages = (product.images || []).filter(url => url !== imageUrl);
+  
+  // Update product
+  await updateProduct(productId, { images: updatedImages });
+  
+  // Delete from storage
+  await deleteProductImage(imageUrl);
+}
+
+/**
+ * Reorder product images
+ */
+export async function reorderProductImages(
+  productId: string,
+  newImageOrder: string[]
+): Promise<void> {
+  await updateProduct(productId, { images: newImageOrder });
+}
+
+/**
+ * Replace all product images
+ */
+export async function replaceProductImages(
+  productId: string,
+  newImages: string[]
+): Promise<void> {
+  await updateProduct(productId, { images: newImages });
+}
+
