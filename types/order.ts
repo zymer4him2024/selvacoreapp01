@@ -53,6 +53,10 @@ export interface Order {
       url: string;
       uploadedAt: Timestamp;
     };
+    fullShot?: {
+      url: string;
+      uploadedAt: Timestamp;
+    };
     waterRunningVideo?: {
       url: string;
       uploadedAt: Timestamp;
