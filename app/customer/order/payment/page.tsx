@@ -376,11 +376,11 @@ export default function PaymentPage() {
     );
   }
 
-  if (!product || !service) return null;
+  if (!product) return null;
 
   const lang = userData?.preferredLanguage || 'en';
   const productPrice = product.basePrice;
-  const servicePrice = service.price;
+  const servicePrice = service?.price || 0;
   const subtotal = productPrice + servicePrice;
   const tax = subtotal * 0.1;
   const total = subtotal + tax;
