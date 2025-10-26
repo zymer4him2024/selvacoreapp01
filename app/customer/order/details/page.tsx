@@ -224,7 +224,7 @@ export default function OrderDetailsPage() {
     );
   }
 
-  if (!product || !service) return null;
+  if (!product) return null;
 
   const lang = userData?.preferredLanguage || 'en';
   const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
