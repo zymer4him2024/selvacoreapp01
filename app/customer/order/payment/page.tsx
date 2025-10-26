@@ -162,7 +162,7 @@ export default function PaymentPage() {
         orderNumber,
         customerId: user.uid,
         productId: product.id,
-        serviceId: service.id,
+        serviceId: service?.id || null,
         variation: variation?.name || 'No variation',
         total
       });
@@ -182,12 +182,12 @@ export default function PaymentPage() {
           image: product.images?.[0] || '',
         },
         
-        serviceId: service.id,
-        serviceSnapshot: {
+        serviceId: service?.id || null,
+        serviceSnapshot: service ? {
           name: service.name,
           price: servicePrice,
           duration: service.duration,
-        },
+        } : null,
         
         installationAddress: selectedAddress,
         installationDate: Timestamp.fromDate(new Date(orderData.installationDate)),
@@ -270,7 +270,7 @@ export default function PaymentPage() {
           currency: product.currency,
           metadata: {
             productId: product.id,
-            serviceId: service.id,
+            serviceId: service?.id || null,
           },
           performedBy: user.uid,
           performedByRole: 'customer',
@@ -303,7 +303,7 @@ export default function PaymentPage() {
           transactionId: paymentResult.transactionId,
           metadata: {
             productName: product.name[userData?.preferredLanguage || 'en'],
-            serviceName: service.name[userData?.preferredLanguage || 'en'],
+            serviceName: service ? service.name[userData?.preferredLanguage || 'en'] : 'Self Installation',
             paymentMethod: paymentResult.method
           }
         });
@@ -318,7 +318,7 @@ export default function PaymentPage() {
           orderNumber,
           customerId: user.uid,
           productId: product.id,
-          serviceId: service.id,
+          serviceId: service?.id || null,
           variationId: orderData.variationId,
           addressId: orderData.addressId,
           installationDate: orderData.installationDate,
