@@ -6,6 +6,7 @@ import { ArrowLeft, Camera, Upload, X, Check } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/lib/firebase/config';
 import PhotoCapture from '@/components/customer/PhotoCapture';
+import VideoCapture from '@/components/customer/VideoCapture';
 import PhotoGuide from '@/components/customer/PhotoGuide';
 import UploadProgress from '@/components/customer/UploadProgress';
 import OrderProgressTracker from '@/components/customer/OrderProgressTracker';
@@ -644,26 +645,32 @@ export default function SitePhotosPage() {
         </div>
       </div>
 
-      {/* Photo Capture Modal */}
-      {showPhotoCapture && (
+      {/* Photo/Video Capture Modal */}
+      {showPhotoCapture && showPhotoCapture === 'waterRunning' ? (
+        <VideoCapture
+          title="4. Water Running"
+          description="Video showing water flow from your tap"
+          onCapture={(file) => {
+            handleFileChange(file, 'waterRunning');
+            setShowPhotoCapture(null);
+          }}
+          onCancel={() => setShowPhotoCapture(null)}
+        />
+      ) : showPhotoCapture ? (
         <PhotoCapture
           title={
             showPhotoCapture === 'waterSource'
               ? '1. Water Source'
               : showPhotoCapture === 'productLocation'
               ? '2. Place for equipment'
-              : showPhotoCapture === 'fullShot'
-              ? '3. Full Shot Photo'
-              : '4. Water Running'
+              : '3. Full Shot Photo'
           }
           description={
             showPhotoCapture === 'waterSource'
               ? 'Photo of your main water supply connection'
               : showPhotoCapture === 'productLocation'
               ? 'Photo of where the product will be installed'
-              : showPhotoCapture === 'fullShot'
-              ? 'Wide photo showing both water source and installation area'
-              : 'Video showing water flow from your tap'
+              : 'Wide photo showing both water source and installation area'
           }
           onCapture={(file) => {
             handleFileChange(file, showPhotoCapture as any);
@@ -671,7 +678,7 @@ export default function SitePhotosPage() {
           }}
           onCancel={() => setShowPhotoCapture(null)}
         />
-      )}
+      ) : null}
     </div>
   );
 }
