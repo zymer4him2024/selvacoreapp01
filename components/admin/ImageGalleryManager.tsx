@@ -206,7 +206,7 @@ export default function ImageGalleryManager({
                 <img
                   src={imageUrl}
                   alt={`Product ${index + 1}`}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  className="w-full h-full object-contain bg-surface-elevated group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
 
@@ -283,7 +283,7 @@ export default function ImageGalleryManager({
           <img
             src={previewImage}
             alt="Preview"
-            className="max-w-full max-h-full object-contain"
+            className="max-w-full max-h-full object-contain bg-surface-elevated rounded-apple"
             onClick={(e) => e.stopPropagation()}
           />
         </div>
