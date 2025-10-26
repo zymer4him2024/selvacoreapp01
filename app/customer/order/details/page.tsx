@@ -49,21 +49,29 @@ export default function OrderDetailsPage() {
   const loadOrderData = async () => {
     try {
       setLoading(true);
+      console.log('🔍 ORDER DETAILS DEBUG - Starting to load order data...');
 
       // Get order data from sessionStorage
       const orderDataStr = sessionStorage.getItem('orderData');
+      console.log('🔍 ORDER DETAILS DEBUG - Order data from session:', orderDataStr);
+      
       if (!orderDataStr) {
+        console.error('❌ ORDER DETAILS DEBUG - No order data found in session');
         toast.error('No order data found');
         router.push('/customer');
         return;
       }
 
       const orderData = JSON.parse(orderDataStr);
+      console.log('🔍 ORDER DETAILS DEBUG - Parsed order data:', orderData);
 
       // Load product (service is optional)
+      console.log('🔍 ORDER DETAILS DEBUG - Loading product with ID:', orderData.productId);
       const productData = await getProductById(orderData.productId);
+      console.log('🔍 ORDER DETAILS DEBUG - Product data loaded:', productData);
       
       if (!productData) {
+        console.error('❌ ORDER DETAILS DEBUG - Product not found');
         toast.error('Product not found');
         router.push('/customer');
         return;
@@ -73,14 +81,17 @@ export default function OrderDetailsPage() {
       
       // Load service only if serviceId exists
       if (orderData.serviceId) {
+        console.log('🔍 ORDER DETAILS DEBUG - Loading service with ID:', orderData.serviceId);
         try {
           const serviceData = await getServiceById(orderData.serviceId);
+          console.log('🔍 ORDER DETAILS DEBUG - Service data loaded:', serviceData);
           setService(serviceData);
         } catch (error) {
-          console.warn('Service not found, continuing without service:', error);
+          console.warn('⚠️ ORDER DETAILS DEBUG - Service not found, continuing without service:', error);
           setService(null);
         }
       } else {
+        console.log('🔍 ORDER DETAILS DEBUG - No serviceId provided, skipping service loading');
         setService(null);
       }
 
@@ -125,8 +136,12 @@ export default function OrderDetailsPage() {
         }
       }
     } catch (error: any) {
+      console.error('❌ ORDER DETAILS DEBUG - Failed to load order data:', error);
+      console.error('❌ ORDER DETAILS DEBUG - Error message:', error.message);
+      console.error('❌ ORDER DETAILS DEBUG - Error stack:', error.stack);
       toast.error('Failed to load order details');
     } finally {
+      console.log('🔍 ORDER DETAILS DEBUG - Setting loading to false');
       setLoading(false);
     }
   };
