@@ -175,13 +175,15 @@ export default function OrderDetailPage() {
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-border">
-                <p className="font-medium">{order.serviceSnapshot.name[lang]}</p>
-                <p className="text-sm text-text-secondary">{order.serviceSnapshot.duration}h installation</p>
-                <p className="text-primary font-semibold mt-1">
-                  {formatCurrency(order.payment.servicePrice, order.payment.currency)}
-                </p>
-              </div>
+              {order.serviceSnapshot && (
+                <div className="pt-4 border-t border-border">
+                  <p className="font-medium">{order.serviceSnapshot.name[lang]}</p>
+                  <p className="text-sm text-text-secondary">{order.serviceSnapshot.duration}h installation</p>
+                  <p className="text-primary font-semibold mt-1">
+                    {formatCurrency(order.payment.servicePrice, order.payment.currency)}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -270,12 +272,14 @@ export default function OrderDetailPage() {
                   {formatCurrency(order.payment.productPrice, order.payment.currency)}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-text-secondary">Service</span>
-                <span className="font-medium">
-                  {formatCurrency(order.payment.servicePrice, order.payment.currency)}
-                </span>
-              </div>
+              {order.serviceSnapshot && (
+                <div className="flex justify-between">
+                  <span className="text-text-secondary">Service</span>
+                  <span className="font-medium">
+                    {formatCurrency(order.payment.servicePrice, order.payment.currency)}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-text-secondary">Tax</span>
                 <span className="font-medium">
