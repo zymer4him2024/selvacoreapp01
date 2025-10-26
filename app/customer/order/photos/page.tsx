@@ -204,7 +204,7 @@ export default function SitePhotosPage() {
       for (let i = 0; i < files.length; i++) {
         if (files[i]) {
           console.log(`🔍 PHOTO UPLOAD DEBUG - Uploading ${fileKeys[i]}`);
-          uploadPromises.push(uploadFile(files[i], basePath));
+          uploadPromises.push(uploadFile(files[i]!, basePath));
         } else {
           console.log(`🔍 PHOTO UPLOAD DEBUG - Skipping ${fileKeys[i]} (no file)`);
           uploadPromises.push(Promise.resolve(null));
