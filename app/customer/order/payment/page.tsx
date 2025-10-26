@@ -85,10 +85,13 @@ export default function PaymentPage() {
       serviceId: service?.id
     });
 
-    if (!user || !product || !service) {
+    if (!user || !product) {
       console.error('❌ PAYMENT DEBUG - Missing required data:', { user: !!user, product: !!product, service: !!service });
+      toast.error('Missing required data');
       return;
     }
+    
+    console.log('✅ PAYMENT DEBUG - All required data present, proceeding with payment...');
 
     try {
       setProcessing(true);
