@@ -14,7 +14,6 @@ import UserProfileDropdown from '@/components/customer/UserProfileDropdown';
 import CustomerHistory from '@/components/customer/CustomerHistory';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
-import { createTestOrder, createMultipleTestOrders, clearTestOrders } from '@/lib/services/testOrderService';
 
 export default function CustomerHomePage() {
   const router = useRouter();
@@ -25,61 +24,6 @@ export default function CustomerHomePage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
-
-  // Test order creation functions
-  const handleCreateTestOrder = () => {
-    if (!user) {
-      toast.error('Please log in to create test orders');
-      return;
-    }
-
-    try {
-      const orderId = createTestOrder({
-        customerId: user.uid,
-        productName: 'Test Water Purification System',
-        serviceName: 'Test Installation Service',
-        total: 999.99,
-        currency: 'USD'
-      });
-      
-      toast.success(`Test order created! ID: ${orderId}`);
-      console.log('🧪 Test order created:', orderId);
-    } catch (error) {
-      console.error('❌ Failed to create test order:', error);
-      toast.error('Failed to create test order');
-    }
-  };
-
-  const handleCreateMultipleTestOrders = () => {
-    if (!user) {
-      toast.error('Please log in to create test orders');
-      return;
-    }
-
-    try {
-      const orderIds = createMultipleTestOrders(user.uid);
-      if (orderIds.length > 0) {
-        toast.success(`Created ${orderIds.length} test orders successfully!`);
-        console.log('🧪 Multiple test orders created:', orderIds);
-      } else {
-        toast.error('Failed to create any test orders');
-      }
-    } catch (error) {
-      console.error('❌ Failed to create test orders:', error);
-      toast.error('Failed to create test orders');
-    }
-  };
-
-  const handleClearTestOrders = () => {
-    try {
-      clearTestOrders();
-      toast.success('All test orders cleared');
-      console.log('🧹 Test orders cleared');
-    } catch (error) {
-      console.error('❌ Failed to clear test orders:', error);
-      toast.error('Failed to clear test orders');
-    }
-  };
 
   useEffect(() => {
     checkProfile();
@@ -233,40 +177,6 @@ export default function CustomerHomePage() {
                 ))}
               </select>
             </div>
-          </div>
-
-          {/* Test Order Creation Buttons - For Testing Only */}
-          <div className="bg-warning/10 border border-warning/30 rounded-apple p-4 mb-6">
-            <h3 className="text-warning font-semibold mb-3">🧪 Test Order Creation (Development Only)</h3>
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={handleCreateTestOrder}
-                className="px-4 py-2 bg-warning/20 text-warning border border-warning/30 rounded-apple hover:bg-warning/30 transition-all text-sm font-medium"
-              >
-                Create Single Test Order
-              </button>
-              <button
-                onClick={handleCreateMultipleTestOrders}
-                className="px-4 py-2 bg-warning/20 text-warning border border-warning/30 rounded-apple hover:bg-warning/30 transition-all text-sm font-medium"
-              >
-                Create Multiple Test Orders
-              </button>
-              <button
-                onClick={handleClearTestOrders}
-                className="px-4 py-2 bg-danger/20 text-danger border border-danger/30 rounded-apple hover:bg-danger/30 transition-all text-sm font-medium"
-              >
-                Clear All Test Orders
-              </button>
-              <Link
-                href="/customer/orders"
-                className="px-4 py-2 bg-primary/20 text-primary border border-primary/30 rounded-apple hover:bg-primary/30 transition-all text-sm font-medium"
-              >
-                View My Orders
-              </Link>
-            </div>
-            <p className="text-warning/70 text-xs mt-2">
-              These buttons create test orders in local storage for testing the "My Orders" functionality.
-            </p>
           </div>
 
           {/* Customer History and Products */}
