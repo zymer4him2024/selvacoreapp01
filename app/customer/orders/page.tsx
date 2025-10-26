@@ -122,16 +122,22 @@ export default function CustomerOrdersPage() {
             dateA = a.createdAt;
           } else if (a.createdAt && typeof a.createdAt.toDate === 'function') {
             dateA = a.createdAt.toDate();
+          } else if (a.createdAt) {
+            // Handle string or number timestamps
+            dateA = new Date(a.createdAt as string | number);
           } else {
-            dateA = new Date(a.createdAt);
+            dateA = new Date(0); // Fallback to epoch
           }
           
           if (b.createdAt instanceof Date) {
             dateB = b.createdAt;
           } else if (b.createdAt && typeof b.createdAt.toDate === 'function') {
             dateB = b.createdAt.toDate();
+          } else if (b.createdAt) {
+            // Handle string or number timestamps
+            dateB = new Date(b.createdAt as string | number);
           } else {
-            dateB = new Date(b.createdAt);
+            dateB = new Date(0); // Fallback to epoch
           }
           
           return dateB.getTime() - dateA.getTime();
