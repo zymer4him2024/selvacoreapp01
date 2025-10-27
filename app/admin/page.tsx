@@ -7,12 +7,42 @@ import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/config';
 import { Package, Wrench, Building2, ShoppingCart, TrendingUp, Users } from 'lucide-react';
+import { getAdminStats, getRecentOrders, RecentOrder, AdminStats } from '@/lib/services/adminStatsService';
+import { formatCurrency, formatOptionalNumber } from '@/lib/utils/formatters';
 import toast from 'react-hot-toast';
+import Link from 'next/link';
 
 export default function AdminDashboard() {
   const router = useRouter();
   const { user, userData, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [user]);
+
+  const loadDashboardData = async () => {
+    if (!user) return;
+    
+    try {
+      setDataLoading(true);
+      const [dashboardStats, orders] = await Promise.all([
+        getAdminStats(),
+        getRecentOrders(5)
+      ]);
+      
+      setStats(dashboardStats);
+      setRecentOrders(orders);
+    } catch (error: any) {
+      console.error('Error loading dashboard data:', error);
+      toast.error('Failed to load dashboard data');
+    } finally {
+      setDataLoading(false);
+    }
+  };
 
   // If not logged in, show login page
   if (!authLoading && !user) {
@@ -76,31 +106,25 @@ export default function AdminDashboard() {
   }
 
   // Show dashboard for admins
-  if (!user || !userData || authLoading) {
+  if (!user || !userData || authLoading || dataLoading || !stats) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading...</p>
+          <p className="text-text-secondary">Loading dashboard...</p>
         </div>
       </div>
     );
   }
-  // Mock data - will be replaced with real data from Firestore
-  const stats = [
-    { name: 'Total Products', value: '24', icon: Package, change: '+12%', trend: 'up' },
-    { name: 'Total Services', value: '8', icon: Wrench, change: '+5%', trend: 'up' },
-    { name: 'Sub-Contractors', value: '12', icon: Building2, change: '+2', trend: 'up' },
-    { name: 'Total Orders', value: '156', icon: ShoppingCart, change: '+23%', trend: 'up' },
-    { name: 'Revenue (MTD)', value: '$24,500', icon: TrendingUp, change: '+18%', trend: 'up' },
-    { name: 'Active Installers', value: '34', icon: Users, change: '+6', trend: 'up' },
-  ];
 
-  const recentOrders = [
-    { id: 'ORD-202501-0042', customer: 'John Doe', product: 'Water Filter Pro', status: 'pending', amount: '$450' },
-    { id: 'ORD-202501-0041', customer: 'Jane Smith', product: 'UV System', status: 'accepted', amount: '$680' },
-    { id: 'ORD-202501-0040', customer: 'Mike Johnson', product: 'RO System', status: 'completed', amount: '$1,200' },
-    { id: 'ORD-202501-0039', customer: 'Sarah Williams', product: 'Water Softener', status: 'in_progress', amount: '$890' },
+  // Real data from Firestore
+  const statsData = [
+    { name: 'Total Products', value: formatOptionalNumber(stats.totalProducts), icon: Package, change: stats.revenueChange, trend: 'up' },
+    { name: 'Total Services', value: formatOptionalNumber(stats.totalServices), icon: Wrench, change: stats.revenueChange, trend: 'up' },
+    { name: 'Technicians', value: formatOptionalNumber(stats.totalTechnicians), icon: Users, change: stats.revenueChange, trend: 'up' },
+    { name: 'Total Orders', value: formatOptionalNumber(stats.totalOrders), icon: ShoppingCart, change: stats.orderChange, trend: 'up' },
+    { name: 'Revenue (MTD)', value: formatCurrency(stats.revenueMTD, 'BRL'), icon: TrendingUp, change: stats.revenueChange, trend: 'up' },
+    { name: 'Total Customers', value: formatOptionalNumber(stats.totalCustomers), icon: Building2, change: stats.orderChange, trend: 'up' },
   ];
 
   const getStatusColor = (status: string) => {
@@ -126,7 +150,7 @@ export default function AdminDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {stats.map((stat, index) => {
+        {statsData.map((stat, index) => {
           const Icon = stat.icon;
           return (
             <div
@@ -165,12 +189,12 @@ export default function AdminDashboard() {
               Latest orders from customers
             </p>
           </div>
-          <a
+          <Link
             href="/admin/orders"
             className="px-4 py-2 bg-surface-elevated hover:bg-surface-secondary rounded-apple text-sm font-medium transition-colors"
           >
             View All
-          </a>
+          </Link>
         </div>
 
         <div className="space-y-3">
