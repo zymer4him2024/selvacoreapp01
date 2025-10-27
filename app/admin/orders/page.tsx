@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Search, Eye, Package as PackageIcon, Calendar, User } from 'lucide-react';
 import { Order } from '@/types';
 import { getAllOrders } from '@/lib/services/orderService';
-import { formatCurrency, formatDate } from '@/lib/utils/formatters';
+import { formatCurrency, formatDate, formatOptionalString } from '@/lib/utils/formatters';
 import toast from 'react-hot-toast';
 
 export default function OrdersPage() {
@@ -43,9 +43,10 @@ export default function OrdersPage() {
   };
 
   const filteredOrders = orders.filter((order) => {
+    const customerName = order.customerInfo?.name || '';
     const matchesSearch =
-      order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customerInfo.name.toLowerCase().includes(searchTerm.toLowerCase());
+      (order.orderNumber || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customerName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -129,15 +130,15 @@ export default function OrdersPage() {
                         </span>
                       </div>
                       <p className="text-sm text-text-secondary">
-                        {order.productSnapshot.name.en} - {order.serviceSnapshot.name.en}
+                        {order.productSnapshot?.name?.en || 'N/A'} - {order.serviceSnapshot?.name?.en || 'N/A'}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-bold text-primary">
-                        {formatCurrency(order.payment.amount, order.payment.currency)}
+                        {order.payment?.amount ? formatCurrency(order.payment.amount, order.payment.currency) : 'N/A'}
                       </p>
                       <p className="text-xs text-text-tertiary mt-1">
-                        {order.payment.status}
+                        {order.payment?.status || 'N/A'}
                       </p>
                     </div>
                   </div>
@@ -145,17 +146,19 @@ export default function OrdersPage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                     <div className="flex items-center gap-2 text-text-secondary">
                       <User className="w-4 h-4" />
-                      <span>{order.customerInfo.name}</span>
+                      <span>{formatOptionalString(order.customerInfo?.name)}</span>
                     </div>
                     <div className="flex items-center gap-2 text-text-secondary">
                       <Calendar className="w-4 h-4" />
-                      <span>{formatDate(order.installationDate, 'short')}</span>
-                      <span className="text-xs bg-surface-elevated px-2 py-0.5 rounded">
-                        {order.timeSlot}
-                      </span>
+                      <span>{order.installationDate ? formatDate(order.installationDate, 'short') : 'N/A'}</span>
+                      {order.timeSlot && (
+                        <span className="text-xs bg-surface-elevated px-2 py-0.5 rounded">
+                          {order.timeSlot}
+                        </span>
+                      )}
                     </div>
                     <div className="text-text-tertiary">
-                      Created {formatDate(order.createdAt, 'short')}
+                      Created {order.createdAt ? formatDate(order.createdAt, 'short') : 'N/A'}
                     </div>
                   </div>
 
@@ -165,10 +168,10 @@ export default function OrdersPage() {
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
                           <span className="text-sm font-semibold text-primary">
-                            {order.technicianInfo.name.charAt(0)}
+                            {order.technicianInfo.name?.charAt(0) || 'T'}
                           </span>
                         </div>
-                        <span className="text-sm">{order.technicianInfo.name}</span>
+                        <span className="text-sm">{formatOptionalString(order.technicianInfo.name)}</span>
                       </div>
                     </div>
                   )}
