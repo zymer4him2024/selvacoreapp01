@@ -178,9 +178,11 @@ export default function AdminOrderDetailPage() {
                   ? order.productSnapshot.name
                   : order.productSnapshot?.name?.en || 'N/A'}
               </p>
-              <p className="text-sm text-text-secondary">
-                Brand: {order.productSnapshot?.brand || 'N/A'}
-              </p>
+              {order.productSnapshot?.variation && (
+                <p className="text-sm text-text-secondary">
+                  Variation: {order.productSnapshot.variation}
+                </p>
+              )}
               {order.productSnapshot?.price && (
                 <p className="font-bold text-primary">
                   {formatCurrency(order.productSnapshot.price, 'BRL')}
@@ -196,9 +198,9 @@ export default function AdminOrderDetailPage() {
                   ? order.serviceSnapshot.name
                   : order.serviceSnapshot?.name?.en || 'N/A'}
               </p>
-              {order.serviceSnapshot?.description && (
+              {order.serviceSnapshot?.duration && (
                 <p className="text-sm text-text-secondary">
-                  {order.serviceSnapshot.description}
+                  Duration: {order.serviceSnapshot.duration} minutes
                 </p>
               )}
               {order.serviceSnapshot?.price && (
