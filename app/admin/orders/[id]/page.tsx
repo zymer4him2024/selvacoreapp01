@@ -154,7 +154,11 @@ export default function AdminOrderDetailPage() {
           </div>
           <div>
             <p className="text-sm text-text-tertiary mb-1">Address</p>
-            <p className="font-medium">{formatOptionalString(order.installationAddress?.fullAddress)}</p>
+            <p className="font-medium">
+              {order.installationAddress
+                ? `${order.installationAddress.street}, ${order.installationAddress.city}, ${order.installationAddress.state} ${order.installationAddress.postalCode}`
+                : 'N/A'}
+            </p>
           </div>
         </div>
       </div>
