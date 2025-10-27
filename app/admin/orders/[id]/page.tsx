@@ -174,7 +174,9 @@ export default function AdminOrderDetailPage() {
             <p className="text-sm text-text-tertiary mb-2">Product</p>
             <div className="space-y-2">
               <p className="font-semibold">
-                {order.productSnapshot?.name?.en || order.productSnapshot?.name || 'N/A'}
+                {typeof order.productSnapshot?.name === 'string'
+                  ? order.productSnapshot.name
+                  : order.productSnapshot?.name?.en || 'N/A'}
               </p>
               <p className="text-sm text-text-secondary">
                 Brand: {order.productSnapshot?.brand || 'N/A'}
@@ -190,7 +192,9 @@ export default function AdminOrderDetailPage() {
             <p className="text-sm text-text-tertiary mb-2">Service</p>
             <div className="space-y-2">
               <p className="font-semibold">
-                {order.serviceSnapshot?.name?.en || order.serviceSnapshot?.name || 'N/A'}
+                {typeof order.serviceSnapshot?.name === 'string'
+                  ? order.serviceSnapshot.name
+                  : order.serviceSnapshot?.name?.en || 'N/A'}
               </p>
               {order.serviceSnapshot?.description && (
                 <p className="text-sm text-text-secondary">
