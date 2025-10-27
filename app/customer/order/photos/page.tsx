@@ -307,11 +307,13 @@ export default function SitePhotosPage() {
               {waterSourcePreview ? (
                 <div className="space-y-3">
                   <div className="relative">
-                    <img
-                      src={waterSourcePreview}
-                      alt="Water source"
-                      className="w-full h-80 object-cover object-center rounded-apple"
-                    />
+                    <div className="w-full h-80 bg-surface-elevated rounded-apple overflow-hidden">
+                      <img
+                        src={waterSourcePreview}
+                        alt="Water source"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
                     <button
                       onClick={() => removeFile('waterSource')}
                       className="absolute top-3 right-3 p-2 bg-error rounded-full hover:bg-error/80 transition-colors shadow-apple"
@@ -396,11 +398,13 @@ export default function SitePhotosPage() {
               {productLocationPreview ? (
                 <div className="space-y-3">
                   <div className="relative">
-                    <img
-                      src={productLocationPreview}
-                      alt="Product location"
-                      className="w-full h-80 object-cover object-center rounded-apple"
-                    />
+                    <div className="w-full h-80 bg-surface-elevated rounded-apple overflow-hidden">
+                      <img
+                        src={productLocationPreview}
+                        alt="Product location"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
                     <button
                       onClick={() => removeFile('productLocation')}
                       className="absolute top-3 right-3 p-2 bg-error rounded-full hover:bg-error/80 transition-colors shadow-apple"
@@ -485,11 +489,13 @@ export default function SitePhotosPage() {
               {fullShotPreview ? (
                 <div className="space-y-3">
                   <div className="relative">
-                    <img
-                      src={fullShotPreview}
-                      alt="Full shot"
-                      className="w-full h-80 object-cover object-center rounded-apple"
-                    />
+                    <div className="w-full h-80 bg-surface-elevated rounded-apple overflow-hidden">
+                      <img
+                        src={fullShotPreview}
+                        alt="Full shot"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
                     <button
                       onClick={() => removeFile('fullShot')}
                       className="absolute top-3 right-3 p-2 bg-error rounded-full hover:bg-error/80 transition-colors shadow-apple"

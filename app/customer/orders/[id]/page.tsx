@@ -322,21 +322,25 @@ export default function OrderDetailPage() {
                 {order.sitePhotos.waterSource && (
                   <div>
                     <p className="text-sm text-text-secondary mb-2">Water Source</p>
-                    <img
-                      src={order.sitePhotos.waterSource.url}
-                      alt="Water source"
-                      className="w-full h-40 object-cover rounded-apple"
-                    />
+                    <div className="w-full h-40 bg-surface-elevated rounded-apple overflow-hidden">
+                      <img
+                        src={order.sitePhotos.waterSource.url}
+                        alt="Water source"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
                   </div>
                 )}
                 {order.sitePhotos.productLocation && (
                   <div>
                     <p className="text-sm text-text-secondary mb-2">Installation Location</p>
-                    <img
-                      src={order.sitePhotos.productLocation.url}
-                      alt="Installation location"
-                      className="w-full h-40 object-cover rounded-apple"
-                    />
+                    <div className="w-full h-40 bg-surface-elevated rounded-apple overflow-hidden">
+                      <img
+                        src={order.sitePhotos.productLocation.url}
+                        alt="Installation location"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
                   </div>
                 )}
                 {order.sitePhotos.waterRunningVideo && (
@@ -361,11 +365,13 @@ export default function OrderDetailPage() {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {order.installationPhotos.map((photo, index) => (
                   <div key={index}>
-                    <img
-                      src={photo.url}
-                      alt={photo.description || `Installation photo ${index + 1}`}
-                      className="w-full h-40 object-cover rounded-apple"
-                    />
+                    <div className="w-full h-40 bg-surface-elevated rounded-apple overflow-hidden">
+                      <img
+                        src={photo.url}
+                        alt={photo.description || `Installation photo ${index + 1}`}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
                     {photo.description && (
                       <p className="text-xs text-text-secondary mt-2">{photo.description}</p>
                     )}

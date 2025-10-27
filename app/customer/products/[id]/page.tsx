@@ -117,12 +117,12 @@ export default function ProductDetailPage() {
           {/* Left: Images */}
           <div className="space-y-4 animate-fade-in">
             {/* Main Image */}
-            <div className="h-96 bg-surface rounded-apple overflow-hidden">
+            <div className="h-96 bg-surface-elevated rounded-apple overflow-hidden">
               {product.images && product.images.length > 0 ? (
                 <img
                   src={product.images[selectedImage]}
                   alt={product.name[lang]}
-                  className="w-full h-full object-cover object-center"
+                  className="w-full h-full object-contain"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
@@ -138,13 +138,13 @@ export default function ProductDetailPage() {
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
-                    className={`h-20 rounded-apple overflow-hidden border-2 transition-all ${
+                    className={`h-20 bg-surface-elevated rounded-apple overflow-hidden border-2 transition-all ${
                       selectedImage === index
                         ? 'border-primary scale-105'
                         : 'border-border hover:border-border-light'
                     }`}
                   >
-                    <img src={img} alt="" className="w-full h-full object-cover object-center" />
+                    <img src={img} alt="" className="w-full h-full object-contain" />
                   </button>
                 ))}
               </div>
