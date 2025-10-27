@@ -12,7 +12,14 @@ import {
   TechnicianWithStats
 } from '@/lib/services/technicianAdminService';
 import { TechnicianStatus } from '@/types/user';
-import { formatCurrency, formatDate } from '@/lib/utils/formatters';
+import { 
+  formatCurrency, 
+  formatDate,
+  formatOptionalCurrency,
+  formatOptionalDate,
+  formatOptionalNumber,
+  formatOptionalString
+} from '@/lib/utils/formatters';
 import toast from 'react-hot-toast';
 
 type TabType = 'all' | 'pending' | 'approved' | 'declined' | 'suspended';
@@ -254,8 +261,8 @@ export default function TechniciansManagementPage() {
                 <div className="flex-1 space-y-3">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="font-semibold text-lg">{technician.displayName}</h3>
-                      <p className="text-sm text-text-secondary">{technician.email}</p>
+                      <h3 className="font-semibold text-lg">{formatOptionalString(technician.displayName)}</h3>
+                      <p className="text-sm text-text-secondary">{formatOptionalString(technician.email)}</p>
                     </div>
                     <div className={`px-3 py-1 rounded-apple text-sm font-semibold ${getStatusColor(technician.technicianStatus)}`}>
                       {getStatusLabel(technician.technicianStatus)}
@@ -266,21 +273,21 @@ export default function TechniciansManagementPage() {
                     <div className="flex items-center gap-2 text-sm">
                       <Calendar className="w-4 h-4 text-text-tertiary" />
                       <span className="text-text-secondary">
-                        Applied: {technician.applicationDate ? formatDate(technician.applicationDate, 'short') : 'N/A'}
+                        Applied: {formatOptionalDate(technician.applicationDate, 'short')}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2 text-sm">
                       <Award className="w-4 h-4 text-warning" />
                       <span className="text-text-secondary">
-                        {technician.completedJobs || 0} jobs • {technician.averageRating?.toFixed(1) || '0.0'}★
+                        {formatOptionalNumber(technician.completedJobs)} jobs • {technician.averageRating ? `${technician.averageRating.toFixed(1)}★` : 'N/A'}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2 text-sm">
                       <DollarSign className="w-4 h-4 text-success" />
                       <span className="text-text-secondary">
-                        {formatCurrency(technician.totalEarnings || 0, 'BRL')}
+                        {formatOptionalCurrency(technician.totalEarnings, 'BRL')}
                       </span>
                     </div>
 

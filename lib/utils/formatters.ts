@@ -114,3 +114,53 @@ export function generateOrderNumber(): string {
   return `ORD-${year}${month}-${random}`;
 }
 
+/**
+ * Return N/A for missing values
+ */
+export function formatValue<T>(value: T | undefined | null, formatFn?: (value: T) => string): string {
+  if (value === undefined || value === null || value === '') {
+    return 'N/A';
+  }
+  return formatFn ? formatFn(value) : String(value);
+}
+
+/**
+ * Format optional currency (returns N/A if amount is 0 or undefined)
+ */
+export function formatOptionalCurrency(amount?: number, currency: string = 'USD'): string {
+  if (amount === undefined || amount === null || amount === 0) return 'N/A';
+  return formatCurrency(amount, currency);
+}
+
+/**
+ * Format optional date (returns N/A if date is missing)
+ */
+export function formatOptionalDate(date?: Date | Timestamp, format: 'short' | 'long' | 'full' = 'short'): string {
+  if (!date) return 'N/A';
+  return formatDate(date, format);
+}
+
+/**
+ * Format optional number with N/A for 0 or undefined
+ */
+export function formatOptionalNumber(value?: number, suffix: string = ''): string {
+  if (value === undefined || value === null || value === 0) return 'N/A';
+  return `${value}${suffix}`;
+}
+
+/**
+ * Format optional boolean as Yes/No/N/A
+ */
+export function formatOptionalBoolean(value?: boolean): string {
+  if (value === undefined || value === null) return 'N/A';
+  return value ? 'Yes' : 'No';
+}
+
+/**
+ * Format optional string (returns N/A if empty)
+ */
+export function formatOptionalString(value?: string): string {
+  if (!value || value.trim() === '') return 'N/A';
+  return value;
+}
+

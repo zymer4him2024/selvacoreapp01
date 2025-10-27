@@ -16,7 +16,14 @@ import {
   updateTechnicianProfile,
   TechnicianWithStats
 } from '@/lib/services/technicianAdminService';
-import { formatCurrency, formatDate } from '@/lib/utils/formatters';
+import { 
+  formatCurrency, 
+  formatDate, 
+  formatOptionalCurrency,
+  formatOptionalDate,
+  formatOptionalNumber,
+  formatOptionalString
+} from '@/lib/utils/formatters';
 import toast from 'react-hot-toast';
 
 export default function TechnicianDetailPage() {
@@ -282,33 +289,31 @@ export default function TechnicianDetailPage() {
           <div className="flex-1 space-y-4">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-2xl font-bold">{technician.displayName}</h2>
-                <p className="text-text-secondary">{technician.email}</p>
+                <h2 className="text-2xl font-bold">{formatOptionalString(technician.displayName)}</h2>
+                <p className="text-text-secondary">{formatOptionalString(technician.email)}</p>
               </div>
               <div className={`px-4 py-2 rounded-apple text-sm font-semibold ${getStatusColor()}`}>
-                {technician.technicianStatus?.toUpperCase() || 'UNKNOWN'}
+                {technician.technicianStatus?.toUpperCase() || 'N/A'}
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-text-tertiary" />
-                <span>{technician.phone}</span>
+                <span>{formatOptionalString(technician.phone)}</span>
               </div>
               <div className="flex items-center gap-3">
                 <MessageCircle className="w-5 h-5 text-text-tertiary" />
-                <span>{technician.whatsapp || technician.phone}</span>
+                <span>{formatOptionalString(technician.whatsapp || technician.phone)}</span>
               </div>
               <div className="flex items-center gap-3">
                 <Calendar className="w-5 h-5 text-text-tertiary" />
-                <span>Applied: {technician.applicationDate ? formatDate(technician.applicationDate, 'short') : 'N/A'}</span>
+                <span>Applied: {formatOptionalDate(technician.applicationDate, 'short')}</span>
               </div>
-              {technician.approvedDate && (
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-success" />
-                  <span>Approved: {formatDate(technician.approvedDate, 'short')}</span>
-                </div>
-              )}
+              <div className="flex items-center gap-3">
+                <CheckCircle className="w-5 h-5 text-success" />
+                <span>Approved: {formatOptionalDate(technician.approvedDate, 'short')}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -322,7 +327,7 @@ export default function TechnicianDetailPage() {
               <TrendingUp className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{technician.totalJobs || 0}</p>
+              <p className="text-2xl font-bold">{formatOptionalNumber(technician.totalJobs)}</p>
               <p className="text-sm text-text-secondary">Total Jobs</p>
             </div>
           </div>
@@ -334,7 +339,7 @@ export default function TechnicianDetailPage() {
               <CheckCircle className="w-6 h-6 text-success" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{technician.completedJobs || 0}</p>
+              <p className="text-2xl font-bold">{formatOptionalNumber(technician.completedJobs)}</p>
               <p className="text-sm text-text-secondary">Completed</p>
             </div>
           </div>
@@ -346,7 +351,7 @@ export default function TechnicianDetailPage() {
               <Award className="w-6 h-6 text-warning" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{technician.averageRating?.toFixed(1) || '0.0'}★</p>
+              <p className="text-2xl font-bold">{technician.averageRating ? `${technician.averageRating.toFixed(1)}★` : 'N/A'}</p>
               <p className="text-sm text-text-secondary">Avg Rating</p>
             </div>
           </div>
@@ -358,7 +363,7 @@ export default function TechnicianDetailPage() {
               <DollarSign className="w-6 h-6 text-success" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{formatCurrency(technician.totalEarnings || 0, 'BRL')}</p>
+              <p className="text-2xl font-bold">{formatOptionalCurrency(technician.totalEarnings, 'BRL')}</p>
               <p className="text-sm text-text-secondary">Total Earnings</p>
             </div>
           </div>
