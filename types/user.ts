@@ -4,6 +4,8 @@ export type UserRole = 'admin' | 'sub-admin' | 'technician' | 'customer';
 
 export type Language = 'en' | 'es' | 'fr' | 'pt' | 'ar' | 'zh';
 
+export type TechnicianStatus = 'pending' | 'approved' | 'declined' | 'suspended';
+
 export interface User {
   id: string;
   role: UserRole;
@@ -17,6 +19,16 @@ export interface User {
   active: boolean;
   emailVerified: boolean;
   roleSelected?: boolean; // Track if user has chosen their role
+  
+  // Technician-specific fields
+  technicianStatus?: TechnicianStatus; // Application/approval status for technicians
+  applicationDate?: Timestamp; // When they applied to be a technician
+  approvedDate?: Timestamp; // When admin approved them
+  serviceAreas?: string[]; // Cities/regions they serve
+  certifications?: string[]; // List of certifications
+  bio?: string; // Professional bio
+  adminNotes?: string; // Admin notes about this technician
+  
   createdAt: Timestamp;
   updatedAt: Timestamp;
   lastLoginAt?: Timestamp;

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAvailableJobs, getTechnicianStats, TechnicianStats } from '@/lib/services/technicianService';
 import { Order } from '@/types/order';
-import { MapPin, Calendar, DollarSign, Package, TrendingUp, Briefcase, Star, Award } from 'lucide-react';
+import { MapPin, Calendar, DollarSign, Package, TrendingUp, Briefcase, Star, Award, AlertCircle, XCircle, Clock } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils/formatters';
 import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
@@ -59,6 +59,93 @@ export default function TechnicianDashboard() {
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="text-text-secondary">Loading available jobs...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Check technician status
+  if (userData?.technicianStatus === 'pending') {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="apple-card max-w-2xl text-center space-y-6">
+          <div className="w-20 h-20 bg-warning/10 rounded-apple flex items-center justify-center mx-auto">
+            <Clock className="w-10 h-10 text-warning" />
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold mb-2">Application Under Review</h2>
+            <p className="text-text-secondary text-lg">
+              Thank you for applying! Your technician application is currently being reviewed by our admin team.
+            </p>
+          </div>
+          <div className="p-4 bg-surface-elevated rounded-apple text-left space-y-2">
+            <h3 className="font-semibold flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-primary" />
+              What happens next?
+            </h3>
+            <ul className="space-y-2 text-sm text-text-secondary ml-7">
+              <li>• Our team will review your application within 1-2 business days</li>
+              <li>• You'll receive an email notification once your account is approved</li>
+              <li>• Once approved, you can start accepting jobs immediately</li>
+            </ul>
+          </div>
+          <p className="text-sm text-text-tertiary">
+            Need help? Contact us at support@selvacore.com
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (userData?.technicianStatus === 'declined') {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="apple-card max-w-2xl text-center space-y-6">
+          <div className="w-20 h-20 bg-error/10 rounded-apple flex items-center justify-center mx-auto">
+            <XCircle className="w-10 h-10 text-error" />
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold mb-2">Application Not Approved</h2>
+            <p className="text-text-secondary text-lg">
+              Unfortunately, your technician application was not approved at this time.
+            </p>
+          </div>
+          {userData.adminNotes && (
+            <div className="p-4 bg-surface-elevated rounded-apple text-left">
+              <h3 className="font-semibold mb-2">Reason:</h3>
+              <p className="text-text-secondary">{userData.adminNotes}</p>
+            </div>
+          )}
+          <p className="text-sm text-text-tertiary">
+            Questions? Contact us at support@selvacore.com
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (userData?.technicianStatus === 'suspended') {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="apple-card max-w-2xl text-center space-y-6">
+          <div className="w-20 h-20 bg-warning/10 rounded-apple flex items-center justify-center mx-auto">
+            <AlertCircle className="w-10 h-10 text-warning" />
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold mb-2">Account Suspended</h2>
+            <p className="text-text-secondary text-lg">
+              Your technician account has been temporarily suspended.
+            </p>
+          </div>
+          {userData.adminNotes && (
+            <div className="p-4 bg-surface-elevated rounded-apple text-left">
+              <h3 className="font-semibold mb-2">Reason:</h3>
+              <p className="text-text-secondary">{userData.adminNotes}</p>
+            </div>
+          )}
+          <p className="text-sm text-text-tertiary">
+            Need assistance? Contact us at support@selvacore.com
+          </p>
         </div>
       </div>
     );

@@ -34,16 +34,41 @@ function SelectRoleContent() {
     try {
       setLoading(true);
 
-      // Update user document with selected role and language
+      // For technician role, redirect to application page without creating user doc yet
+      if (selectedRole === 'technician') {
+        // Create a minimal user document that will be updated with application details
+        await setDoc(doc(db, 'users', user.uid), {
+          role: selectedRole,
+          email: user.email,
+          displayName: user.displayName || '',
+          phone: '',
+          photoURL: user.photoURL,
+          emailVerified: user.emailVerified,
+          preferredLanguage: selectedLanguage,
+          active: false, // Will be activated when admin approves
+          roleSelected: true,
+          technicianStatus: 'draft', // Draft status until they complete application
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+          lastLoginAt: Timestamp.now(),
+        });
+        
+        // Redirect to application form
+        router.push('/technician/apply');
+        return;
+      }
+
+      // For other roles, create full user document
       await setDoc(doc(db, 'users', user.uid), {
         role: selectedRole,
         email: user.email,
         displayName: user.displayName,
+        phone: '',
         photoURL: user.photoURL,
         emailVerified: user.emailVerified,
         preferredLanguage: selectedLanguage,
         active: true,
-        roleSelected: true, // Mark role as confirmed
+        roleSelected: true,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
         lastLoginAt: Timestamp.now(),

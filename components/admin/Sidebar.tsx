@@ -11,6 +11,7 @@ import {
   Receipt, 
   BarChart3, 
   Settings,
+  Users,
   LogOut,
   Menu,
   X
@@ -29,6 +30,7 @@ const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Products', href: '/admin/products', icon: Package },
   { name: 'Services', href: '/admin/services', icon: Wrench },
+  { name: 'Technicians', href: '/admin/technicians', icon: Users },
   { name: 'Sub-Contractors', href: '/admin/sub-contractors', icon: Building2 },
   { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
   { name: 'Transactions', href: '/admin/transactions', icon: Receipt },
