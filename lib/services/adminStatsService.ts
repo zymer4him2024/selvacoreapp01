@@ -116,3 +116,100 @@ export async function getRecentOrders(limitCount: number = 5): Promise<RecentOrd
   }
 }
 
+export interface TopProduct {
+  name: string;
+  sales: number;
+  revenue: number;
+}
+
+/**
+ * Get top products by revenue
+ */
+export async function getTopProducts(limitCount: number = 10): Promise<TopProduct[]> {
+  try {
+    const ordersRef = collection(db, 'orders');
+    const snapshot = await getDocs(query(ordersRef, where('status', '==', 'completed')));
+    
+    // Count sales and revenue per product
+    const productMap = new Map<string, { sales: number; revenue: number }>();
+    
+    snapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const productName = data.productSnapshot?.name?.en || 
+                         data.productSnapshot?.name || 
+                         'Unknown Product';
+      const amount = data.totalAmount || 0;
+      
+      if (productMap.has(productName)) {
+        const current = productMap.get(productName)!;
+        productMap.set(productName, {
+          sales: current.sales + 1,
+          revenue: current.revenue + amount,
+        });
+      } else {
+        productMap.set(productName, { sales: 1, revenue: amount });
+      }
+    });
+    
+    // Convert to array and sort by revenue
+    const topProducts = Array.from(productMap.entries())
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, limitCount);
+    
+    return topProducts;
+  } catch (error) {
+    console.error('Error fetching top products:', error);
+    return [];
+  }
+}
+
+export interface AnalyticsMetrics {
+  totalRevenue: number;
+  totalOrders: number;
+  avgOrderValue: number;
+  conversionRate: number;
+}
+
+/**
+ * Get analytics metrics
+ */
+export async function getAnalyticsMetrics(): Promise<AnalyticsMetrics> {
+  try {
+    // Get all orders
+    const allOrdersSnapshot = await getDocs(query(collection(db, 'orders')));
+    const completedOrdersSnapshot = await getDocs(query(
+      collection(db, 'orders'),
+      where('status', '==', 'completed')
+    ));
+    
+    const allOrders = allOrdersSnapshot.docs.map(doc => doc.data());
+    const completedOrders = completedOrdersSnapshot.docs.map(doc => doc.data());
+    
+    // Calculate metrics
+    const totalRevenue = completedOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+    const totalOrders = allOrders.length;
+    const avgOrderValue = completedOrders.length > 0 
+      ? totalRevenue / completedOrders.length 
+      : 0;
+    
+    // Mock conversion rate (would need visitor tracking for real data)
+    const conversionRate = totalOrders > 0 ? (totalOrders / 1000) * 100 : 0;
+    
+    return {
+      totalRevenue,
+      totalOrders,
+      avgOrderValue,
+      conversionRate,
+    };
+  } catch (error) {
+    console.error('Error fetching analytics metrics:', error);
+    return {
+      totalRevenue: 0,
+      totalOrders: 0,
+      avgOrderValue: 0,
+      conversionRate: 0,
+    };
+  }
+}
+

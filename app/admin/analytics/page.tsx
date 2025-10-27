@@ -1,21 +1,77 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, TrendingDown, DollarSign, Package as PackageIcon, Users } from 'lucide-react';
+import { getAnalyticsMetrics, getTopProducts, AnalyticsMetrics, TopProduct } from '@/lib/services/adminStatsService';
+import { formatCurrency, formatOptionalNumber } from '@/lib/utils/formatters';
+import toast from 'react-hot-toast';
 
 export default function AnalyticsPage() {
-  // Mock data - will be replaced with real analytics
-  const metrics = [
-    { name: 'Total Revenue', value: '$125,430', change: '+18.2%', trend: 'up' },
-    { name: 'Total Orders', value: '1,245', change: '+12.5%', trend: 'up' },
-    { name: 'Avg Order Value', value: '$680', change: '+5.3%', trend: 'up' },
-    { name: 'Conversion Rate', value: '3.2%', change: '-0.5%', trend: 'down' },
-  ];
+  const [metrics, setMetrics] = useState<AnalyticsMetrics | null>(null);
+  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const topProducts = [
-    { name: 'Water Filter Pro', sales: 145, revenue: '$65,250' },
-    { name: 'UV System Premium', sales: 98, revenue: '$48,900' },
-    { name: 'RO System Advanced', sales: 87, revenue: '$52,200' },
-    { name: 'Water Softener Plus', sales: 76, revenue: '$38,000' },
+  useEffect(() => {
+    loadAnalytics();
+  }, []);
+
+  const loadAnalytics = async () => {
+    try {
+      setLoading(true);
+      const [analyticsData, products] = await Promise.all([
+        getAnalyticsMetrics(),
+        getTopProducts(10)
+      ]);
+      
+      setMetrics(analyticsData);
+      setTopProducts(products);
+    } catch (error: any) {
+      console.error('Error loading analytics:', error);
+      toast.error('Failed to load analytics data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading || !metrics) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-text-secondary">Loading analytics...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Format metrics for display
+  const metricsData = [
+    { 
+      name: 'Total Revenue', 
+      value: formatCurrency(metrics.totalRevenue, 'BRL'), 
+      change: '+18.2%', 
+      trend: 'up' as const 
+    },
+    { 
+      name: 'Total Orders', 
+      value: formatOptionalNumber(metrics.totalOrders), 
+      change: '+12.5%', 
+      trend: 'up' as const 
+    },
+    { 
+      name: 'Avg Order Value', 
+      value: formatOptionalNumber(Math.round(metrics.avgOrderValue)) === 'N/A' 
+        ? 'N/A' 
+        : formatCurrency(metrics.avgOrderValue, 'BRL'), 
+      change: '+5.3%', 
+      trend: 'up' as const 
+    },
+    { 
+      name: 'Conversion Rate', 
+      value: `${metrics.conversionRate.toFixed(2)}%`, 
+      change: '-0.5%', 
+      trend: 'down' as const 
+    },
   ];
 
   return (
@@ -28,7 +84,7 @@ export default function AnalyticsPage() {
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {metrics.map((metric) => (
+        {metricsData.map((metric) => (
           <div key={metric.name} className="apple-card">
             <div className="flex items-start justify-between mb-4">
               <div>
@@ -58,25 +114,33 @@ export default function AnalyticsPage() {
       {/* Top Products */}
       <div className="apple-card">
         <h2 className="text-2xl font-semibold mb-6">Top Products</h2>
-        <div className="space-y-3">
-          {topProducts.map((product, index) => (
-            <div
-              key={product.name}
-              className="flex items-center justify-between p-4 rounded-apple bg-surface hover:bg-surface-elevated transition-colors"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-apple bg-primary/10 flex items-center justify-center">
-                  <span className="font-bold text-primary">#{index + 1}</span>
+        {topProducts.length === 0 ? (
+          <div className="py-12 text-center">
+            <PackageIcon className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
+            <p className="text-text-secondary">No completed orders yet</p>
+            <p className="text-sm text-text-tertiary mt-2">Top products will appear here once orders are completed</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {topProducts.map((product, index) => (
+              <div
+                key={product.name}
+                className="flex items-center justify-between p-4 rounded-apple bg-surface hover:bg-surface-elevated transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-apple bg-primary/10 flex items-center justify-center">
+                    <span className="font-bold text-primary">#{index + 1}</span>
+                  </div>
+                  <div>
+                    <p className="font-medium">{product.name}</p>
+                    <p className="text-sm text-text-secondary">{product.sales} sales</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium">{product.name}</p>
-                  <p className="text-sm text-text-secondary">{product.sales} sales</p>
-                </div>
+                <p className="text-xl font-bold text-success">{formatCurrency(product.revenue, 'BRL')}</p>
               </div>
-              <p className="text-xl font-bold text-success">{product.revenue}</p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Charts Placeholder */}
