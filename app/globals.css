@@ -127,17 +127,88 @@ a:hover {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Pastel Green theme for Customer and Technician pages */
+/* Light Pastel Green theme for Customer and Technician pages */
 .customer-theme,
 .technician-theme {
-  /* Override primary color to harmonized pastel green */
+  /* Background colors - light pastel green tones */
+  --background: #f0fdf9; /* Very light mint green background */
+  --surface: #ffffff; /* Pure white for cards */
+  --surface-elevated: #f8fffe; /* Slightly tinted white for elevated surfaces */
+  --surface-secondary: #e8faf5; /* Light pastel green for secondary surfaces */
+  
+  /* Primary colors - pastel green */
   --tw-color-primary: #72edb6;
   --tw-color-primary-hover: #55d287;
   --tw-color-primary-light: #9ef4d0;
   --tw-color-primary-dark: #3dc896;
+  
+  /* Text colors - dark for light background */
+  --text-primary: #1a1a1a; /* Almost black for main text */
+  --text-secondary: #4a5568; /* Gray for secondary text */
+  --text-tertiary: #718096; /* Lighter gray for tertiary text */
+  
+  /* Border colors - soft pastel green */
+  --border: #d1f5e8; /* Very light pastel green border */
+  --border-light: #e0f9f0; /* Even lighter border */
 }
 
-/* Override Tailwind primary utilities for customer and technician sections */
+/* Override background colors */
+.customer-theme,
+.customer-theme body,
+.technician-theme,
+.technician-theme body {
+  background-color: var(--background) !important;
+  color: var(--text-primary) !important;
+}
+
+.customer-theme .bg-background,
+.technician-theme .bg-background {
+  background-color: var(--background) !important;
+}
+
+.customer-theme .bg-surface,
+.technician-theme .bg-surface {
+  background-color: var(--surface) !important;
+}
+
+.customer-theme .bg-surface-elevated,
+.technician-theme .bg-surface-elevated {
+  background-color: var(--surface-elevated) !important;
+}
+
+.customer-theme .bg-surface-secondary,
+.technician-theme .bg-surface-secondary {
+  background-color: var(--surface-secondary) !important;
+}
+
+/* Override text colors */
+.customer-theme .text-text-primary,
+.technician-theme .text-text-primary {
+  color: var(--text-primary) !important;
+}
+
+.customer-theme .text-text-secondary,
+.technician-theme .text-text-secondary {
+  color: var(--text-secondary) !important;
+}
+
+.customer-theme .text-text-tertiary,
+.technician-theme .text-text-tertiary {
+  color: var(--text-tertiary) !important;
+}
+
+/* Override border colors */
+.customer-theme .border-border,
+.technician-theme .border-border {
+  border-color: var(--border) !important;
+}
+
+.customer-theme .border-border-light,
+.technician-theme .border-border-light {
+  border-color: var(--border-light) !important;
+}
+
+/* Override primary color utilities */
 .customer-theme .bg-primary,
 .technician-theme .bg-primary {
   background-color: #72edb6 !important;
@@ -168,10 +239,10 @@ a:hover {
   border-color: #72edb6 !important;
 }
 
-/* Opacity variants - harmonized for better visual balance */
+/* Opacity variants for light theme */
 .customer-theme .bg-primary\/5,
 .technician-theme .bg-primary\/5 {
-  background-color: rgba(114, 237, 182, 0.08) !important;
+  background-color: rgba(114, 237, 182, 0.1) !important;
 }
 
 .customer-theme .bg-primary\/10,
@@ -194,10 +265,106 @@ a:hover {
   border-color: rgba(114, 237, 182, 0.4) !important;
 }
 
-/* Harmonized focus ring */
+/* Cards - white with light borders */
+.customer-theme .apple-card,
+.technician-theme .apple-card {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  box-shadow: 0 2px 8px rgba(114, 237, 182, 0.1) !important;
+}
+
+.customer-theme .apple-card:hover,
+.technician-theme .apple-card:hover {
+  border-color: #72edb6 !important;
+  box-shadow: 0 4px 16px rgba(114, 237, 182, 0.15) !important;
+}
+
+/* Input fields - white with light borders */
+.customer-theme input,
+.customer-theme textarea,
+.customer-theme select,
+.technician-theme input,
+.technician-theme textarea,
+.technician-theme select {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+.customer-theme input:focus,
+.customer-theme textarea:focus,
+.customer-theme select:focus,
+.technician-theme input:focus,
+.technician-theme textarea:focus,
+.technician-theme select:focus {
+  border-color: #72edb6 !important;
+  box-shadow: 0 0 0 3px rgba(114, 237, 182, 0.1) !important;
+}
+
+/* Autofill styles for light theme */
+.customer-theme input:-webkit-autofill,
+.customer-theme input:-webkit-autofill:hover,
+.customer-theme input:-webkit-autofill:focus,
+.customer-theme textarea:-webkit-autofill,
+.customer-theme textarea:-webkit-autofill:hover,
+.customer-theme textarea:-webkit-autofill:focus,
+.customer-theme select:-webkit-autofill,
+.customer-theme select:-webkit-autofill:hover,
+.customer-theme select:-webkit-autofill:focus,
+.technician-theme input:-webkit-autofill,
+.technician-theme input:-webkit-autofill:hover,
+.technician-theme input:-webkit-autofill:focus,
+.technician-theme textarea:-webkit-autofill,
+.technician-theme textarea:-webkit-autofill:hover,
+.technician-theme textarea:-webkit-autofill:focus,
+.technician-theme select:-webkit-autofill,
+.technician-theme select:-webkit-autofill:hover,
+.technician-theme select:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text-primary) !important;
+  -webkit-box-shadow: 0 0 0px 1000px var(--surface) inset !important;
+}
+
+/* Navigation and sticky elements */
+.customer-theme nav,
+.technician-theme nav {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-color: var(--border) !important;
+}
+
+/* Scrollbar for light theme */
+.customer-theme ::-webkit-scrollbar-track,
+.technician-theme ::-webkit-scrollbar-track {
+  background: var(--surface-secondary) !important;
+}
+
+.customer-theme ::-webkit-scrollbar-thumb,
+.technician-theme ::-webkit-scrollbar-thumb {
+  background: var(--border) !important;
+}
+
+.customer-theme ::-webkit-scrollbar-thumb:hover,
+.technician-theme ::-webkit-scrollbar-thumb:hover {
+  background: #72edb6 !important;
+}
+
+/* Focus ring */
 .customer-theme *:focus-visible,
 .technician-theme *:focus-visible {
-  box-shadow: 0 0 0 4px rgba(114, 237, 182, 0.25) !important;
+  box-shadow: 0 0 0 4px rgba(114, 237, 182, 0.2) !important;
+  outline: none !important;
+}
+
+/* Links */
+.customer-theme a,
+.technician-theme a {
+  color: #72edb6 !important;
+}
+
+.customer-theme a:hover,
+.technician-theme a:hover {
+  color: #55d287 !important;
 }
 
 /* Gradient text */
@@ -211,15 +378,24 @@ a:hover {
   --tw-gradient-to: #72edb6;
 }
 
-/* Enhanced hover states for better interaction feedback */
+/* Button text on primary background - should be dark for readability */
+.customer-theme .bg-primary .text-white,
+.customer-theme .bg-primary button,
+.customer-theme .bg-primary span,
+.technician-theme .bg-primary .text-white,
+.technician-theme .bg-primary button,
+.technician-theme .bg-primary span {
+  color: #1a1a1a !important;
+}
+
+/* Enhanced hover states */
 .customer-theme .hover\:bg-primary:hover,
 .technician-theme .hover\:bg-primary:hover {
   background-color: #55d287 !important;
 }
 
-/* Border hover states */
-.customer-theme .hover\:border-primary:hover,
-.technician-theme .hover\:border-primary:hover {
-  border-color: #72edb6 !important;
+.customer-theme .hover\:bg-surface-elevated:hover,
+.technician-theme .hover\:bg-surface-elevated:hover {
+  background-color: var(--surface-elevated) !important;
 }
 
