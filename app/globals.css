@@ -127,3 +127,99 @@ a:hover {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Pastel Green theme for Customer and Technician pages */
+.customer-theme,
+.technician-theme {
+  /* Override primary color to harmonized pastel green */
+  --tw-color-primary: #72edb6;
+  --tw-color-primary-hover: #55d287;
+  --tw-color-primary-light: #9ef4d0;
+  --tw-color-primary-dark: #3dc896;
+}
+
+/* Override Tailwind primary utilities for customer and technician sections */
+.customer-theme .bg-primary,
+.technician-theme .bg-primary {
+  background-color: #72edb6 !important;
+}
+
+.customer-theme .bg-primary-hover:hover,
+.technician-theme .bg-primary-hover:hover {
+  background-color: #55d287 !important;
+}
+
+.customer-theme .text-primary,
+.technician-theme .text-primary {
+  color: #72edb6 !important;
+}
+
+.customer-theme .border-primary,
+.technician-theme .border-primary {
+  border-color: #72edb6 !important;
+}
+
+.customer-theme .hover\:border-primary:hover,
+.technician-theme .hover\:border-primary:hover {
+  border-color: #72edb6 !important;
+}
+
+.customer-theme .focus\:border-primary:focus,
+.technician-theme .focus\:border-primary:focus {
+  border-color: #72edb6 !important;
+}
+
+/* Opacity variants - harmonized for better visual balance */
+.customer-theme .bg-primary\/5,
+.technician-theme .bg-primary\/5 {
+  background-color: rgba(114, 237, 182, 0.08) !important;
+}
+
+.customer-theme .bg-primary\/10,
+.technician-theme .bg-primary\/10 {
+  background-color: rgba(114, 237, 182, 0.15) !important;
+}
+
+.customer-theme .bg-primary\/20,
+.technician-theme .bg-primary\/20 {
+  background-color: rgba(114, 237, 182, 0.25) !important;
+}
+
+.customer-theme .border-primary\/20,
+.technician-theme .border-primary\/20 {
+  border-color: rgba(114, 237, 182, 0.3) !important;
+}
+
+.customer-theme .border-primary\/30,
+.technician-theme .border-primary\/30 {
+  border-color: rgba(114, 237, 182, 0.4) !important;
+}
+
+/* Harmonized focus ring */
+.customer-theme *:focus-visible,
+.technician-theme *:focus-visible {
+  box-shadow: 0 0 0 4px rgba(114, 237, 182, 0.25) !important;
+}
+
+/* Gradient text */
+.customer-theme .from-primary,
+.technician-theme .from-primary {
+  --tw-gradient-from: #72edb6;
+}
+
+.customer-theme .to-primary,
+.technician-theme .to-primary {
+  --tw-gradient-to: #72edb6;
+}
+
+/* Enhanced hover states for better interaction feedback */
+.customer-theme .hover\:bg-primary:hover,
+.technician-theme .hover\:bg-primary:hover {
+  background-color: #55d287 !important;
+}
+
+/* Border hover states */
+.customer-theme .hover\:border-primary:hover,
+.technician-theme .hover\:border-primary:hover {
+  border-color: #72edb6 !important;
+}
+

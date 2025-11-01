@@ -21,7 +21,7 @@ export default function TechnicianLayout({
 
   return (
     <ProtectedRoute allowedRoles={['technician']}>
-      <div className="min-h-screen bg-background">
+      <div className="technician-theme min-h-screen bg-background">
         {/* Top Navigation */}
         <nav className="sticky top-0 z-40 bg-surface/80 backdrop-blur-xl border-b border-border">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

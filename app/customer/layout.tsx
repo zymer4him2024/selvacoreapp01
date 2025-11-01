@@ -9,7 +9,9 @@ export default function CustomerLayout({
 }) {
   return (
     <ProtectedRoute allowedRoles={['customer']}>
-      {children}
+      <div className="customer-theme">
+        {children}
+      </div>
     </ProtectedRoute>
   );
 }
