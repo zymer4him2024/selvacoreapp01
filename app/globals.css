@@ -399,3 +399,31 @@ a:hover {
   background-color: var(--surface-elevated) !important;
 }
 
+/* Product card text - darker green for better visibility */
+.customer-theme .apple-card .text-text-secondary,
+.customer-theme .apple-card p.text-text-secondary,
+.customer-theme .apple-card span.text-text-secondary {
+  color: #2d5a45 !important; /* Dark green for better readability */
+}
+
+.customer-theme .apple-card .text-text-tertiary,
+.customer-theme .apple-card p.text-text-tertiary,
+.customer-theme .apple-card span.text-text-tertiary {
+  color: #3d7a5f !important; /* Medium-dark green */
+}
+
+.customer-theme .apple-card h3,
+.customer-theme .apple-card .font-semibold {
+  color: #1a4a35 !important; /* Very dark green for headings */
+}
+
+/* Product card body text */
+.customer-theme .apple-card p:not(.text-primary):not(.text-2xl) {
+  color: #2d5a45 !important;
+}
+
+/* Product card price - keep it vibrant but readable */
+.customer-theme .apple-card .text-primary.text-2xl {
+  color: #0fa968 !important; /* Bright medium green for prices */
+}
+
