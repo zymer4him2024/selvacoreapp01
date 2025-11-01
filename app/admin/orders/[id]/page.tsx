@@ -271,7 +271,7 @@ export default function AdminOrderDetailPage() {
             {order.sitePhotos.waterSource && (
               <div>
                 <p className="text-sm text-text-secondary mb-2">Water Source</p>
-                <div className="w-full h-40 bg-surface-elevated rounded-apple overflow-hidden">
+                <div className="w-full h-40 bg-white rounded-apple overflow-hidden">
                   <img
                     src={order.sitePhotos.waterSource.url}
                     alt="Water source"
@@ -283,7 +283,7 @@ export default function AdminOrderDetailPage() {
             {order.sitePhotos.productLocation && (
               <div>
                 <p className="text-sm text-text-secondary mb-2">Installation Location</p>
-                <div className="w-full h-40 bg-surface-elevated rounded-apple overflow-hidden">
+                <div className="w-full h-40 bg-white rounded-apple overflow-hidden">
                   <img
                     src={order.sitePhotos.productLocation.url}
                     alt="Installation location"
@@ -295,7 +295,7 @@ export default function AdminOrderDetailPage() {
             {order.sitePhotos.fullShot && (
               <div>
                 <p className="text-sm text-text-secondary mb-2">Full Shot</p>
-                <div className="w-full h-40 bg-surface-elevated rounded-apple overflow-hidden">
+                <div className="w-full h-40 bg-white rounded-apple overflow-hidden">
                   <img
                     src={order.sitePhotos.fullShot.url}
                     alt="Full shot"
