@@ -46,19 +46,15 @@ export default function CustomerOrdersPage() {
 
   const loadOrders = async () => {
     if (!user) {
-      console.log('❌ ORDERS DEBUG - No user, cannot load orders');
       return;
     }
 
-    console.log('🔄 ORDERS DEBUG - Starting to load orders for user:', user.uid);
-
     try {
       setLoading(true);
-      
+
       // Try to load from Firestore
       let firestoreOrders: Order[] = [];
       try {
-        console.log('🔥 ORDERS DEBUG - Attempting to load from Firestore...');
         const ordersRef = collection(db, 'orders');
         const q = query(
           ordersRef,
@@ -71,23 +67,12 @@ export default function CustomerOrdersPage() {
           id: doc.id,
           ...doc.data(),
         } as Order));
-        
-        console.log('✅ ORDERS DEBUG - Loaded orders from Firestore:', firestoreOrders.length);
-        console.log('📋 ORDERS DEBUG - Firestore orders:', firestoreOrders);
-      } catch (firestoreError: any) {
-        console.error('❌ ORDERS DEBUG - Failed to load orders from Firestore:', firestoreError);
-        console.warn('⚠️ ORDERS DEBUG - Firestore error details:', {
-          message: firestoreError.message,
-          code: firestoreError.code,
-          stack: firestoreError.stack
-        });
+      } catch (firestoreError: unknown) {
+        // Firestore loading failed, will use fallback orders
       }
-      
+
       // Load fallback orders
-      console.log('💾 ORDERS DEBUG - Loading fallback orders...');
       const fallbackOrders = getFallbackOrders(user.uid);
-      console.log('✅ ORDERS DEBUG - Loaded fallback orders:', fallbackOrders.length);
-      console.log('📋 ORDERS DEBUG - Fallback orders:', fallbackOrders);
       
       // Convert fallback orders to display format
       const convertedFallbackOrders: FallbackOrderDisplay[] = fallbackOrders.map(order => ({
@@ -111,7 +96,6 @@ export default function CustomerOrdersPage() {
       }));
       
       // Combine and sort orders
-      console.log('🔄 ORDERS DEBUG - Combining orders...');
       const allOrders = [...firestoreOrders, ...convertedFallbackOrders]
         .sort((a, b) => {
           // Handle both Date objects and Firestore Timestamps
@@ -143,27 +127,15 @@ export default function CustomerOrdersPage() {
           return dateB.getTime() - dateA.getTime();
         });
       
-      console.log('📋 ORDERS DEBUG - Final combined orders:', allOrders.length);
-      console.log('📋 ORDERS DEBUG - All orders details:', allOrders);
       setOrders(allOrders);
-      
+
       if (fallbackOrders.length > 0) {
-        console.log('💾 ORDERS DEBUG - Showing fallback orders notification');
         toast.success(`${fallbackOrders.length} orders saved locally. Will sync when possible.`);
       }
-      
-      console.log('✅ ORDERS DEBUG - Orders loading completed successfully');
-      
-    } catch (error: any) {
-      console.error('❌ ORDERS DEBUG - Failed to load orders:', error);
-      console.error('❌ ORDERS DEBUG - Error details:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      });
+
+    } catch (error: unknown) {
       toast.error('Failed to load orders');
     } finally {
-      console.log('🏁 ORDERS DEBUG - Setting loading to false');
       setLoading(false);
     }
   };

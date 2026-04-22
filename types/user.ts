@@ -2,7 +2,7 @@ import { Timestamp } from 'firebase/firestore';
 
 export type UserRole = 'admin' | 'sub-admin' | 'technician' | 'customer';
 
-export type Language = 'en' | 'es' | 'fr' | 'pt' | 'ar' | 'zh';
+export type Language = 'en' | 'es' | 'pt' | 'ko';
 
 export type TechnicianStatus = 'pending' | 'approved' | 'declined' | 'suspended';
 
@@ -12,6 +12,7 @@ export interface User {
   email: string;
   displayName: string;
   photoURL?: string;
+  logoURL?: string;
   phone: string;
   whatsapp?: string; // WhatsApp number for communication (can be different from phone)
   preferredLanguage: Language;

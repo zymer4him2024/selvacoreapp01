@@ -8,6 +8,16 @@ export interface MultiLanguageText {
   [key: string]: string;
 }
 
+export interface MaintenanceTemplateFilter {
+  name: string;
+  intervalDays: number;
+}
+
+export interface MaintenanceTemplate {
+  ezerIntervalDays: number;
+  filters: MaintenanceTemplateFilter[];
+}
+
 export interface Product {
   id: string;
   name: MultiLanguageText;
@@ -23,6 +33,7 @@ export interface Product {
   active: boolean;
   featured: boolean;
   tags: string[];
+  maintenanceTemplate?: MaintenanceTemplate;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

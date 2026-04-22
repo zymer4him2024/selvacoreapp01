@@ -85,8 +85,9 @@ function SelectRoleContent() {
       };
 
       router.push(roleDashboards[selectedRole]);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to save role');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to save role';
+      toast.error(message);
     } finally {
       setLoading(false);
     }

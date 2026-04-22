@@ -2,106 +2,211 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper function to check if user is authenticated
+
     function isAuthenticated() {
       return request.auth != null;
     }
-    
-    // Helper function to check if user owns the document
+
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
-    
-    // Helper function to check if user is admin
+
     function isAdmin() {
-      return isAuthenticated() && 
+      return isAuthenticated() &&
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
-    
-    // Users collection - users can read/write their own data
+
+    function isTechnician() {
+      return isAuthenticated() &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'technician';
+    }
+
+    function isSubAdmin() {
+      return isAuthenticated() &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'sub-admin';
+    }
+
+    // Get the sub-contractor ID for the current sub-admin user
+    function subAdminContractorId() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.subContractorId;
+    }
+
+    // Users collection - users can read their own data, admins can read all
+    // Sub-admins can read technicians in their sub-contractor
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      allow read: if isOwner(userId) || isAdmin() ||
+        (isSubAdmin() && resource.data.subContractorId == subAdminContractorId());
       allow write: if isOwner(userId) || isAdmin();
     }
-    
-    // Products collection - everyone can read, only admins can write
+
+    // Products collection - public catalog read, admin write
     match /products/{productId} {
-      allow read: if true;  // Allow everyone to read products (public catalog)
-      allow write: if isAdmin();  // Only admins can create/update/delete
+      allow read: if true;
+      allow write: if isAdmin();
     }
-    
-    // Customers collection - customers can read/write their own data
+
+    // Customers collection
     match /customers/{customerId} {
       allow read: if isOwner(customerId) || isAdmin();
       allow write: if isOwner(customerId) || isAdmin();
     }
-    
-    // Orders collection - users can read their own orders, admins can read all
+
+    // Orders collection - restricted reads, validated creates
     match /orders/{orderId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      
-      // Admins can always update/delete
+      // Customers see their own orders, technicians see pending + their own, admins see all
+      // Sub-admins see orders assigned to their sub-contractor
+      allow read: if isAdmin() ||
+        (isAuthenticated() && resource.data.customerId == request.auth.uid) ||
+        (isTechnician() && (resource.data.status == 'pending' || resource.data.technicianId == request.auth.uid)) ||
+        (isSubAdmin() && resource.data.subContractorId == subAdminContractorId());
+
+      // Only allow create if customerId matches the authenticated user
+      allow create: if isAuthenticated() &&
+        request.resource.data.customerId == request.auth.uid;
+
       allow update, delete: if isAdmin();
-      
-      // Technicians can update pending orders (to accept them) or their own accepted orders
-      allow update: if isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'technician' &&
-        (resource.data.status == 'pending' || 
-         resource.data.technicianId == request.auth.uid);
+
+      // Customers can update their own orders (rating, cancellation)
+      // But cannot modify scheduling fields (admin-only)
+      allow update: if isAuthenticated() &&
+        resource.data.customerId == request.auth.uid &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['scheduledAt', 'estimatedDurationMinutes']);
+
+      // Technicians can update pending orders (accept) or their own assigned orders
+      // But cannot modify scheduling fields (admin-only)
+      allow update: if isTechnician() &&
+        (resource.data.status == 'pending' ||
+         resource.data.technicianId == request.auth.uid) &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['scheduledAt', 'estimatedDurationMinutes']);
     }
-    
-    // Sub-contractors collection - authenticated users can read, admins can write
+
+    // Sub-contractors collection - admins + sub-admins (own contractor only)
     match /subContractors/{contractorId} {
-      allow read: if isAuthenticated();
+      allow read: if isAdmin() ||
+        (isSubAdmin() && contractorId == subAdminContractorId());
       allow write: if isAdmin();
     }
-    
-    // Transactions collection - customers can create, admins can read/update/delete
+
+    // Transactions collection - validated create, admin manage
     match /transactions/{transactionId} {
       allow read: if isAdmin();
-      allow create: if isAuthenticated();  // Allow customers to log transactions
+      // Enforce performedBy matches the authenticated user
+      allow create: if isAuthenticated() &&
+        request.resource.data.performedBy == request.auth.uid;
       allow update, delete: if isAdmin();
     }
-    
-    // Services collection - everyone can read, admins can write
+
+    // Services collection - public read, admin write
     match /services/{serviceId} {
       allow read: if true;
       allow write: if isAdmin();
     }
-    
-    // Customer History collection - customers can read/write their own history
+
+    // Customer History collection
     match /customerHistory/{historyId} {
-      allow read: if isOwner(resource.data.customerId);
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.customerId;
+      allow read: if isAuthenticated() && resource.data.customerId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.customerId == request.auth.uid;
       allow update, delete: if isAdmin();
     }
-    
-    // Student data - only authenticated users can access their own data
+
+    // Student data
     match /students/{studentId} {
       allow read: if isOwner(studentId);
       allow write: if isOwner(studentId);
     }
-    
-    // Lessons - authenticated users can read, admins can write
+
+    // Lessons
     match /lessons/{lessonId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
-    
-    // Problem sets - authenticated users can read
+
+    // Problem sets
     match /problemSets/{problemSetId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
-    
-    // User progress - users can only access their own progress
+
+    // User progress
     match /progress/{userId} {
       allow read: if isOwner(userId);
       allow write: if isOwner(userId);
     }
-    
+
+    // Devices collection — registered Ezer units
+    // Any technician can read devices (needed for QR scan maintenance workflow)
+    match /devices/{deviceId} {
+      allow read: if isAdmin() || isTechnician() ||
+        (isAuthenticated() && resource.data.customerId == request.auth.uid);
+      allow create: if isTechnician() &&
+        request.resource.data.technicianId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // Notifications collection — in-app notifications per user
+    match /notifications/{notificationId} {
+      // User reads own notifications, admin reads all
+      allow read: if isAdmin() ||
+        (isAuthenticated() && resource.data.userId == request.auth.uid);
+      // Any authenticated user can create notifications (server-side via Cloud Functions runs as admin)
+      allow create: if isAuthenticated();
+      // User can update own notification (mark as read), admin can update any
+      allow update: if isAdmin() ||
+        (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    // Reviews collection — customer ratings for orders
+    match /reviews/{reviewId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() &&
+        request.resource.data.customerId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // Maintenance Schedules collection
+    // Any technician can read and update schedules (needed for QR scan maintenance workflow)
+    // Customers can read schedules (needed for customer device portal)
+    match /maintenanceSchedules/{scheduleId} {
+      allow read: if isAdmin() || isTechnician() || isAuthenticated();
+      allow create: if isTechnician() &&
+        request.resource.data.createdBy == request.auth.uid;
+      allow update: if isAdmin() || isTechnician();
+      allow delete: if isAdmin();
+    }
+
+    // Maintenance Visits collection
+    // Technicians can create and read visits
+    // Admins can read and write all visits
+    // Customers can read visits for their devices
+    match /maintenanceVisits/{visitId} {
+      allow read: if isAdmin() || isTechnician() || isAuthenticated();
+      allow create: if isTechnician();
+      allow update, delete: if isAdmin();
+    }
+
+    // Inventory collection — admin only
+    match /inventory/{itemId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Stock Adjustments collection — admin only
+    match /stockAdjustments/{adjustmentId} {
+      allow read, write: if isAdmin();
+    }
+
+    // QR Codes collection — admin only
+    match /qrCodes/{qrCodeId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Mail collection — used by Firebase Trigger Email extension
+    // Authenticated users can create emails; extension handles read/delete
+    match /mail/{mailId} {
+      allow create: if isAuthenticated();
+      allow read, update, delete: if isAdmin();
+    }
+
     // Default deny all other access
     match /{document=**} {
       allow read, write: if false;

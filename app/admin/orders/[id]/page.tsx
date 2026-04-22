@@ -10,12 +10,15 @@ import { Order } from '@/types/order';
 import { getOrderById } from '@/lib/services/orderService';
 import { formatCurrency, formatDate, formatOptionalString } from '@/lib/utils/formatters';
 import toast from 'react-hot-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function AdminOrderDetailPage() {
+  const { t } = useTranslation();
+  const od = t.admin.orderDetail;
   const params = useParams();
   const router = useRouter();
   const orderId = params?.id as string;
-  
+
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -30,8 +33,9 @@ export default function AdminOrderDetailPage() {
       setLoading(true);
       const data = await getOrderById(orderId);
       setOrder(data);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load order');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to load order';
+      toast.error(message);
       router.push('/admin/orders');
     } finally {
       setLoading(false);
@@ -64,7 +68,7 @@ export default function AdminOrderDetailPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading order details...</p>
+          <p className="text-text-secondary">{od.loading}</p>
         </div>
       </div>
     );
@@ -73,12 +77,12 @@ export default function AdminOrderDetailPage() {
   if (!order) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-bold mb-4">Order not found</h2>
+        <h2 className="text-2xl font-bold mb-4">{od.notFound}</h2>
         <button
           onClick={() => router.push('/admin/orders')}
           className="apple-button-primary"
         >
-          Back to Orders
+          {od.backToOrders}
         </button>
       </div>
     );
@@ -95,8 +99,8 @@ export default function AdminOrderDetailPage() {
           <ArrowLeft className="w-6 h-6" />
         </button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold">Order Details</h1>
-          <p className="text-text-secondary">View and manage order information</p>
+          <h1 className="text-3xl font-bold">{od.title}</h1>
+          <p className="text-text-secondary">{od.subtitle}</p>
         </div>
         <div className={`px-4 py-2 rounded-apple text-sm font-semibold flex items-center gap-2 ${getStatusColor(order.status)}`}>
           {getStatusIcon(order.status)}
@@ -106,27 +110,27 @@ export default function AdminOrderDetailPage() {
 
       {/* Order Info Card */}
       <div className="apple-card">
-        <h2 className="text-xl font-semibold mb-4">Order Information</h2>
+        <h2 className="text-xl font-semibold mb-4">{od.orderInfo}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <p className="text-sm text-text-tertiary mb-1">Order Number</p>
-            <p className="font-semibold text-lg">{order.orderNumber || 'N/A'}</p>
+            <p className="text-sm text-text-tertiary mb-1">{od.orderNumber}</p>
+            <p className="font-semibold text-lg">{order.orderNumber || od.na}</p>
           </div>
           <div>
-            <p className="text-sm text-text-tertiary mb-1">Created Date</p>
+            <p className="text-sm text-text-tertiary mb-1">{od.createdDate}</p>
             <p className="font-semibold">
-              {order.createdAt ? formatDate(order.createdAt, 'short') : 'N/A'}
+              {order.createdAt ? formatDate(order.createdAt, 'short') : od.na}
             </p>
           </div>
           {order.installationDate && (
             <div>
-              <p className="text-sm text-text-tertiary mb-1">Installation Date</p>
+              <p className="text-sm text-text-tertiary mb-1">{od.installationDate}</p>
               <p className="font-semibold">{formatDate(order.installationDate, 'short')}</p>
             </div>
           )}
           {order.timeSlot && (
             <div>
-              <p className="text-sm text-text-tertiary mb-1">Time Slot</p>
+              <p className="text-sm text-text-tertiary mb-1">{od.timeSlot}</p>
               <p className="font-semibold">{order.timeSlot}</p>
             </div>
           )}
@@ -137,15 +141,15 @@ export default function AdminOrderDetailPage() {
       <div className="apple-card">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <User className="w-6 h-6 text-primary" />
-          Customer Information
+          {od.customerInfo}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <p className="text-sm text-text-tertiary mb-1">Name</p>
+            <p className="text-sm text-text-tertiary mb-1">{od.name}</p>
             <p className="font-medium">{formatOptionalString(order.customerInfo?.name)}</p>
           </div>
           <div>
-            <p className="text-sm text-text-tertiary mb-1">Email</p>
+            <p className="text-sm text-text-tertiary mb-1">{od.email}</p>
             <p className="font-medium">{formatOptionalString(order.customerInfo?.email)}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -153,11 +157,11 @@ export default function AdminOrderDetailPage() {
             <p className="font-medium">{formatOptionalString(order.customerInfo?.phone)}</p>
           </div>
           <div>
-            <p className="text-sm text-text-tertiary mb-1">Address</p>
+            <p className="text-sm text-text-tertiary mb-1">{od.address}</p>
             <p className="font-medium">
               {order.installationAddress
                 ? `${order.installationAddress.street}, ${order.installationAddress.city}, ${order.installationAddress.state} ${order.installationAddress.postalCode}`
-                : 'N/A'}
+                : od.na}
             </p>
           </div>
         </div>
@@ -167,20 +171,20 @@ export default function AdminOrderDetailPage() {
       <div className="apple-card">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Package className="w-6 h-6 text-primary" />
-          Product & Service
+          {od.productService}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <p className="text-sm text-text-tertiary mb-2">Product</p>
+            <p className="text-sm text-text-tertiary mb-2">{od.product}</p>
             <div className="space-y-2">
               <p className="font-semibold">
                 {typeof order.productSnapshot?.name === 'string'
                   ? order.productSnapshot.name
-                  : order.productSnapshot?.name?.en || 'N/A'}
+                  : order.productSnapshot?.name?.en || od.na}
               </p>
               {order.productSnapshot?.variation && (
                 <p className="text-sm text-text-secondary">
-                  Variation: {order.productSnapshot.variation}
+                  {od.variation}: {order.productSnapshot.variation}
                 </p>
               )}
               {order.productSnapshot?.price && (
@@ -191,16 +195,16 @@ export default function AdminOrderDetailPage() {
             </div>
           </div>
           <div>
-            <p className="text-sm text-text-tertiary mb-2">Service</p>
+            <p className="text-sm text-text-tertiary mb-2">{od.service}</p>
             <div className="space-y-2">
               <p className="font-semibold">
                 {typeof order.serviceSnapshot?.name === 'string'
                   ? order.serviceSnapshot.name
-                  : order.serviceSnapshot?.name?.en || 'N/A'}
+                  : order.serviceSnapshot?.name?.en || od.na}
               </p>
               {order.serviceSnapshot?.duration && (
                 <p className="text-sm text-text-secondary">
-                  Duration: {order.serviceSnapshot.duration} minutes
+                  {od.duration}: {order.serviceSnapshot.duration} {od.minutes}
                 </p>
               )}
               {order.serviceSnapshot?.price && (
@@ -218,22 +222,22 @@ export default function AdminOrderDetailPage() {
         <div className="apple-card">
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <DollarSign className="w-6 h-6 text-primary" />
-            Payment Information
+            {od.paymentInfo}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <p className="text-sm text-text-tertiary mb-1">Amount</p>
+              <p className="text-sm text-text-tertiary mb-1">{od.amount}</p>
               <p className="text-2xl font-bold text-success">
-                {order.payment.amount ? formatCurrency(order.payment.amount, order.payment.currency || 'BRL') : 'N/A'}
+                {order.payment.amount ? formatCurrency(order.payment.amount, order.payment.currency || 'BRL') : od.na}
               </p>
             </div>
             <div>
-              <p className="text-sm text-text-tertiary mb-1">Status</p>
-              <p className="font-semibold">{order.payment.status || 'N/A'}</p>
+              <p className="text-sm text-text-tertiary mb-1">{t.common.status}</p>
+              <p className="font-semibold">{order.payment.status || od.na}</p>
             </div>
             {order.payment.method && (
               <div>
-                <p className="text-sm text-text-tertiary mb-1">Method</p>
+                <p className="text-sm text-text-tertiary mb-1">{od.method}</p>
                 <p className="font-semibold">{order.payment.method}</p>
               </div>
             )}
@@ -246,16 +250,16 @@ export default function AdminOrderDetailPage() {
         <div className="apple-card">
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <User className="w-6 h-6 text-primary" />
-            Assigned Technician
+            {od.assignedTechnician}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-text-tertiary mb-1">Name</p>
+              <p className="text-sm text-text-tertiary mb-1">{od.name}</p>
               <p className="font-medium">{formatOptionalString(order.technicianInfo.name)}</p>
             </div>
             {order.technicianInfo.phone && (
               <div>
-                <p className="text-sm text-text-tertiary mb-1">Phone</p>
+                <p className="text-sm text-text-tertiary mb-1">{t.common.phone}</p>
                 <p className="font-medium">{order.technicianInfo.phone}</p>
               </div>
             )}
@@ -266,11 +270,11 @@ export default function AdminOrderDetailPage() {
       {/* Site Photos */}
       {order.sitePhotos && (
         <div className="apple-card">
-          <h2 className="text-xl font-semibold mb-4">Site Photos</h2>
+          <h2 className="text-xl font-semibold mb-4">{od.sitePhotos}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {order.sitePhotos.waterSource && (
               <div>
-                <p className="text-sm text-text-secondary mb-2">Water Source</p>
+                <p className="text-sm text-text-secondary mb-2">{od.waterSource}</p>
                 <div className="w-full h-40 bg-white rounded-apple overflow-hidden">
                   <img
                     src={order.sitePhotos.waterSource.url}
@@ -282,7 +286,7 @@ export default function AdminOrderDetailPage() {
             )}
             {order.sitePhotos.productLocation && (
               <div>
-                <p className="text-sm text-text-secondary mb-2">Installation Location</p>
+                <p className="text-sm text-text-secondary mb-2">{od.installationLocation}</p>
                 <div className="w-full h-40 bg-white rounded-apple overflow-hidden">
                   <img
                     src={order.sitePhotos.productLocation.url}
@@ -294,7 +298,7 @@ export default function AdminOrderDetailPage() {
             )}
             {order.sitePhotos.fullShot && (
               <div>
-                <p className="text-sm text-text-secondary mb-2">Full Shot</p>
+                <p className="text-sm text-text-secondary mb-2">{od.fullShot}</p>
                 <div className="w-full h-40 bg-white rounded-apple overflow-hidden">
                   <img
                     src={order.sitePhotos.fullShot.url}

@@ -1,24 +1,15 @@
-'use client';
+import type { Metadata } from 'next';
+import AdminLayoutClient from '@/components/admin/AdminLayoutClient';
 
-import Sidebar from '@/components/admin/Sidebar';
-import ProtectedRoute from '@/components/common/ProtectedRoute';
+export const metadata: Metadata = {
+  title: 'Admin Dashboard | Selvacore',
+  description: 'Manage products, orders, technicians, and analytics',
+};
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <ProtectedRoute allowedRoles={['admin']}>
-      <div className="flex min-h-screen bg-background">
-        <Sidebar />
-        <main className="flex-1 lg:ml-64 p-8">
-          <div className="max-w-7xl mx-auto">
-            {children}
-          </div>
-        </main>
-      </div>
-    </ProtectedRoute>
-  );
+  return <AdminLayoutClient>{children}</AdminLayoutClient>;
 }
-

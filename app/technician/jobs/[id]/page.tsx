@@ -3,17 +3,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  getTechnicianJobById, 
-  startJob, 
+import {
+  getTechnicianJobById,
+  startJob,
   completeJob,
-  uploadInstallationPhoto 
+  uploadInstallationPhoto
 } from '@/lib/services/technicianService';
+import { getDeviceByOrderId } from '@/lib/services/deviceService';
 import { Order } from '@/types/order';
-import { 
-  ArrowLeft, MapPin, Calendar, Clock, DollarSign, User, Phone, 
-  MessageCircle, Image as ImageIcon, Video, Upload, X, Check, 
-  Loader2, Play, CheckCircle, ExternalLink 
+import DeviceRegistrationFlow from '@/components/technician/DeviceRegistrationFlow';
+import {
+  ArrowLeft, MapPin, Calendar, Clock, DollarSign, User, Phone,
+  MessageCircle, Image as ImageIcon, Video, Upload, X, Check,
+  Loader2, Play, CheckCircle, ExternalLink, QrCode
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils/formatters';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -35,6 +37,8 @@ export default function JobDetailPage() {
   const [photoPreview, setPhotoPreview] = useState<string[]>([]);
   const [completionNotes, setCompletionNotes] = useState('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [showRegistration, setShowRegistration] = useState(false);
+  const [deviceRegistered, setDeviceRegistered] = useState<boolean | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lang = userData?.preferredLanguage || 'en';
 
@@ -58,8 +62,15 @@ export default function JobDetailPage() {
       }
 
       setJob(jobData);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load job');
+
+      // Check if device is already registered for completed jobs
+      if (jobData.status === 'completed') {
+        const device = await getDeviceByOrderId(jobData.id);
+        setDeviceRegistered(!!device);
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to load job';
+      toast.error(message);
       router.push('/technician/jobs');
     } finally {
       setLoading(false);
@@ -74,8 +85,9 @@ export default function JobDetailPage() {
       await startJob(job.id, user.uid);
       toast.success('Job started!');
       loadJob();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to start job');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to start job';
+      toast.error(message);
     } finally {
       setStarting(false);
     }
@@ -126,11 +138,13 @@ export default function JobDetailPage() {
 
       // Complete the job
       await completeJob(job.id, user.uid, photoUrls, completionNotes);
-      
-      toast.success('Job completed successfully!');
-      router.push('/technician/jobs?tab=completed');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to complete job');
+
+      toast.success('Job completed! Now register the device.');
+      setShowRegistration(true);
+      loadJob();
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Failed to complete job';
+      toast.error(msg);
     } finally {
       setCompleting(false);
       setUploadingPhotos(false);
@@ -531,6 +545,42 @@ export default function JobDetailPage() {
               <p className="text-sm">{job.technicianNotes}</p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Device Registration Flow */}
+      {showRegistration && user && job.status === 'completed' && (
+        <div className="apple-card">
+          <DeviceRegistrationFlow
+            orderId={job.id}
+            technicianId={user.uid}
+            onComplete={() => router.push('/technician/jobs?tab=completed')}
+            onSkip={() => {
+              setShowRegistration(false);
+              router.push('/technician/jobs?tab=completed');
+            }}
+          />
+        </div>
+      )}
+
+      {/* Register Device button for completed jobs without device */}
+      {!showRegistration && job.status === 'completed' && deviceRegistered === false && user && (
+        <div className="apple-card border-l-4 border-warning">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold">Device Not Registered</h3>
+              <p className="text-sm text-text-secondary">
+                Scan the QR code on the Ezer to register the device and set up maintenance.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowRegistration(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-medium rounded-apple hover:bg-primary/90 transition-all"
+            >
+              <QrCode className="w-5 h-5" />
+              Register Device
+            </button>
+          </div>
         </div>
       )}
 

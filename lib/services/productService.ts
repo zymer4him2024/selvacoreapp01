@@ -1,16 +1,20 @@
 // Product Service - Handle all product operations
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  getDoc, 
-  addDoc, 
-  updateDoc, 
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  addDoc,
+  updateDoc,
   deleteDoc,
   query,
   where,
   orderBy,
-  Timestamp 
+  limit,
+  startAfter,
+  Timestamp,
+  QueryDocumentSnapshot,
+  DocumentData,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase/config';
@@ -36,6 +40,37 @@ export async function getAllProducts(): Promise<Product[]> {
     const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
     return bTime - aTime;
   });
+}
+
+export interface PaginatedResult<T> {
+  items: T[];
+  lastDoc: QueryDocumentSnapshot<DocumentData> | null;
+  hasMore: boolean;
+}
+
+/**
+ * Get products with cursor-based pagination
+ */
+export async function getProductsPaginated(
+  pageSize: number = 20,
+  lastDoc?: QueryDocumentSnapshot<DocumentData> | null
+): Promise<PaginatedResult<Product>> {
+  const productsRef = collection(db, 'products');
+
+  const q = lastDoc
+    ? query(productsRef, orderBy('createdAt', 'desc'), startAfter(lastDoc), limit(pageSize + 1))
+    : query(productsRef, orderBy('createdAt', 'desc'), limit(pageSize + 1));
+
+  const snapshot = await getDocs(q);
+
+  const hasMore = snapshot.docs.length > pageSize;
+  const docs = hasMore ? snapshot.docs.slice(0, pageSize) : snapshot.docs;
+
+  return {
+    items: docs.map((doc) => ({ id: doc.id, ...doc.data() } as Product)),
+    lastDoc: docs.length > 0 ? docs[docs.length - 1] : null,
+    hasMore,
+  };
 }
 
 /**
@@ -118,7 +153,7 @@ export async function deleteProductImage(imageUrl: string): Promise<void> {
     const imageRef = ref(storage, imageUrl);
     await deleteObject(imageRef);
   } catch (error) {
-    console.error('Error deleting image:', error);
+    // Silently ignore - image may have already been deleted
   }
 }
 
@@ -171,7 +206,6 @@ export async function addProductImages(
       const url = await uploadProductImage(productId, file, 'main');
       uploadedUrls.push(url);
     } catch (error) {
-      console.error('Failed to upload image:', error);
       throw error;
     }
   }

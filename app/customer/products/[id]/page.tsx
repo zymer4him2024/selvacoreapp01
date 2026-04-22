@@ -7,18 +7,16 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Product } from '@/types';
 import { getProductById } from '@/lib/services/productService';
 import { formatCurrency } from '@/lib/utils/formatters';
+import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
 export default function ProductDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { userData } = useAuth();
+  const { t } = useTranslation();
+  const o = t.orders;
   const productId = params.id as string;
-
-  console.log('🎬 Product detail component started');
-  console.log('🎬 Product ID:', productId);
-  console.log('🎬 User data:', userData);
-  console.log('🎬 Params:', params);
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,42 +25,29 @@ export default function ProductDetailPage() {
   const [selectedImage, setSelectedImage] = useState(0);
 
   useEffect(() => {
-    console.log('🚀 Product detail page useEffect triggered');
-    console.log('🚀 Product ID from params:', productId);
-    console.log('🚀 User data:', userData);
     loadData();
   }, [productId]);
 
   const loadData = async () => {
     try {
-      console.log('🔍 Loading product with ID:', productId);
       setLoading(true);
-      
+
       // Load product first (required)
-      console.log('📦 Getting product data...');
       const productData = await getProductById(productId);
-      console.log('📦 Product data result:', productData);
 
       if (!productData) {
-        console.log('❌ Product not found');
         toast.error('Product not found');
         router.push('/customer');
         return;
       }
 
-      console.log('✅ Setting product data');
       setProduct(productData);
 
       // Pre-select first variation if available
       if (productData.variations && productData.variations.length > 0) {
         setSelectedVariationId(productData.variations[0].id);
       }
-      
-      console.log('✅ Product detail page loaded successfully');
-    } catch (error: any) {
-      console.error('❌ Product loading failed:', error);
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Error code:', error.code);
+    } catch (error: unknown) {
       toast.error('Failed to load product');
     } finally {
       setLoading(false);
@@ -84,7 +69,7 @@ export default function ProductDetailPage() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading...</p>
+          <p className="text-text-secondary">{t.common.loading}</p>
         </div>
       </div>
     );
@@ -107,7 +92,7 @@ export default function ProductDetailPage() {
             className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
-            Back to Products
+            {o.backToProducts}
           </button>
         </div>
       </div>
@@ -162,7 +147,7 @@ export default function ProductDetailPage() {
                 </div>
                 {product.featured && (
                   <span className="px-3 py-1 bg-warning text-black text-sm font-bold rounded-full">
-                    ⭐ Featured
+                    {t.customer.featured}
                   </span>
                 )}
               </div>
@@ -171,7 +156,7 @@ export default function ProductDetailPage() {
 
             {/* Price */}
             <div className="p-6 bg-surface rounded-apple">
-              <p className="text-sm text-text-tertiary mb-2">Price</p>
+              <p className="text-sm text-text-tertiary mb-2">{o.price}</p>
               <p className="text-4xl font-bold text-primary">
                 {formatCurrency(selectedVariation?.price || product.basePrice, product.currency)}
               </p>
@@ -181,7 +166,7 @@ export default function ProductDetailPage() {
             {product.variations && product.variations.length > 0 && (
               <div>
                 <label className="block text-sm font-medium mb-3">
-                  Select Option <span className="text-error">*</span>
+                  {o.selectOption} <span className="text-error">*</span>
                 </label>
                 <div className="space-y-2">
                   {product.variations.map((variation) => (
@@ -211,7 +196,7 @@ export default function ProductDetailPage() {
                           <p className={`text-xs mt-1 ${
                             selectedVariationId === variation.id ? 'text-white/60' : 'text-text-tertiary'
                           }`}>
-                            {variation.stock > 0 ? `${variation.stock} in stock` : 'Out of stock'}
+                            {variation.stock > 0 ? `${variation.stock} ${o.inStock}` : o.outOfStock}
                           </p>
                         </div>
                       </div>
@@ -224,7 +209,7 @@ export default function ProductDetailPage() {
             {/* Specifications */}
             {product.specifications && Object.keys(product.specifications).length > 0 && (
               <div className="p-6 bg-surface rounded-apple">
-                <h3 className="font-semibold mb-4">Specifications</h3>
+                <h3 className="font-semibold mb-4">{o.specifications}</h3>
                 <div className="space-y-2">
                   {Object.entries(product.specifications).map(([key, value]) => (
                     <div key={key} className="flex justify-between text-sm">
@@ -240,7 +225,7 @@ export default function ProductDetailPage() {
             <div className="sticky bottom-0 pt-6 pb-6 bg-background/80 backdrop-blur-lg border-t border-border -mx-4 px-4 lg:mx-0 lg:px-0">
               <div className="p-6 bg-surface rounded-apple mb-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-lg font-semibold">Total</span>
+                  <span className="text-lg font-semibold">{o.total}</span>
                   <span className="text-2xl font-bold text-primary">
                     {formatCurrency(totalPrice, product.currency)}
                   </span>
@@ -251,7 +236,7 @@ export default function ProductDetailPage() {
                 onClick={handleOrder}
                 className="w-full px-8 py-4 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
               >
-                Continue to Order Details
+                {o.continueToDetails}
               </button>
             </div>
           </div>

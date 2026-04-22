@@ -9,12 +9,14 @@ import { auth, db } from '@/lib/firebase/config';
 import { Package, Wrench, Building2, ShoppingCart, TrendingUp, Users } from 'lucide-react';
 import { getAdminStats, getRecentOrders, RecentOrder, AdminStats } from '@/lib/services/adminStatsService';
 import { formatCurrency, formatOptionalNumber } from '@/lib/utils/formatters';
+import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
 export default function AdminDashboard() {
   const router = useRouter();
   const { user, userData, loading: authLoading } = useAuth();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
@@ -36,29 +38,28 @@ export default function AdminDashboard() {
       
       setStats(dashboardStats);
       setRecentOrders(orders);
-    } catch (error: any) {
-      console.error('Error loading dashboard data:', error);
-      toast.error('Failed to load dashboard data');
+    } catch (error: unknown) {
+      toast.error(t.admin.dashboard.failedToLoad);
     } finally {
       setDataLoading(false);
     }
   };
 
   // If not logged in, show login page
+  const d = t.admin.dashboard;
+  const l = t.admin.login;
+
   if (!authLoading && !user) {
-    return <AdminLoginView onSignIn={async () => {
+    return <AdminLoginView t={l} onSignIn={async () => {
       try {
         setLoading(true);
-        console.log('🔐 Admin login attempt...');
-        
+
         const provider = new GoogleAuthProvider();
         const result = await signInWithPopup(auth, provider);
-        console.log('✅ Popup sign-in successful:', result.user.email);
-        
+
         const userDoc = await getDoc(doc(db, 'users', result.user.uid));
-        
+
         if (!userDoc.exists()) {
-          console.log('📝 Creating admin account...');
           const newAdminUser = {
             id: result.user.uid,
             role: 'admin',
@@ -76,23 +77,25 @@ export default function AdminDashboard() {
           };
           
           await setDoc(doc(db, 'users', result.user.uid), newAdminUser);
-          toast.success('Admin account created! Welcome!');
+          toast.success(l.accountCreated);
           return;
         }
         
         const userDataFromDb = userDoc.data();
         
         if (userDataFromDb.role !== 'admin') {
-          toast.error(`Access denied. Admin access only.`);
+          toast.error(l.accessDenied);
           await auth.signOut();
           setLoading(false);
         } else {
-          toast.success('Welcome, Admin!');
+          toast.success(l.welcomeAdmin);
         }
-      } catch (error: any) {
-        console.error('❌ Admin sign-in error:', error);
-        if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
-          toast.error(error.message || 'Failed to sign in');
+      } catch (error: unknown) {
+        const isFirebaseError = error instanceof Error && 'code' in error;
+        const code = isFirebaseError ? (error as { code: string }).code : '';
+        if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') {
+          const message = error instanceof Error ? error.message : 'Failed to sign in';
+          toast.error(message);
         }
         setLoading(false);
       }
@@ -111,7 +114,7 @@ export default function AdminDashboard() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading dashboard...</p>
+          <p className="text-text-secondary">{d.loadingDashboard}</p>
         </div>
       </div>
     );
@@ -119,12 +122,12 @@ export default function AdminDashboard() {
 
   // Real data from Firestore
   const statsData = [
-    { name: 'Total Products', value: formatOptionalNumber(stats.totalProducts), icon: Package, change: stats.revenueChange, trend: 'up' },
-    { name: 'Total Services', value: formatOptionalNumber(stats.totalServices), icon: Wrench, change: stats.revenueChange, trend: 'up' },
-    { name: 'Technicians', value: formatOptionalNumber(stats.totalTechnicians), icon: Users, change: stats.revenueChange, trend: 'up' },
-    { name: 'Total Orders', value: formatOptionalNumber(stats.totalOrders), icon: ShoppingCart, change: stats.orderChange, trend: 'up' },
-    { name: 'Revenue (MTD)', value: formatCurrency(stats.revenueMTD, 'BRL'), icon: TrendingUp, change: stats.revenueChange, trend: 'up' },
-    { name: 'Total Customers', value: formatOptionalNumber(stats.totalCustomers), icon: Building2, change: stats.orderChange, trend: 'up' },
+    { name: d.totalProducts, value: formatOptionalNumber(stats.totalProducts), icon: Package, change: stats.revenueChange, trend: 'up' },
+    { name: d.totalServices, value: formatOptionalNumber(stats.totalServices), icon: Wrench, change: stats.revenueChange, trend: 'up' },
+    { name: d.technicians, value: formatOptionalNumber(stats.totalTechnicians), icon: Users, change: stats.revenueChange, trend: 'up' },
+    { name: d.totalOrders, value: formatOptionalNumber(stats.totalOrders), icon: ShoppingCart, change: stats.orderChange, trend: 'up' },
+    { name: d.revenueMTD, value: formatCurrency(stats.revenueMTD, 'BRL'), icon: TrendingUp, change: stats.revenueChange, trend: 'up' },
+    { name: d.totalCustomers, value: formatOptionalNumber(stats.totalCustomers), icon: Building2, change: stats.orderChange, trend: 'up' },
   ];
 
   const getStatusColor = (status: string) => {
@@ -141,11 +144,20 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div>
-        <h1 className="text-4xl font-bold tracking-tight mb-2">Dashboard</h1>
-        <p className="text-text-secondary">
-          Welcome back! Here's what's happening with your platform.
-        </p>
+      <div className="flex items-center gap-4">
+        {userData?.logoURL && (
+          <img
+            src={userData.logoURL}
+            alt="Logo"
+            className="w-16 h-16 rounded-apple object-contain border border-border bg-white p-1"
+          />
+        )}
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight mb-2">{d.title}</h1>
+          <p className="text-text-secondary">
+            {d.subtitle}
+          </p>
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -168,7 +180,7 @@ export default function AdminDashboard() {
                     <span className={`text-sm font-medium ${stat.trend === 'up' ? 'text-success' : 'text-error'}`}>
                       {stat.change}
                     </span>
-                    <span className="text-xs text-text-tertiary">vs last month</span>
+                    <span className="text-xs text-text-tertiary">{t.common.vsLastMonth}</span>
                   </div>
                 </div>
                 <div className="w-12 h-12 rounded-apple bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
@@ -184,16 +196,16 @@ export default function AdminDashboard() {
       <div className="apple-card">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold">Recent Orders</h2>
+            <h2 className="text-2xl font-bold">{d.recentOrders}</h2>
             <p className="text-text-secondary text-sm mt-1">
-              Latest orders from customers
+              {d.latestOrders}
             </p>
           </div>
           <Link
             href="/admin/orders"
             className="px-4 py-2 bg-surface-elevated hover:bg-surface-secondary rounded-apple text-sm font-medium transition-colors"
           >
-            View All
+            {t.common.viewAll}
           </Link>
         </div>
 
@@ -230,8 +242,8 @@ export default function AdminDashboard() {
           className="apple-card hover:scale-[1.02] transition-transform text-center py-8"
         >
           <Package className="w-10 h-10 mx-auto mb-3 text-primary" />
-          <h3 className="font-semibold mb-1">Add Product</h3>
-          <p className="text-sm text-text-tertiary">Create new product</p>
+          <h3 className="font-semibold mb-1">{d.addProduct}</h3>
+          <p className="text-sm text-text-tertiary">{d.createNewProduct}</p>
         </a>
 
         <a
@@ -239,8 +251,8 @@ export default function AdminDashboard() {
           className="apple-card hover:scale-[1.02] transition-transform text-center py-8"
         >
           <Wrench className="w-10 h-10 mx-auto mb-3 text-secondary" />
-          <h3 className="font-semibold mb-1">Add Service</h3>
-          <p className="text-sm text-text-tertiary">Create new service</p>
+          <h3 className="font-semibold mb-1">{d.addService}</h3>
+          <p className="text-sm text-text-tertiary">{d.createNewService}</p>
         </a>
 
         <a
@@ -248,8 +260,8 @@ export default function AdminDashboard() {
           className="apple-card hover:scale-[1.02] transition-transform text-center py-8"
         >
           <Building2 className="w-10 h-10 mx-auto mb-3 text-success" />
-          <h3 className="font-semibold mb-1">Manage Sub-Contractors</h3>
-          <p className="text-sm text-text-tertiary">View all contractors</p>
+          <h3 className="font-semibold mb-1">{d.manageSubContractors}</h3>
+          <p className="text-sm text-text-tertiary">{d.viewAllContractors}</p>
         </a>
 
         <a
@@ -257,8 +269,8 @@ export default function AdminDashboard() {
           className="apple-card hover:scale-[1.02] transition-transform text-center py-8"
         >
           <TrendingUp className="w-10 h-10 mx-auto mb-3 text-warning" />
-          <h3 className="font-semibold mb-1">View Analytics</h3>
-          <p className="text-sm text-text-tertiary">Business insights</p>
+          <h3 className="font-semibold mb-1">{d.viewAnalytics}</h3>
+          <p className="text-sm text-text-tertiary">{d.businessInsights}</p>
         </a>
       </div>
     </div>
@@ -266,9 +278,9 @@ export default function AdminDashboard() {
 }
 
 // Admin Login View Component
-function AdminLoginView({ onSignIn, loading }: { onSignIn: () => Promise<void>; loading: boolean }) {
+function AdminLoginView({ onSignIn, loading, t }: { onSignIn: () => Promise<void>; loading: boolean; t: typeof import('@/lib/translations/en').en.admin.login }) {
   const router = useRouter();
-  
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-8 animate-fade-in">
@@ -277,10 +289,10 @@ function AdminLoginView({ onSignIn, loading }: { onSignIn: () => Promise<void>; 
           <div className="text-6xl mb-4">👑</div>
           <div className="space-y-2">
             <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Admin Portal
+              {t.adminPortal}
             </h1>
             <p className="text-lg text-text-secondary">
-              Administrators Only
+              {t.administratorsOnly}
             </p>
           </div>
         </div>
@@ -288,9 +300,9 @@ function AdminLoginView({ onSignIn, loading }: { onSignIn: () => Promise<void>; 
         {/* Login Card */}
         <div className="apple-card space-y-6 animate-slide-up">
           <div className="text-center space-y-2">
-            <h2 className="text-2xl font-semibold">Sign In</h2>
+            <h2 className="text-2xl font-semibold">{t.signIn}</h2>
             <p className="text-text-secondary text-sm">
-              Use your authorized admin Google account
+              {t.useAuthorized}
             </p>
           </div>
 
@@ -318,13 +330,13 @@ function AdminLoginView({ onSignIn, loading }: { onSignIn: () => Promise<void>; 
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            {loading ? 'Verifying...' : 'Continue with Google'}
+            {loading ? t.verifying : t.continueWithGoogle}
           </button>
 
           {/* Warning */}
           <div className="p-4 bg-warning/10 border border-warning/30 rounded-apple">
             <p className="text-sm text-warning text-center">
-              ⚠️ Authorized administrators only. Access is restricted.
+              {t.warningRestricted}
             </p>
           </div>
         </div>
@@ -335,7 +347,7 @@ function AdminLoginView({ onSignIn, loading }: { onSignIn: () => Promise<void>; 
             onClick={() => router.push('/')}
             className="text-sm text-text-secondary hover:text-text-primary transition-colors"
           >
-            ← Back to Main Site
+            {t.backToMainSite}
           </button>
         </div>
       </div>

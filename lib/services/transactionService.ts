@@ -7,8 +7,11 @@ import {
   query,
   orderBy,
   limit,
+  startAfter,
   Timestamp,
   where,
+  QueryDocumentSnapshot,
+  DocumentData,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { Transaction, TransactionType } from '@/types';
@@ -42,6 +45,46 @@ export async function getAllTransactions(limitCount: number = 100): Promise<Tran
     id: doc.id,
     ...doc.data(),
   } as Transaction));
+}
+
+export interface PaginatedResult<T> {
+  items: T[];
+  lastDoc: QueryDocumentSnapshot<DocumentData> | null;
+  hasMore: boolean;
+}
+
+/**
+ * Get transactions with cursor-based pagination
+ */
+export async function getTransactionsPaginated(
+  pageSize: number = 50,
+  lastDoc?: QueryDocumentSnapshot<DocumentData> | null,
+  typeFilter?: string
+): Promise<PaginatedResult<Transaction>> {
+  const transactionsRef = collection(db, 'transactions');
+  const hasType = typeFilter && typeFilter !== 'all';
+
+  let q;
+  if (hasType && lastDoc) {
+    q = query(transactionsRef, where('type', '==', typeFilter), orderBy('timestamp', 'desc'), startAfter(lastDoc), limit(pageSize + 1));
+  } else if (hasType) {
+    q = query(transactionsRef, where('type', '==', typeFilter), orderBy('timestamp', 'desc'), limit(pageSize + 1));
+  } else if (lastDoc) {
+    q = query(transactionsRef, orderBy('timestamp', 'desc'), startAfter(lastDoc), limit(pageSize + 1));
+  } else {
+    q = query(transactionsRef, orderBy('timestamp', 'desc'), limit(pageSize + 1));
+  }
+
+  const snapshot = await getDocs(q);
+
+  const hasMore = snapshot.docs.length > pageSize;
+  const docs = hasMore ? snapshot.docs.slice(0, pageSize) : snapshot.docs;
+
+  return {
+    items: docs.map((doc) => ({ id: doc.id, ...doc.data() } as Transaction)),
+    lastDoc: docs.length > 0 ? docs[docs.length - 1] : null,
+    hasMore,
+  };
 }
 
 /**

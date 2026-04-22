@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase/config';
 import { ArrowLeft, Save, Globe, Bell, Shield } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { SUPPORTED_LANGUAGES } from '@/lib/utils/constants';
+import type { Language } from '@/types';
 import toast from 'react-hot-toast';
 
 export default function CustomerSettingsPage() {
@@ -48,20 +49,20 @@ export default function CustomerSettingsPage() {
 
       // Update language
       if (settings.preferredLanguage !== userData?.preferredLanguage) {
-        changeLanguage(settings.preferredLanguage as any);
+        changeLanguage(settings.preferredLanguage as Language);
       }
 
       // Update local state
       if (updateUserData) {
         await updateUserData({
-          preferredLanguage: settings.preferredLanguage as any,
+          preferredLanguage: settings.preferredLanguage as Language,
         });
       }
 
       toast.success(t.messages?.saved || 'Settings updated successfully');
-    } catch (error: any) {
-      console.error('Error updating settings:', error);
-      toast.error(error.message || 'Failed to update settings');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to update settings';
+      toast.error(message);
     } finally {
       setLoading(false);
     }

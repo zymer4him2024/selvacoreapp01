@@ -24,9 +24,12 @@ import {
   formatOptionalNumber,
   formatOptionalString
 } from '@/lib/utils/formatters';
+import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
 export default function TechnicianDetailPage() {
+  const { t } = useTranslation();
+  const td = t.admin.technicianDetail;
   const router = useRouter();
   const params = useParams();
   const technicianId = params?.id as string;
@@ -64,8 +67,9 @@ export default function TechnicianDetailPage() {
           adminNotes: data.adminNotes || '',
         });
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load technician');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to load technician';
+      toast.error(message);
       router.push('/admin/technicians');
     } finally {
       setLoading(false);
@@ -73,62 +77,66 @@ export default function TechnicianDetailPage() {
   };
 
   const handleApprove = async () => {
-    if (!confirm('Are you sure you want to approve this technician?')) return;
+    if (!confirm(td.confirmApprove)) return;
     
     setActionLoading(true);
     try {
       await approveTechnician(technicianId, editedData.adminNotes);
-      toast.success('Technician approved successfully');
+      toast.success(td.approvedSuccess);
       loadTechnician();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to approve technician');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to approve technician';
+      toast.error(message);
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleDecline = async () => {
-    const reason = prompt('Please provide a reason for declining:');
+    const reason = prompt(td.reasonDecline);
     if (!reason) return;
-    
+
     setActionLoading(true);
     try {
       await declineTechnician(technicianId, reason);
-      toast.success('Technician application declined');
+      toast.success(td.declinedSuccess);
       loadTechnician();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to decline technician');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to decline technician';
+      toast.error(message);
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleSuspend = async () => {
-    const reason = prompt('Please provide a reason for suspension:');
+    const reason = prompt(td.reasonSuspend);
     if (!reason) return;
-    
+
     setActionLoading(true);
     try {
       await suspendTechnician(technicianId, reason);
-      toast.success('Technician suspended');
+      toast.success(td.suspendedSuccess);
       loadTechnician();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to suspend technician');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to suspend technician';
+      toast.error(message);
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleReactivate = async () => {
-    if (!confirm('Are you sure you want to reactivate this technician?')) return;
+    if (!confirm(td.confirmReactivate)) return;
     
     setActionLoading(true);
     try {
       await reactivateTechnician(technicianId);
-      toast.success('Technician reactivated');
+      toast.success(td.reactivatedSuccess);
       loadTechnician();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to reactivate technician');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to reactivate technician';
+      toast.error(message);
     } finally {
       setActionLoading(false);
     }
@@ -143,11 +151,12 @@ export default function TechnicianDetailPage() {
         bio: editedData.bio,
         adminNotes: editedData.adminNotes,
       });
-      toast.success('Technician profile updated');
+      toast.success(td.profileUpdated);
       setIsEditing(false);
       loadTechnician();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update profile');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to update profile';
+      toast.error(message);
     } finally {
       setActionLoading(false);
     }
@@ -202,7 +211,7 @@ export default function TechnicianDetailPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading technician details...</p>
+          <p className="text-text-secondary">{td.loading}</p>
         </div>
       </div>
     );
@@ -211,12 +220,12 @@ export default function TechnicianDetailPage() {
   if (!technician) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-bold mb-4">Technician not found</h2>
+        <h2 className="text-2xl font-bold mb-4">{td.notFound}</h2>
         <button
           onClick={() => router.push('/admin/technicians')}
           className="apple-button-primary"
         >
-          Back to Technicians
+          {td.backToTechnicians}
         </button>
       </div>
     );
@@ -233,8 +242,8 @@ export default function TechnicianDetailPage() {
           <ArrowLeft className="w-6 h-6" />
         </button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold">Technician Details</h1>
-          <p className="text-text-secondary">View and manage technician profile</p>
+          <h1 className="text-3xl font-bold">{td.title}</h1>
+          <p className="text-text-secondary">{td.subtitle}</p>
         </div>
         <button
           onClick={() => {
@@ -253,7 +262,7 @@ export default function TechnicianDetailPage() {
           className="apple-button-secondary flex items-center gap-2"
         >
           {isEditing ? <X className="w-5 h-5" /> : <Edit className="w-5 h-5" />}
-          {isEditing ? 'Cancel' : 'Edit'}
+          {isEditing ? t.common.cancel : t.common.edit}
         </button>
         {isEditing && (
           <button
@@ -262,7 +271,7 @@ export default function TechnicianDetailPage() {
             className="apple-button-primary flex items-center gap-2"
           >
             <Save className="w-5 h-5" />
-            Save Changes
+            {td.saveChanges}
           </button>
         )}
       </div>
@@ -308,11 +317,11 @@ export default function TechnicianDetailPage() {
               </div>
               <div className="flex items-center gap-3">
                 <Calendar className="w-5 h-5 text-text-tertiary" />
-                <span>Applied: {formatOptionalDate(technician.applicationDate, 'short')}</span>
+                <span>{td.applied} {formatOptionalDate(technician.applicationDate, 'short')}</span>
               </div>
               <div className="flex items-center gap-3">
                 <CheckCircle className="w-5 h-5 text-success" />
-                <span>Approved: {formatOptionalDate(technician.approvedDate, 'short')}</span>
+                <span>{td.approvedDate} {formatOptionalDate(technician.approvedDate, 'short')}</span>
               </div>
             </div>
           </div>
@@ -328,7 +337,7 @@ export default function TechnicianDetailPage() {
             </div>
             <div>
               <p className="text-2xl font-bold">{formatOptionalNumber(technician.totalJobs)}</p>
-              <p className="text-sm text-text-secondary">Total Jobs</p>
+              <p className="text-sm text-text-secondary">{td.totalJobs}</p>
             </div>
           </div>
         </div>
@@ -340,7 +349,7 @@ export default function TechnicianDetailPage() {
             </div>
             <div>
               <p className="text-2xl font-bold">{formatOptionalNumber(technician.completedJobs)}</p>
-              <p className="text-sm text-text-secondary">Completed</p>
+              <p className="text-sm text-text-secondary">{td.completed}</p>
             </div>
           </div>
         </div>
@@ -352,7 +361,7 @@ export default function TechnicianDetailPage() {
             </div>
             <div>
               <p className="text-2xl font-bold">{technician.averageRating ? `${technician.averageRating.toFixed(1)}★` : 'N/A'}</p>
-              <p className="text-sm text-text-secondary">Avg Rating</p>
+              <p className="text-sm text-text-secondary">{td.avgRating}</p>
             </div>
           </div>
         </div>
@@ -364,7 +373,7 @@ export default function TechnicianDetailPage() {
             </div>
             <div>
               <p className="text-2xl font-bold">{formatOptionalCurrency(technician.totalEarnings, 'BRL')}</p>
-              <p className="text-sm text-text-secondary">Total Earnings</p>
+              <p className="text-sm text-text-secondary">{td.totalEarnings}</p>
             </div>
           </div>
         </div>
@@ -374,14 +383,14 @@ export default function TechnicianDetailPage() {
       <div className="apple-card">
         <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <MapPin className="w-5 h-5 text-primary" />
-          Service Areas
+          {td.serviceAreas}
         </h3>
         {isEditing ? (
           <div className="space-y-3">
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="Add service area..."
+                placeholder={td.addServiceArea}
                 value={newArea}
                 onChange={(e) => setNewArea(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && addServiceArea()}
@@ -423,7 +432,7 @@ export default function TechnicianDetailPage() {
                 </span>
               ))
             ) : (
-              <p className="text-text-secondary">No service areas specified</p>
+              <p className="text-text-secondary">{td.noServiceAreas}</p>
             )}
           </div>
         )}
@@ -433,14 +442,14 @@ export default function TechnicianDetailPage() {
       <div className="apple-card">
         <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Award className="w-5 h-5 text-warning" />
-          Certifications
+          {td.certifications}
         </h3>
         {isEditing ? (
           <div className="space-y-3">
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="Add certification..."
+                placeholder={td.addCertification}
                 value={newCert}
                 onChange={(e) => setNewCert(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && addCertification()}
@@ -482,7 +491,7 @@ export default function TechnicianDetailPage() {
                 </span>
               ))
             ) : (
-              <p className="text-text-secondary">No certifications specified</p>
+              <p className="text-text-secondary">{td.noCertifications}</p>
             )}
           </div>
         )}
@@ -490,43 +499,43 @@ export default function TechnicianDetailPage() {
 
       {/* Bio */}
       <div className="apple-card">
-        <h3 className="text-xl font-semibold mb-4">Professional Bio</h3>
+        <h3 className="text-xl font-semibold mb-4">{td.professionalBio}</h3>
         {isEditing ? (
           <textarea
             value={editedData.bio}
             onChange={(e) => setEditedData(prev => ({ ...prev, bio: e.target.value }))}
-            placeholder="Enter bio..."
+            placeholder={td.enterBio}
             rows={4}
             className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none"
           />
         ) : (
           <p className="text-text-secondary">
-            {technician.bio || 'No bio provided'}
+            {technician.bio || td.noBio}
           </p>
         )}
       </div>
 
       {/* Admin Notes */}
       <div className="apple-card">
-        <h3 className="text-xl font-semibold mb-4">Admin Notes</h3>
+        <h3 className="text-xl font-semibold mb-4">{td.adminNotes}</h3>
         {isEditing ? (
           <textarea
             value={editedData.adminNotes}
             onChange={(e) => setEditedData(prev => ({ ...prev, adminNotes: e.target.value }))}
-            placeholder="Enter admin notes..."
+            placeholder={td.enterNotes}
             rows={3}
             className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none"
           />
         ) : (
           <p className="text-text-secondary">
-            {technician.adminNotes || 'No notes'}
+            {technician.adminNotes || td.noNotes}
           </p>
         )}
       </div>
 
       {/* Action Buttons */}
       <div className="apple-card">
-        <h3 className="text-xl font-semibold mb-4">Actions</h3>
+        <h3 className="text-xl font-semibold mb-4">{td.actions}</h3>
         <div className="flex flex-wrap gap-3">
           {technician.technicianStatus === 'pending' && (
             <>
@@ -536,7 +545,7 @@ export default function TechnicianDetailPage() {
                 className="flex items-center gap-2 px-6 py-3 bg-success hover:bg-success/90 text-white font-semibold rounded-apple transition-all disabled:opacity-50"
               >
                 <CheckCircle className="w-5 h-5" />
-                Approve Technician
+                {td.approveTechnician}
               </button>
               <button
                 onClick={handleDecline}
@@ -544,7 +553,7 @@ export default function TechnicianDetailPage() {
                 className="flex items-center gap-2 px-6 py-3 bg-error hover:bg-error/90 text-white font-semibold rounded-apple transition-all disabled:opacity-50"
               >
                 <XCircle className="w-5 h-5" />
-                Decline Application
+                {td.declineApplication}
               </button>
             </>
           )}
@@ -556,7 +565,7 @@ export default function TechnicianDetailPage() {
               className="flex items-center gap-2 px-6 py-3 bg-warning hover:bg-warning/90 text-white font-semibold rounded-apple transition-all disabled:opacity-50"
             >
               <Pause className="w-5 h-5" />
-              Suspend Technician
+              {td.suspendTechnician}
             </button>
           )}
 
@@ -567,7 +576,7 @@ export default function TechnicianDetailPage() {
               className="flex items-center gap-2 px-6 py-3 bg-success hover:bg-success/90 text-white font-semibold rounded-apple transition-all disabled:opacity-50"
             >
               <Play className="w-5 h-5" />
-              Reactivate Technician
+              {td.reactivateTechnician}
             </button>
           )}
         </div>

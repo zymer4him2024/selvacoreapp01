@@ -5,8 +5,11 @@ import { BarChart3, TrendingUp, TrendingDown, DollarSign, Package as PackageIcon
 import { getAnalyticsMetrics, getTopProducts, AnalyticsMetrics, TopProduct } from '@/lib/services/adminStatsService';
 import { formatCurrency, formatOptionalNumber } from '@/lib/utils/formatters';
 import toast from 'react-hot-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function AnalyticsPage() {
+  const { t } = useTranslation();
+  const an = t.admin.analytics;
   const [metrics, setMetrics] = useState<AnalyticsMetrics | null>(null);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,8 +28,7 @@ export default function AnalyticsPage() {
       
       setMetrics(analyticsData);
       setTopProducts(products);
-    } catch (error: any) {
-      console.error('Error loading analytics:', error);
+    } catch (error: unknown) {
       toast.error('Failed to load analytics data');
     } finally {
       setLoading(false);
@@ -38,7 +40,7 @@ export default function AnalyticsPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading analytics...</p>
+          <p className="text-text-secondary">{an.loading}</p>
         </div>
       </div>
     );
@@ -46,31 +48,31 @@ export default function AnalyticsPage() {
 
   // Format metrics for display
   const metricsData = [
-    { 
-      name: 'Total Revenue', 
-      value: formatCurrency(metrics.totalRevenue, 'BRL'), 
-      change: '+18.2%', 
-      trend: 'up' as const 
+    {
+      name: an.totalRevenue,
+      value: formatCurrency(metrics.totalRevenue, 'BRL'),
+      change: '+18.2%',
+      trend: 'up' as const
     },
-    { 
-      name: 'Total Orders', 
-      value: formatOptionalNumber(metrics.totalOrders), 
-      change: '+12.5%', 
-      trend: 'up' as const 
+    {
+      name: an.totalOrders,
+      value: formatOptionalNumber(metrics.totalOrders),
+      change: '+12.5%',
+      trend: 'up' as const
     },
-    { 
-      name: 'Avg Order Value', 
-      value: formatOptionalNumber(Math.round(metrics.avgOrderValue)) === 'N/A' 
-        ? 'N/A' 
-        : formatCurrency(metrics.avgOrderValue, 'BRL'), 
-      change: '+5.3%', 
-      trend: 'up' as const 
+    {
+      name: an.avgOrderValue,
+      value: formatOptionalNumber(Math.round(metrics.avgOrderValue)) === 'N/A'
+        ? 'N/A'
+        : formatCurrency(metrics.avgOrderValue, 'BRL'),
+      change: '+5.3%',
+      trend: 'up' as const
     },
-    { 
-      name: 'Conversion Rate', 
-      value: `${metrics.conversionRate.toFixed(2)}%`, 
-      change: '-0.5%', 
-      trend: 'down' as const 
+    {
+      name: an.conversionRate,
+      value: `${metrics.conversionRate.toFixed(2)}%`,
+      change: '-0.5%',
+      trend: 'down' as const
     },
   ];
 
@@ -78,8 +80,8 @@ export default function AnalyticsPage() {
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div>
-        <h1 className="text-4xl font-bold tracking-tight mb-2">Analytics</h1>
-        <p className="text-text-secondary">Business insights and performance metrics</p>
+        <h1 className="text-4xl font-bold tracking-tight mb-2">{an.title}</h1>
+        <p className="text-text-secondary">{an.subtitle}</p>
       </div>
 
       {/* Key Metrics */}
@@ -105,7 +107,7 @@ export default function AnalyticsPage() {
               >
                 {metric.change}
               </span>
-              <span className="text-xs text-text-tertiary">vs last month</span>
+              <span className="text-xs text-text-tertiary">{t.common.vsLastMonth}</span>
             </div>
           </div>
         ))}
@@ -113,12 +115,12 @@ export default function AnalyticsPage() {
 
       {/* Top Products */}
       <div className="apple-card">
-        <h2 className="text-2xl font-semibold mb-6">Top Products</h2>
+        <h2 className="text-2xl font-semibold mb-6">{an.topProducts}</h2>
         {topProducts.length === 0 ? (
           <div className="py-12 text-center">
             <PackageIcon className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
-            <p className="text-text-secondary">No completed orders yet</p>
-            <p className="text-sm text-text-tertiary mt-2">Top products will appear here once orders are completed</p>
+            <p className="text-text-secondary">{an.noOrders}</p>
+            <p className="text-sm text-text-tertiary mt-2">{an.topProductsAppear}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -133,7 +135,7 @@ export default function AnalyticsPage() {
                   </div>
                   <div>
                     <p className="font-medium">{product.name}</p>
-                    <p className="text-sm text-text-secondary">{product.sales} sales</p>
+                    <p className="text-sm text-text-secondary">{product.sales} {an.sales}</p>
                   </div>
                 </div>
                 <p className="text-xl font-bold text-success">{formatCurrency(product.revenue, 'BRL')}</p>
@@ -145,13 +147,13 @@ export default function AnalyticsPage() {
 
       {/* Charts Placeholder */}
       <div className="apple-card">
-        <h2 className="text-2xl font-semibold mb-6">Revenue Trend</h2>
+        <h2 className="text-2xl font-semibold mb-6">{an.revenueTrend}</h2>
         <div className="h-64 flex items-center justify-center bg-surface-elevated rounded-apple">
           <div className="text-center">
             <BarChart3 className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
-            <p className="text-text-secondary">Charts will be implemented soon</p>
+            <p className="text-text-secondary">{an.chartsComingSoon}</p>
             <p className="text-sm text-text-tertiary mt-2">
-              Integration with Recharts for beautiful data visualization
+              {an.chartsDescription}
             </p>
           </div>
         </div>

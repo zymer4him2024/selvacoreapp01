@@ -6,9 +6,12 @@ import { ArrowLeft, Plus, X } from 'lucide-react';
 import { MultiLanguageText, Service } from '@/types';
 import { createService } from '@/lib/services/serviceService';
 import { SUPPORTED_LANGUAGES, SERVICE_CATEGORIES } from '@/lib/utils/constants';
+import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
 export default function NewServicePage() {
+  const { t } = useTranslation();
+  const sn = t.admin.serviceNew;
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -39,22 +42,22 @@ export default function NewServicePage() {
 
     // Validation
     if (!name.en.trim()) {
-      toast.error('Please enter service name in English');
+      toast.error(sn.validationName);
       return;
     }
 
     if (!category) {
-      toast.error('Please select a category');
+      toast.error(sn.validationCategory);
       return;
     }
 
     if (!price || parseFloat(price) <= 0) {
-      toast.error('Please enter a valid price');
+      toast.error(sn.validationPrice);
       return;
     }
 
     if (!duration || parseInt(duration) <= 0) {
-      toast.error('Please enter a valid duration');
+      toast.error(sn.validationDuration);
       return;
     }
 
@@ -72,11 +75,11 @@ export default function NewServicePage() {
         active,
       });
 
-      toast.success('Service created successfully!');
+      toast.success(sn.serviceCreated);
       router.push('/admin/services');
-    } catch (error: any) {
-      console.error('Error creating service:', error);
-      toast.error(error.message || 'Failed to create service');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to create service';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -93,9 +96,9 @@ export default function NewServicePage() {
           <ArrowLeft className="w-6 h-6" />
         </button>
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Add New Service</h1>
+          <h1 className="text-4xl font-bold tracking-tight">{sn.title}</h1>
           <p className="text-text-secondary mt-1">
-            Create a new service with multi-language support
+            {sn.subtitle}
           </p>
         </div>
       </div>
@@ -103,13 +106,13 @@ export default function NewServicePage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Information */}
         <div className="apple-card">
-          <h2 className="text-2xl font-semibold mb-6">Basic Information</h2>
+          <h2 className="text-2xl font-semibold mb-6">{sn.basicInfo}</h2>
 
           <div className="space-y-6">
             {/* Service Name (Multi-language) */}
             <div>
               <label className="block text-sm font-medium mb-3">
-                Service Name <span className="text-error">*</span>
+                {sn.serviceName} <span className="text-error">*</span>
               </label>
               <div className="space-y-3">
                 {SUPPORTED_LANGUAGES.map((lang) => (
@@ -132,7 +135,7 @@ export default function NewServicePage() {
 
             {/* Description (Multi-language) */}
             <div>
-              <label className="block text-sm font-medium mb-3">Description</label>
+              <label className="block text-sm font-medium mb-3">{sn.description}</label>
               <div className="space-y-3">
                 {SUPPORTED_LANGUAGES.map((lang) => (
                   <div key={lang.code} className="flex gap-3">
@@ -155,7 +158,7 @@ export default function NewServicePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Category <span className="text-error">*</span>
+                  {sn.category} <span className="text-error">*</span>
                 </label>
                 <select
                   value={category}
@@ -163,7 +166,7 @@ export default function NewServicePage() {
                   className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
                   required
                 >
-                  <option value="">Select category</option>
+                  <option value="">{sn.selectCategory}</option>
                   {SERVICE_CATEGORIES.map((cat) => (
                     <option key={cat} value={cat}>
                       {cat}
@@ -174,7 +177,7 @@ export default function NewServicePage() {
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Price <span className="text-error">*</span>
+                  {sn.price} <span className="text-error">*</span>
                 </label>
                 <input
                   type="number"
@@ -188,7 +191,7 @@ export default function NewServicePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Currency</label>
+                <label className="block text-sm font-medium mb-2">{sn.currency}</label>
                 <select
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
@@ -203,7 +206,7 @@ export default function NewServicePage() {
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Duration (hours) <span className="text-error">*</span>
+                  {sn.duration} <span className="text-error">*</span>
                 </label>
                 <input
                   type="number"
@@ -218,14 +221,14 @@ export default function NewServicePage() {
 
             {/* What's Included */}
             <div>
-              <label className="block text-sm font-medium mb-2">What's Included</label>
+              <label className="block text-sm font-medium mb-2">{sn.whatsIncluded}</label>
               <div className="flex gap-2 mb-3">
                 <input
                   type="text"
                   value={includeInput}
                   onChange={(e) => setIncludeInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addInclude())}
-                  placeholder="Add item and press Enter"
+                  placeholder={sn.addItemPlaceholder}
                   className="flex-1 px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
                 />
                 <button
@@ -266,7 +269,7 @@ export default function NewServicePage() {
                   onChange={(e) => setActive(e.target.checked)}
                   className="w-5 h-5 rounded accent-primary"
                 />
-                <span className="text-sm font-medium">Active</span>
+                <span className="text-sm font-medium">{sn.active}</span>
               </label>
             </div>
           </div>
@@ -279,14 +282,14 @@ export default function NewServicePage() {
             disabled={loading}
             className="flex-1 px-8 py-4 bg-secondary hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
           >
-            {loading ? 'Creating Service...' : 'Create Service'}
+            {loading ? sn.creatingService : sn.createService}
           </button>
           <button
             type="button"
             onClick={() => router.back()}
             className="px-8 py-4 bg-surface hover:bg-surface-elevated text-white font-semibold rounded-apple transition-all border border-border"
           >
-            Cancel
+            {t.common.cancel}
           </button>
         </div>
       </form>

@@ -3,13 +3,16 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Plus, Trash2, Upload, X } from 'lucide-react';
-import { Product, ProductVariation, MultiLanguageText } from '@/types';
-import { createProduct, uploadProductImage } from '@/lib/services/productService';
+import { Product, ProductVariation, MultiLanguageText, MaintenanceTemplateFilter } from '@/types';
+import { createProduct, updateProduct, uploadProductImage } from '@/lib/services/productService';
 import { PRODUCT_CATEGORIES, SUPPORTED_LANGUAGES } from '@/lib/utils/constants';
 import toast from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function NewProductPage() {
+  const { t } = useTranslation();
+  const pn = t.admin.productNew;
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   
@@ -33,6 +36,18 @@ export default function NewProductPage() {
   // Variations
   const [variations, setVariations] = useState<ProductVariation[]>([]);
   const [showVariationForm, setShowVariationForm] = useState(false);
+
+  // Maintenance Template
+  const [ezerIntervalDays, setEzerIntervalDays] = useState(180);
+  const [templateFilters, setTemplateFilters] = useState<MaintenanceTemplateFilter[]>([
+    { name: 'Sediment Filter', intervalDays: 180 },
+  ]);
+
+  const INTERVAL_OPTIONS = [
+    { label: pn.threeMonths, days: 90 },
+    { label: pn.sixMonths, days: 180 },
+    { label: pn.twelveMonths, days: 365 },
+  ];
 
   // Specifications
   const [specifications, setSpecifications] = useState<Record<string, string>>({});
@@ -101,7 +116,7 @@ export default function NewProductPage() {
     setVariations(variations.filter(v => v.id !== id));
   };
 
-  const updateVariation = (id: string, field: keyof ProductVariation, value: any) => {
+  const updateVariation = (id: string, field: keyof ProductVariation, value: ProductVariation[keyof ProductVariation]) => {
     setVariations(variations.map(v =>
       v.id === id ? { ...v, [field]: value } : v
     ));
@@ -112,17 +127,17 @@ export default function NewProductPage() {
     
     // Validation
     if (!name.en.trim()) {
-      toast.error('Please enter product name in English');
+      toast.error(pn.validationName);
       return;
     }
     
     if (!category) {
-      toast.error('Please select a category');
+      toast.error(pn.validationCategory);
       return;
     }
     
     if (!basePrice || parseFloat(basePrice) <= 0) {
-      toast.error('Please enter a valid price');
+      toast.error(pn.validationPrice);
       return;
     }
 
@@ -144,6 +159,10 @@ export default function NewProductPage() {
         active,
         featured,
         tags,
+        maintenanceTemplate: {
+          ezerIntervalDays,
+          filters: templateFilters,
+        },
       });
 
       // Upload images
@@ -155,30 +174,14 @@ export default function NewProductPage() {
 
       // Update product with image URLs
       if (imageUrls.length > 0) {
-        await createProduct({
-          ...          {
-            name,
-            description,
-            category,
-            brand,
-            basePrice: parseFloat(basePrice) || 0,
-            currency,
-            variations,
-            images: imageUrls,
-            specifications,
-            installationTime: parseInt(installationTime) || 1,
-            active,
-            featured,
-            tags,
-          }
-        });
+        await updateProduct(productId, { images: imageUrls });
       }
 
-      toast.success('Product created successfully!');
+      toast.success(pn.productCreated);
       router.push('/admin/products');
-    } catch (error: any) {
-      console.error('Error creating product:', error);
-      toast.error(error.message || 'Failed to create product');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to create product';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -195,9 +198,9 @@ export default function NewProductPage() {
           <ArrowLeft className="w-6 h-6" />
         </button>
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Add New Product</h1>
+          <h1 className="text-4xl font-bold tracking-tight">{pn.title}</h1>
           <p className="text-text-secondary mt-1">
-            Create a new product with variations and multi-language support
+            {pn.subtitle}
           </p>
         </div>
       </div>
@@ -205,13 +208,13 @@ export default function NewProductPage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Information */}
         <div className="apple-card">
-          <h2 className="text-2xl font-semibold mb-6">Basic Information</h2>
+          <h2 className="text-2xl font-semibold mb-6">{pn.basicInfo}</h2>
           
           <div className="space-y-6">
             {/* Product Name (Multi-language) */}
             <div>
               <label className="block text-sm font-medium mb-3">
-                Product Name <span className="text-error">*</span>
+                {pn.productName} <span className="text-error">*</span>
               </label>
               <div className="space-y-3">
                 {SUPPORTED_LANGUAGES.map(lang => (
@@ -235,7 +238,7 @@ export default function NewProductPage() {
             {/* Product Description (Multi-language) */}
             <div>
               <label className="block text-sm font-medium mb-3">
-                Description
+                {pn.description}
               </label>
               <div className="space-y-3">
                 {SUPPORTED_LANGUAGES.map(lang => (
@@ -259,7 +262,7 @@ export default function NewProductPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Category <span className="text-error">*</span>
+                  {pn.category} <span className="text-error">*</span>
                 </label>
                 <select
                   value={category}
@@ -267,7 +270,7 @@ export default function NewProductPage() {
                   className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
                   required
                 >
-                  <option value="">Select category</option>
+                  <option value="">{pn.selectCategory}</option>
                   {PRODUCT_CATEGORIES.map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
@@ -276,13 +279,13 @@ export default function NewProductPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Brand <span className="text-error">*</span>
+                  {pn.brand} <span className="text-error">*</span>
                 </label>
                 <input
                   type="text"
                   value={brand}
                   onChange={(e) => setBrand(e.target.value)}
-                  placeholder="e.g., AquaPure"
+                  placeholder={pn.brandPlaceholder}
                   className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
                   required
                 />
@@ -293,7 +296,7 @@ export default function NewProductPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Base Price <span className="text-error">*</span>
+                  {pn.basePrice} <span className="text-error">*</span>
                 </label>
                 <input
                   type="number"
@@ -308,7 +311,7 @@ export default function NewProductPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Currency
+                  {pn.currency}
                 </label>
                 <select
                   value={currency}
@@ -324,7 +327,7 @@ export default function NewProductPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Installation Time (hours)
+                  {pn.installationTime}
                 </label>
                 <input
                   type="number"
@@ -338,14 +341,14 @@ export default function NewProductPage() {
 
             {/* Tags */}
             <div>
-              <label className="block text-sm font-medium mb-2">Tags</label>
+              <label className="block text-sm font-medium mb-2">{pn.tags}</label>
               <div className="flex gap-2 mb-3">
                 <input
                   type="text"
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                  placeholder="Add tag and press Enter"
+                  placeholder={pn.tagsPlaceholder}
                   className="flex-1 px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
                 />
                 <button
@@ -386,7 +389,7 @@ export default function NewProductPage() {
                   onChange={(e) => setActive(e.target.checked)}
                   className="w-5 h-5 rounded accent-primary"
                 />
-                <span className="text-sm font-medium">Active</span>
+                <span className="text-sm font-medium">{pn.active}</span>
               </label>
 
               <label className="flex items-center gap-3 cursor-pointer">
@@ -396,7 +399,7 @@ export default function NewProductPage() {
                   onChange={(e) => setFeatured(e.target.checked)}
                   className="w-5 h-5 rounded accent-warning"
                 />
-                <span className="text-sm font-medium">Featured</span>
+                <span className="text-sm font-medium">{pn.featured}</span>
               </label>
             </div>
           </div>
@@ -404,14 +407,14 @@ export default function NewProductPage() {
 
         {/* Product Images */}
         <div className="apple-card">
-          <h2 className="text-2xl font-semibold mb-6">Product Images</h2>
+          <h2 className="text-2xl font-semibold mb-6">{pn.productImages}</h2>
           
           <div className="space-y-4">
             <div>
               <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-border rounded-apple hover:border-primary transition-all cursor-pointer bg-surface-elevated hover:bg-surface-secondary">
                 <Upload className="w-12 h-12 text-text-tertiary mb-2" />
-                <span className="text-sm text-text-secondary">Click to upload images</span>
-                <span className="text-xs text-text-tertiary mt-1">PNG, JPG, WebP (max 10MB)</span>
+                <span className="text-sm text-text-secondary">{pn.uploadImages}</span>
+                <span className="text-xs text-text-tertiary mt-1">{pn.imageFormats}</span>
                 <input
                   type="file"
                   multiple
@@ -440,7 +443,7 @@ export default function NewProductPage() {
                     </button>
                     {index === 0 && (
                       <div className="absolute bottom-2 left-2 px-2 py-1 bg-primary text-white text-xs rounded">
-                        Main
+                        {pn.main}
                       </div>
                     )}
                   </div>
@@ -452,7 +455,7 @@ export default function NewProductPage() {
 
         {/* Specifications */}
         <div className="apple-card">
-          <h2 className="text-2xl font-semibold mb-6">Specifications</h2>
+          <h2 className="text-2xl font-semibold mb-6">{pn.specifications}</h2>
           
           <div className="space-y-4">
             <div className="flex gap-3">
@@ -460,14 +463,14 @@ export default function NewProductPage() {
                 type="text"
                 value={specKey}
                 onChange={(e) => setSpecKey(e.target.value)}
-                placeholder="Key (e.g., Dimensions)"
+                placeholder={pn.specKey}
                 className="flex-1 px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
               />
               <input
                 type="text"
                 value={specValue}
                 onChange={(e) => setSpecValue(e.target.value)}
-                placeholder="Value (e.g., 12 x 8 x 24 inches)"
+                placeholder={pn.specValue}
                 className="flex-1 px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
               />
               <button
@@ -508,9 +511,9 @@ export default function NewProductPage() {
         <div className="apple-card">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-semibold">Product Variations</h2>
+              <h2 className="text-2xl font-semibold">{pn.productVariations}</h2>
               <p className="text-sm text-text-secondary mt-1">
-                Add different sizes, models, or configurations
+                {pn.whatsIncluded}
               </p>
             </div>
             <button
@@ -519,13 +522,13 @@ export default function NewProductPage() {
               className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-apple transition-all"
             >
               <Plus className="w-5 h-5" />
-              Add Variation
+              {pn.addVariation}
             </button>
           </div>
 
           {variations.length === 0 ? (
             <div className="text-center py-8 text-text-tertiary">
-              No variations yet. Click "Add Variation" to create one.
+              {pn.noVariations}
             </div>
           ) : (
             <div className="space-y-4">
@@ -550,14 +553,14 @@ export default function NewProductPage() {
                       type="text"
                       value={variation.name}
                       onChange={(e) => updateVariation(variation.id, 'name', e.target.value)}
-                      placeholder="Variation name (e.g., Small - 5 Stage)"
+                      placeholder={pn.variationName}
                       className="px-4 py-2 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
                     />
                     <input
                       type="text"
                       value={variation.sku}
                       onChange={(e) => updateVariation(variation.id, 'sku', e.target.value)}
-                      placeholder="SKU"
+                      placeholder={pn.sku}
                       className="px-4 py-2 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
                     />
                     <input
@@ -565,14 +568,14 @@ export default function NewProductPage() {
                       step="0.01"
                       value={variation.price || ''}
                       onChange={(e) => updateVariation(variation.id, 'price', parseFloat(e.target.value) || 0)}
-                      placeholder="Price"
+                      placeholder={pn.price}
                       className="px-4 py-2 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
                     />
                     <input
                       type="number"
                       value={variation.stock || ''}
                       onChange={(e) => updateVariation(variation.id, 'stock', parseInt(e.target.value) || 0)}
-                      placeholder="Stock quantity"
+                      placeholder={pn.stock}
                       className="px-4 py-2 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
                     />
                   </div>
@@ -582,6 +585,79 @@ export default function NewProductPage() {
           )}
         </div>
 
+        {/* Maintenance Template */}
+        <div className="apple-card">
+          <div className="mb-6">
+            <h2 className="text-2xl font-semibold">{pn.maintenanceTemplate}</h2>
+            <p className="text-sm text-text-secondary mt-1">{pn.maintenanceTemplateDesc}</p>
+          </div>
+
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium mb-3">{pn.ezerInterval}</label>
+              <div className="grid grid-cols-3 gap-2">
+                {INTERVAL_OPTIONS.map((opt) => (
+                  <button key={opt.days} type="button"
+                    onClick={() => setEzerIntervalDays(opt.days)}
+                    className={`px-3 py-2 rounded-apple text-sm font-medium transition-all ${
+                      ezerIntervalDays === opt.days
+                        ? 'bg-primary text-white'
+                        : 'bg-surface-elevated text-text-secondary hover:text-text-primary'
+                    }`}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-sm font-medium">{pn.filterSchedules}</label>
+                {templateFilters.length < 4 && (
+                  <button type="button"
+                    onClick={() => setTemplateFilters([...templateFilters, { name: '', intervalDays: 180 }])}
+                    className="flex items-center gap-1 text-sm text-primary font-medium hover:text-primary/80 transition-all">
+                    <Plus className="w-4 h-4" /> {pn.addFilter}
+                  </button>
+                )}
+              </div>
+              <div className="space-y-4">
+                {templateFilters.map((filter, index) => (
+                  <div key={index} className="p-4 bg-surface rounded-apple border border-border space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-text-secondary">{pn.filterName}</span>
+                      {templateFilters.length > 1 && (
+                        <button type="button"
+                          onClick={() => setTemplateFilters(templateFilters.filter((_, i) => i !== index))}
+                          className="text-sm text-error hover:text-error/80 transition-colors">
+                          {pn.removeFilter}
+                        </button>
+                      )}
+                    </div>
+                    <input type="text" value={filter.name}
+                      onChange={(e) => setTemplateFilters(templateFilters.map((f, i) => i === index ? { ...f, name: e.target.value } : f))}
+                      placeholder={pn.filterNamePlaceholder}
+                      className="w-full px-4 py-2 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all text-sm" />
+                    <div className="grid grid-cols-3 gap-2">
+                      {INTERVAL_OPTIONS.map((opt) => (
+                        <button key={opt.days} type="button"
+                          onClick={() => setTemplateFilters(templateFilters.map((f, i) => i === index ? { ...f, intervalDays: opt.days } : f))}
+                          className={`px-3 py-2 rounded-apple text-sm font-medium transition-all ${
+                            filter.intervalDays === opt.days
+                              ? 'bg-primary text-white'
+                              : 'bg-surface-elevated text-text-secondary hover:text-text-primary'
+                          }`}>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Submit Buttons */}
         <div className="flex gap-4">
           <button
@@ -589,14 +665,14 @@ export default function NewProductPage() {
             disabled={loading}
             className="flex-1 px-8 py-4 bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
           >
-            {loading ? 'Creating Product...' : 'Create Product'}
+            {loading ? pn.creatingProduct : pn.createProduct}
           </button>
           <button
             type="button"
             onClick={() => router.back()}
             className="px-8 py-4 bg-surface hover:bg-surface-elevated text-white font-semibold rounded-apple transition-all border border-border"
           >
-            Cancel
+            {t.common.cancel}
           </button>
         </div>
       </form>

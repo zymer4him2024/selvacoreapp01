@@ -17,7 +17,14 @@ export type TransactionType =
   | 'service_updated'
   | 'service_deleted'
   | 'sub_contractor_created'
-  | 'sub_contractor_updated';
+  | 'sub_contractor_updated'
+  | 'device_registered'
+  | 'device_status_changed'
+  | 'maintenance_completed'
+  | 'maintenance_visit'
+  | 'inventory_created'
+  | 'inventory_updated'
+  | 'stock_adjusted';
 
 export interface Transaction {
   id: string;
@@ -35,7 +42,7 @@ export interface Transaction {
   currency?: string;
   
   // Metadata
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   
   // Audit trail
   performedBy: string; // userId

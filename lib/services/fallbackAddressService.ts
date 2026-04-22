@@ -20,9 +20,8 @@ export function saveFallbackAddress(address: Address): void {
     }
     
     localStorage.setItem(FALLBACK_ADDRESSES_KEY, JSON.stringify(addresses));
-    console.log('✅ Address saved to fallback storage:', address.id);
   } catch (error) {
-    console.error('❌ Failed to save fallback address:', error);
+    // Silently ignore - localStorage may be unavailable
   }
 }
 
@@ -36,7 +35,6 @@ export function getFallbackAddresses(): Address[] {
     
     return JSON.parse(addressesStr);
   } catch (error) {
-    console.error('❌ Failed to get fallback addresses:', error);
     return [];
   }
 }
@@ -49,7 +47,6 @@ export function getFallbackAddress(addressId: string): Address | null {
     const addresses = getFallbackAddresses();
     return addresses.find(address => address.id === addressId) || null;
   } catch (error) {
-    console.error('❌ Failed to get fallback address:', error);
     return null;
   }
 }
@@ -62,10 +59,8 @@ export function deleteFallbackAddress(addressId: string): boolean {
     const addresses = getFallbackAddresses();
     const filteredAddresses = addresses.filter(a => a.id !== addressId);
     localStorage.setItem(FALLBACK_ADDRESSES_KEY, JSON.stringify(filteredAddresses));
-    console.log('✅ Fallback address deleted:', addressId);
     return true;
   } catch (error) {
-    console.error('❌ Failed to delete fallback address:', error);
     return false;
   }
 }
@@ -76,9 +71,8 @@ export function deleteFallbackAddress(addressId: string): boolean {
 export function clearFallbackAddresses(): void {
   try {
     localStorage.removeItem(FALLBACK_ADDRESSES_KEY);
-    console.log('✅ Fallback addresses cleared');
   } catch (error) {
-    console.error('❌ Failed to clear fallback addresses:', error);
+    // Silently ignore - localStorage may be unavailable
   }
 }
 
@@ -116,17 +110,13 @@ export async function syncFallbackAddressesToFirestore(): Promise<number> {
         const remainingAddresses = addresses.filter(a => a.id !== address.id);
         localStorage.setItem(FALLBACK_ADDRESSES_KEY, JSON.stringify(remainingAddresses));
         syncedCount++;
-        
-        console.log('✅ Fallback address synced to Firestore:', address.id);
       } catch (error) {
-        console.log('⚠️ Could not sync fallback address to Firestore:', address.id);
         // Keep in fallback storage if Firestore fails
       }
     }
     
     return syncedCount;
   } catch (error) {
-    console.error('❌ Failed to sync fallback addresses:', error);
     return 0;
   }
 }

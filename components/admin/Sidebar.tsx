@@ -2,53 +2,67 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  Package, 
-  Wrench, 
-  Building2, 
-  ShoppingCart, 
-  Receipt, 
-  BarChart3, 
+import {
+  LayoutDashboard,
+  Package,
+  Wrench,
+  Building2,
+  ShoppingCart,
+  Receipt,
+  BarChart3,
   Settings,
   Users,
+  CalendarClock,
+  CalendarDays,
+  Boxes,
   LogOut,
   Menu,
   X
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/hooks/useTranslation';
+import NotificationBell from '@/components/common/NotificationBell';
 import toast from 'react-hot-toast';
 
+import { LucideIcon } from 'lucide-react';
+
 interface NavItem {
-  name: string;
+  key: string;
   href: string;
-  icon: any;
+  icon: LucideIcon;
 }
 
-const navigation: NavItem[] = [
-  { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { name: 'Products', href: '/admin/products', icon: Package },
-  { name: 'Services', href: '/admin/services', icon: Wrench },
-  { name: 'Technicians', href: '/admin/technicians', icon: Users },
-  { name: 'Sub-Contractors', href: '/admin/sub-contractors', icon: Building2 },
-  { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
-  { name: 'Transactions', href: '/admin/transactions', icon: Receipt },
-  { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
-  { name: 'Settings', href: '/admin/settings', icon: Settings },
+const navigationItems: NavItem[] = [
+  { key: 'dashboard', href: '/admin', icon: LayoutDashboard },
+  { key: 'products', href: '/admin/products', icon: Package },
+  { key: 'services', href: '/admin/services', icon: Wrench },
+  { key: 'technicians', href: '/admin/technicians', icon: Users },
+  { key: 'subContractors', href: '/admin/sub-contractors', icon: Building2 },
+  { key: 'orders', href: '/admin/orders', icon: ShoppingCart },
+  { key: 'schedule', href: '/admin/schedule', icon: CalendarDays },
+  { key: 'inventory', href: '/admin/inventory', icon: Boxes },
+  { key: 'maintenance', href: '/admin/maintenance', icon: CalendarClock },
+  { key: 'transactions', href: '/admin/transactions', icon: Receipt },
+  { key: 'analytics', href: '/admin/analytics', icon: BarChart3 },
+  { key: 'settings', href: '/admin/settings', icon: Settings },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { userData, signOut } = useAuth();
+  const { t } = useTranslation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const s = t.admin.sidebar;
 
   const handleSignOut = async () => {
     try {
       await signOut();
-      toast.success('Signed out successfully');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to sign out');
+      toast.success(s.signedOut);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to sign out';
+      toast.error(message);
     }
   };
 
@@ -92,20 +106,21 @@ export default function Sidebar() {
               <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                 Selvacore
               </h1>
-              <p className="text-xs text-text-tertiary">Admin Panel</p>
+              <p className="text-xs text-text-tertiary">{s.adminPanel}</p>
             </div>
           </Link>
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navigation.map((item) => {
+          {navigationItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
+            const label = s[item.key as keyof typeof s] || item.key;
 
             return (
               <Link
-                key={item.name}
+                key={item.key}
                 href={item.href}
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`
@@ -118,7 +133,7 @@ export default function Sidebar() {
                 `}
               >
                 <Icon className="w-5 h-5" />
-                <span className="font-medium">{item.name}</span>
+                <span className="font-medium">{label}</span>
               </Link>
             );
           })}
@@ -140,6 +155,7 @@ export default function Sidebar() {
                 {userData?.email}
               </p>
             </div>
+            <NotificationBell />
           </div>
 
           <button
@@ -147,7 +163,7 @@ export default function Sidebar() {
             className="w-full flex items-center gap-3 px-4 py-3 rounded-apple text-text-secondary hover:text-error hover:bg-surface-elevated transition-all"
           >
             <LogOut className="w-5 h-5" />
-            <span className="font-medium">Sign Out</span>
+            <span className="font-medium">{s.signOut}</span>
           </button>
         </div>
       </aside>

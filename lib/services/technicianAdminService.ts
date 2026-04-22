@@ -1,14 +1,13 @@
 // Technician Admin Service - Admin-only functions for managing technicians
-import { 
-  collection, 
-  doc, 
-  getDocs, 
+import {
+  collection,
+  doc,
+  getDocs,
   getDoc,
   updateDoc,
   query,
   where,
-  orderBy,
-  Timestamp 
+  Timestamp
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { User, TechnicianStatus } from '@/types/user';
@@ -35,46 +34,40 @@ export interface TechnicianWithStats extends User {
  */
 export async function getAllTechnicians(status?: TechnicianStatus): Promise<TechnicianWithStats[]> {
   try {
-    console.log('📋 ADMIN - Fetching technicians, status filter:', status || 'all');
-    
     const usersRef = collection(db, 'users');
-    let q;
-    
-    if (status) {
-      q = query(
-        usersRef,
-        where('role', '==', 'technician'),
-        where('technicianStatus', '==', status),
-        orderBy('applicationDate', 'desc')
-      );
-    } else {
-      q = query(
-        usersRef,
-        where('role', '==', 'technician'),
-        orderBy('applicationDate', 'desc')
-      );
-    }
-    
+    const q = status
+      ? query(
+          usersRef,
+          where('role', '==', 'technician'),
+          where('technicianStatus', '==', status)
+        )
+      : query(usersRef, where('role', '==', 'technician'));
+
     const snapshot = await getDocs(q);
-    console.log('📋 ADMIN - Found', snapshot.size, 'technicians');
-    
+
     const technicians: TechnicianWithStats[] = [];
-    
+
     for (const docSnap of snapshot.docs) {
       const userData = { id: docSnap.id, ...docSnap.data() } as User;
-      
+
       // Get technician stats from orders
       const stats = await getTechnicianJobStats(docSnap.id);
-      
+
       technicians.push({
         ...userData,
         ...stats
       });
     }
-    
+
+    // Sort client-side so technicians without applicationDate still appear
+    technicians.sort((a, b) => {
+      const aMillis = a.applicationDate?.toMillis?.() ?? a.createdAt?.toMillis?.() ?? 0;
+      const bMillis = b.applicationDate?.toMillis?.() ?? b.createdAt?.toMillis?.() ?? 0;
+      return bMillis - aMillis;
+    });
+
     return technicians;
   } catch (error) {
-    console.error('❌ ADMIN - Error fetching technicians:', error);
     throw error;
   }
 }
@@ -119,7 +112,6 @@ async function getTechnicianJobStats(technicianId: string) {
       lastJobDate
     };
   } catch (error) {
-    console.error('Error fetching technician stats:', error);
     return {
       totalJobs: 0,
       completedJobs: 0,
@@ -151,7 +143,6 @@ export async function getTechnicianStatsSummary(): Promise<TechnicianStats> {
     
     return stats;
   } catch (error) {
-    console.error('Error fetching technician stats:', error);
     return {
       totalTechnicians: 0,
       pendingApplications: 0,
@@ -168,8 +159,6 @@ export async function getTechnicianStatsSummary(): Promise<TechnicianStats> {
  */
 export async function approveTechnician(technicianId: string, adminNotes?: string): Promise<void> {
   try {
-    console.log('✅ ADMIN - Approving technician:', technicianId);
-    
     const userRef = doc(db, 'users', technicianId);
     await updateDoc(userRef, {
       technicianStatus: 'approved',
@@ -178,10 +167,7 @@ export async function approveTechnician(technicianId: string, adminNotes?: strin
       adminNotes: adminNotes || '',
       updatedAt: Timestamp.now(),
     });
-    
-    console.log('✅ ADMIN - Technician approved successfully');
   } catch (error) {
-    console.error('❌ ADMIN - Error approving technician:', error);
     throw error;
   }
 }
@@ -191,8 +177,6 @@ export async function approveTechnician(technicianId: string, adminNotes?: strin
  */
 export async function declineTechnician(technicianId: string, reason?: string): Promise<void> {
   try {
-    console.log('❌ ADMIN - Declining technician:', technicianId);
-    
     const userRef = doc(db, 'users', technicianId);
     await updateDoc(userRef, {
       technicianStatus: 'declined',
@@ -200,10 +184,7 @@ export async function declineTechnician(technicianId: string, reason?: string): 
       adminNotes: reason || 'Application declined',
       updatedAt: Timestamp.now(),
     });
-    
-    console.log('❌ ADMIN - Technician declined');
   } catch (error) {
-    console.error('❌ ADMIN - Error declining technician:', error);
     throw error;
   }
 }
@@ -213,8 +194,6 @@ export async function declineTechnician(technicianId: string, reason?: string): 
  */
 export async function suspendTechnician(technicianId: string, reason: string): Promise<void> {
   try {
-    console.log('⏸️ ADMIN - Suspending technician:', technicianId);
-    
     const userRef = doc(db, 'users', technicianId);
     await updateDoc(userRef, {
       technicianStatus: 'suspended',
@@ -222,10 +201,7 @@ export async function suspendTechnician(technicianId: string, reason: string): P
       adminNotes: reason,
       updatedAt: Timestamp.now(),
     });
-    
-    console.log('⏸️ ADMIN - Technician suspended');
   } catch (error) {
-    console.error('❌ ADMIN - Error suspending technician:', error);
     throw error;
   }
 }
@@ -235,18 +211,13 @@ export async function suspendTechnician(technicianId: string, reason: string): P
  */
 export async function reactivateTechnician(technicianId: string): Promise<void> {
   try {
-    console.log('▶️ ADMIN - Reactivating technician:', technicianId);
-    
     const userRef = doc(db, 'users', technicianId);
     await updateDoc(userRef, {
       technicianStatus: 'approved',
       active: true,
       updatedAt: Timestamp.now(),
     });
-    
-    console.log('▶️ ADMIN - Technician reactivated');
   } catch (error) {
-    console.error('❌ ADMIN - Error reactivating technician:', error);
     throw error;
   }
 }
@@ -259,17 +230,12 @@ export async function updateTechnicianProfile(
   updates: Partial<User>
 ): Promise<void> {
   try {
-    console.log('📝 ADMIN - Updating technician profile:', technicianId);
-    
     const userRef = doc(db, 'users', technicianId);
     await updateDoc(userRef, {
       ...updates,
       updatedAt: Timestamp.now(),
     });
-    
-    console.log('📝 ADMIN - Technician profile updated');
   } catch (error) {
-    console.error('❌ ADMIN - Error updating technician profile:', error);
     throw error;
   }
 }
@@ -294,7 +260,6 @@ export async function getTechnicianById(technicianId: string): Promise<Technicia
       ...stats
     };
   } catch (error) {
-    console.error('Error fetching technician:', error);
     throw error;
   }
 }
@@ -313,7 +278,6 @@ export async function searchTechnicians(searchTerm: string): Promise<TechnicianW
       tech.phone?.includes(searchTerm)
     );
   } catch (error) {
-    console.error('Error searching technicians:', error);
     throw error;
   }
 }

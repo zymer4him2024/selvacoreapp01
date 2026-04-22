@@ -119,6 +119,132 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "devices",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "registeredAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "devices",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "nextEzerMaintenanceDue",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "maintenanceSchedules",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "deviceId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "devices",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "technicianId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "registeredAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "maintenanceVisits",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "deviceId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "notifications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "inventory",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "active",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "name",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "stockAdjustments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "itemId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "technicianId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "scheduledAt",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

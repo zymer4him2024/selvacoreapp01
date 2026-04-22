@@ -7,8 +7,11 @@ import { SubContractor } from '@/types';
 import { getAllSubContractors, deleteSubContractor } from '@/lib/services/subContractorService';
 import { formatCurrency, formatPhone } from '@/lib/utils/formatters';
 import toast from 'react-hot-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function SubContractorsPage() {
+  const { t } = useTranslation();
+  const sc = t.admin.subContractors;
   const [subContractors, setSubContractors] = useState<SubContractor[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -22,29 +25,31 @@ export default function SubContractorsPage() {
       setLoading(true);
       const data = await getAllSubContractors();
       setSubContractors(data);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load sub-contractors');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to load sub-contractors';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete "${name}"? This will affect all associated installers.`)) return;
+    if (!confirm(sc.confirmDelete.replace('{name}', name))) return;
 
     try {
       await deleteSubContractor(id);
       toast.success('Sub-contractor deleted successfully');
       loadSubContractors();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to delete sub-contractor');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete sub-contractor';
+      toast.error(message);
     }
   };
 
-  const filteredSubContractors = subContractors.filter((sc) =>
-    sc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sc.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sc.address.city.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredSubContractors = subContractors.filter((item) =>
+    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.address.city.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -52,7 +57,7 @@ export default function SubContractorsPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading sub-contractors...</p>
+          <p className="text-text-secondary">{sc.loading}</p>
         </div>
       </div>
     );
@@ -63,15 +68,15 @@ export default function SubContractorsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight mb-2">Sub-Contractors</h1>
-          <p className="text-text-secondary">Manage sub-contractors and their installers</p>
+          <h1 className="text-4xl font-bold tracking-tight mb-2">{sc.title}</h1>
+          <p className="text-text-secondary">{sc.subtitle}</p>
         </div>
         <Link
           href="/admin/sub-contractors/new"
           className="flex items-center gap-2 px-6 py-3 bg-success hover:bg-success/90 text-white font-semibold rounded-apple transition-all hover:scale-105 shadow-apple"
         >
           <Plus className="w-5 h-5" />
-          Add Sub-Contractor
+          {sc.addSubContractor}
         </Link>
       </div>
 
@@ -81,7 +86,7 @@ export default function SubContractorsPage() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
           <input
             type="text"
-            placeholder="Search by name, email, or city..."
+            placeholder={sc.searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
@@ -93,9 +98,9 @@ export default function SubContractorsPage() {
       {filteredSubContractors.length === 0 ? (
         <div className="apple-card text-center py-16">
           <Building2 className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
-          <h3 className="text-xl font-semibold mb-2">No sub-contractors found</h3>
+          <h3 className="text-xl font-semibold mb-2">{sc.noSubContractors}</h3>
           <p className="text-text-secondary mb-6">
-            {searchTerm ? 'Try a different search term' : 'Get started by adding your first sub-contractor'}
+            {searchTerm ? sc.tryDifferent : sc.getStarted}
           </p>
           {!searchTerm && (
             <Link
@@ -103,15 +108,15 @@ export default function SubContractorsPage() {
               className="inline-flex items-center gap-2 px-6 py-3 bg-success hover:bg-success/90 text-white font-semibold rounded-apple transition-all"
             >
               <Plus className="w-5 h-5" />
-              Add First Sub-Contractor
+              {sc.addFirst}
             </Link>
           )}
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {filteredSubContractors.map((sc) => (
+          {filteredSubContractors.map((item) => (
             <div
-              key={sc.id}
+              key={item.id}
               className="apple-card hover:scale-[1.01] transition-all"
             >
               <div className="flex items-start gap-4">
@@ -122,13 +127,13 @@ export default function SubContractorsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h3 className="text-xl font-semibold mb-1">{sc.name}</h3>
-                      <p className="text-sm text-text-secondary">{sc.email}</p>
-                      <p className="text-sm text-text-tertiary mt-1">{formatPhone(sc.phone)}</p>
+                      <h3 className="text-xl font-semibold mb-1">{item.name}</h3>
+                      <p className="text-sm text-text-secondary">{item.email}</p>
+                      <p className="text-sm text-text-tertiary mt-1">{formatPhone(item.phone)}</p>
                     </div>
-                    {!sc.active && (
+                    {!item.active && (
                       <span className="px-3 py-1 bg-error/20 text-error text-xs font-medium rounded-full">
-                        Inactive
+                        {sc.inactive}
                       </span>
                     )}
                   </div>
@@ -136,37 +141,37 @@ export default function SubContractorsPage() {
                   <div className="flex items-center gap-4 mb-4 text-sm">
                     <div className="flex items-center gap-2 text-text-secondary">
                       <Users className="w-4 h-4" />
-                      <span>{sc.stats.totalInstallers} installers</span>
+                      <span>{item.stats.totalInstallers} {sc.installers}</span>
                     </div>
                     <div className="flex items-center gap-2 text-text-secondary">
                       <PackageIcon className="w-4 h-4" />
-                      <span>{sc.stats.totalOrders} orders</span>
+                      <span>{item.stats.totalOrders} {sc.ordersLabel}</span>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between pt-3 border-t border-border">
                     <div>
-                      <p className="text-xs text-text-tertiary">Revenue</p>
+                      <p className="text-xs text-text-tertiary">{sc.revenue}</p>
                       <p className="text-lg font-bold text-success">
-                        {formatCurrency(sc.stats.revenue)}
+                        {formatCurrency(item.stats.revenue)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-text-tertiary">Commission</p>
-                      <p className="text-lg font-bold">{sc.commission}%</p>
+                      <p className="text-xs text-text-tertiary">{sc.commission}</p>
+                      <p className="text-lg font-bold">{item.commission}%</p>
                     </div>
                   </div>
 
                   <div className="flex gap-2 mt-4">
                     <Link
-                      href={`/admin/sub-contractors/${sc.id}`}
+                      href={`/admin/sub-contractors/${item.id}`}
                       className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-surface-elevated hover:bg-surface-secondary rounded-apple text-sm font-medium transition-all"
                     >
                       <Edit className="w-4 h-4" />
-                      Edit
+                      {t.common.edit}
                     </Link>
                     <button
-                      onClick={() => handleDelete(sc.id, sc.name)}
+                      onClick={() => handleDelete(item.id, item.name)}
                       className="flex items-center justify-center gap-2 px-4 py-2 bg-surface-elevated hover:bg-error/20 hover:text-error rounded-apple text-sm font-medium transition-all"
                     >
                       <Trash2 className="w-4 h-4" />

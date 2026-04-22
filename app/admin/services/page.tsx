@@ -6,9 +6,12 @@ import { Plus, Search, Edit, Trash2, Wrench, Clock } from 'lucide-react';
 import { Service } from '@/types';
 import { getAllServices, deleteService } from '@/lib/services/serviceService';
 import { formatCurrency } from '@/lib/utils/formatters';
+import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
 export default function ServicesPage() {
+  const { t } = useTranslation();
+  const sv = t.admin.services;
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -22,8 +25,9 @@ export default function ServicesPage() {
       setLoading(true);
       const data = await getAllServices();
       setServices(data);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load services');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to load services';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -36,8 +40,9 @@ export default function ServicesPage() {
       await deleteService(id);
       toast.success('Service deleted successfully');
       loadServices();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to delete service');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete service';
+      toast.error(message);
     }
   };
 
@@ -51,7 +56,7 @@ export default function ServicesPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading services...</p>
+          <p className="text-text-secondary">{sv.loading}</p>
         </div>
       </div>
     );
@@ -62,15 +67,15 @@ export default function ServicesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight mb-2">Services</h1>
-          <p className="text-text-secondary">Manage installation and maintenance services</p>
+          <h1 className="text-4xl font-bold tracking-tight mb-2">{sv.title}</h1>
+          <p className="text-text-secondary">{sv.subtitle}</p>
         </div>
         <Link
           href="/admin/services/new"
           className="flex items-center gap-2 px-6 py-3 bg-secondary hover:bg-secondary/90 text-white font-semibold rounded-apple transition-all hover:scale-105 shadow-apple"
         >
           <Plus className="w-5 h-5" />
-          Add Service
+          {sv.addService}
         </Link>
       </div>
 
@@ -80,7 +85,7 @@ export default function ServicesPage() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
           <input
             type="text"
-            placeholder="Search services..."
+            placeholder={sv.searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all text-text-primary placeholder:text-text-tertiary"
@@ -92,9 +97,9 @@ export default function ServicesPage() {
       {filteredServices.length === 0 ? (
         <div className="apple-card text-center py-16">
           <Wrench className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
-          <h3 className="text-xl font-semibold mb-2">No services found</h3>
+          <h3 className="text-xl font-semibold mb-2">{sv.noServices}</h3>
           <p className="text-text-secondary mb-6">
-            {searchTerm ? 'Try a different search term' : 'Get started by adding your first service'}
+            {searchTerm ? sv.tryDifferent : sv.getStarted}
           </p>
           {!searchTerm && (
             <Link
@@ -102,7 +107,7 @@ export default function ServicesPage() {
               className="inline-flex items-center gap-2 px-6 py-3 bg-secondary hover:bg-secondary/90 text-white font-semibold rounded-apple transition-all"
             >
               <Plus className="w-5 h-5" />
-              Add First Service
+              {sv.addFirst}
             </Link>
           )}
         </div>
@@ -130,7 +135,7 @@ export default function ServicesPage() {
                         </div>
                         {!service.active && (
                           <span className="px-3 py-1 bg-error/20 text-error text-xs font-medium rounded-full">
-                            Inactive
+                            {sv.inactive}
                           </span>
                         )}
                       </div>
@@ -154,7 +159,7 @@ export default function ServicesPage() {
 
                       {service.includes && service.includes.length > 0 && (
                         <div className="mt-4">
-                          <p className="text-xs text-text-tertiary mb-2">Includes:</p>
+                          <p className="text-xs text-text-tertiary mb-2">{sv.includes}</p>
                           <div className="flex flex-wrap gap-2">
                             {service.includes.slice(0, 3).map((item, index) => (
                               <span
@@ -166,7 +171,7 @@ export default function ServicesPage() {
                             ))}
                             {service.includes.length > 3 && (
                               <span className="px-2 py-1 text-xs text-text-tertiary">
-                                +{service.includes.length - 3} more
+                                +{service.includes.length - 3} {sv.more}
                               </span>
                             )}
                           </div>
@@ -200,7 +205,7 @@ export default function ServicesPage() {
       {/* Summary */}
       {filteredServices.length > 0 && (
         <div className="text-center text-sm text-text-tertiary">
-          Showing {filteredServices.length} of {services.length} services
+          {sv.showing} {filteredServices.length} {sv.of} {services.length} {sv.services}
         </div>
       )}
     </div>

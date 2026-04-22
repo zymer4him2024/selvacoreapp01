@@ -4,7 +4,7 @@ import { pt } from './pt';
 import { es } from './es';
 import { ko } from './ko';
 
-export type Language = 'en' | 'pt' | 'es' | 'ko';
+export type { Language } from '@/types/user';
 
 export const translations = {
   en,

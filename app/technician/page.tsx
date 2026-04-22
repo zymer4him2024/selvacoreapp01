@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAvailableJobs, getTechnicianStats, TechnicianStats } from '@/lib/services/technicianService';
 import { Order } from '@/types/order';
-import { MapPin, Calendar, DollarSign, Package, TrendingUp, Briefcase, Star, Award, AlertCircle, XCircle, Clock } from 'lucide-react';
+import { MapPin, Calendar, DollarSign, Package, TrendingUp, Briefcase, Star, Award, AlertCircle, XCircle, Clock, QrCode } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { formatCurrency, formatDate } from '@/lib/utils/formatters';
 import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
@@ -13,6 +14,7 @@ import JobDetailModal from '@/components/technician/JobDetailModal';
 export default function TechnicianDashboard() {
   const { user, userData } = useAuth();
   const { t } = useTranslation();
+  const router = useRouter();
   const [jobs, setJobs] = useState<Order[]>([]);
   const [stats, setStats] = useState<TechnicianStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,8 +37,9 @@ export default function TechnicianDashboard() {
       
       setJobs(availableJobs);
       setStats(techStats);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load jobs');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to load jobs';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -154,13 +157,22 @@ export default function TechnicianDashboard() {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Welcome Header */}
-      <div>
-        <h1 className="text-4xl font-bold tracking-tight">
-          Welcome back, {userData?.displayName?.split(' ')[0] || 'Technician'}! 👋
-        </h1>
-        <p className="text-text-secondary mt-2">
-          {jobs.length} {jobs.length === 1 ? 'job' : 'jobs'} available for you
-        </p>
+      <div className="flex items-center gap-4">
+        {userData?.logoURL && (
+          <img
+            src={userData.logoURL}
+            alt="Logo"
+            className="w-16 h-16 rounded-apple object-contain border border-border bg-white p-1"
+          />
+        )}
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight">
+            Welcome back, {userData?.displayName?.split(' ')[0] || 'Technician'}! 👋
+          </h1>
+          <p className="text-text-secondary mt-2">
+            {jobs.length} {jobs.length === 1 ? 'job' : 'jobs'} available for you
+          </p>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -215,6 +227,25 @@ export default function TechnicianDashboard() {
           </div>
         </div>
       )}
+
+      {/* Quick Scan Card */}
+      <div
+        onClick={() => router.push('/technician/scan')}
+        className="apple-card cursor-pointer hover:shadow-apple-lg transition-all group"
+      >
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-apple bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-all">
+            <QrCode className="w-7 h-7 text-primary" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-bold text-lg">Quick Scan</h3>
+            <p className="text-sm text-text-secondary">Scan a device QR code to complete maintenance</p>
+          </div>
+          <div className="px-4 py-2 bg-primary text-white text-sm font-semibold rounded-apple">
+            Scan
+          </div>
+        </div>
+      </div>
 
       {/* Available Jobs */}
       <div>

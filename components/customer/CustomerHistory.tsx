@@ -24,7 +24,7 @@ export default function CustomerHistory({ customerId, limit = 5 }: CustomerHisto
       const historyData = await getCustomerHistory(customerId);
       setHistory(historyData.slice(0, limit));
     } catch (error) {
-      console.error('Failed to load customer history:', error);
+      // Silently ignore - UI will show empty state
     } finally {
       setLoading(false);
     }

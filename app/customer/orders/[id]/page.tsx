@@ -9,6 +9,13 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils/formatters';
 import { generateWhatsAppLink, openWhatsApp } from '@/lib/utils/whatsappHelper';
+import { cancelOrder } from '@/lib/services/orderService';
+import { refundAmazonPayment } from '@/lib/services/amazonPaymentService';
+import { addCustomerHistoryRecord } from '@/lib/services/customerHistoryService';
+import CancelOrderModal from '@/components/customer/CancelOrderModal';
+import RatingModal from '@/components/customer/RatingModal';
+import { submitRating } from '@/lib/services/ratingService';
+import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
 export default function OrderDetailPage() {
@@ -16,11 +23,15 @@ export default function OrderDetailPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const { userData } = useAuth();
+  const { t } = useTranslation();
+  const o = t.orders;
   const orderId = params.id as string;
   const isNewOrder = searchParams.get('success') === 'true';
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
 
   useEffect(() => {
     loadOrder();
@@ -42,10 +53,61 @@ export default function OrderDetailPage() {
       }
 
       setOrder({ id: orderDoc.id, ...orderDoc.data() } as Order);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error('Failed to load order');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancelOrder = async (reason: string) => {
+    if (!order || !userData) return;
+    try {
+      await cancelOrder(orderId, reason, 'customer', userData.id);
+
+      if (order.payment.transactionId) {
+        await refundAmazonPayment(order.payment.transactionId, order.payment.amount);
+      }
+
+      await addCustomerHistoryRecord({
+        customerId: userData.id,
+        type: 'order_cancelled',
+        title: 'Order Cancelled',
+        description: `Order ${order.orderNumber} cancelled. Reason: ${reason}`,
+        amount: order.payment.amount,
+        currency: order.payment.currency,
+        orderId,
+      });
+
+      toast.success(o.cancelSuccess);
+      setShowCancelModal(false);
+      await loadOrder();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to cancel order';
+      toast.error(message);
+    }
+  };
+
+  const handleSubmitRating = async (data: { score: number; review: string; categories: { punctuality: number; professionalism: number; quality: number; cleanliness: number } }) => {
+    if (!order || !userData) return;
+    try {
+      await submitRating({
+        orderId,
+        orderNumber: order.orderNumber,
+        customerId: userData.id,
+        installerId: order.technicianId || '',
+        subContractorId: order.subContractorId || '',
+        score: data.score,
+        review: data.review,
+        categories: data.categories,
+      });
+
+      toast.success('Thank you for your review!');
+      setShowRatingModal(false);
+      await loadOrder();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to submit rating';
+      toast.error(message);
     }
   };
 
@@ -77,7 +139,7 @@ export default function OrderDetailPage() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading order details...</p>
+          <p className="text-text-secondary">{o.loadingOrderDetails}</p>
         </div>
       </div>
     );
@@ -108,7 +170,7 @@ export default function OrderDetailPage() {
             className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
-            Back to Orders
+            {o.backToOrders}
           </button>
         </div>
       </div>
@@ -121,9 +183,9 @@ export default function OrderDetailPage() {
               <div className="flex items-start gap-4">
                 <CheckCircle className="w-8 h-8 text-success flex-shrink-0" />
                 <div>
-                  <h3 className="font-semibold text-success mb-1">Order Placed Successfully!</h3>
+                  <h3 className="font-semibold text-success mb-1">{o.orderPlacedSuccess}</h3>
                   <p className="text-sm text-text-secondary">
-                    Your order has been received. A technician will accept it soon. You'll be notified once it's accepted.
+                    {o.orderPlacedDesc}
                   </p>
                 </div>
               </div>
@@ -134,9 +196,9 @@ export default function OrderDetailPage() {
           <div>
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h1 className="text-3xl font-bold mb-2">Order {order.orderNumber}</h1>
+                <h1 className="text-3xl font-bold mb-2">{o.orderNumber} {order.orderNumber}</h1>
                 <p className="text-text-secondary">
-                  Placed on {formatDate(order.createdAt, 'long')}
+                  {o.placedOn} {formatDate(order.createdAt, 'long')}
                 </p>
               </div>
               <span className={`px-4 py-2 rounded-apple text-sm font-medium border-2 ${getStatusColor(order.status)}`}>
@@ -147,7 +209,7 @@ export default function OrderDetailPage() {
 
           {/* Product & Service Info */}
           <div className="apple-card">
-            <h2 className="text-xl font-semibold mb-4">Order Details</h2>
+            <h2 className="text-xl font-semibold mb-4">{o.orderDetails}</h2>
             
             <div className="space-y-4">
               <div className="flex gap-4">
@@ -178,7 +240,7 @@ export default function OrderDetailPage() {
               {order.serviceSnapshot && (
                 <div className="pt-4 border-t border-border">
                   <p className="font-medium">{order.serviceSnapshot.name[lang]}</p>
-                  <p className="text-sm text-text-secondary">{order.serviceSnapshot.duration}h installation</p>
+                  <p className="text-sm text-text-secondary">{order.serviceSnapshot.duration}h {o.installationService}</p>
                   <p className="text-primary font-semibold mt-1">
                     {formatCurrency(order.payment.servicePrice, order.payment.currency)}
                   </p>
@@ -189,7 +251,7 @@ export default function OrderDetailPage() {
 
           {/* Installation Details */}
           <div className="apple-card">
-            <h2 className="text-xl font-semibold mb-4">Installation Schedule</h2>
+            <h2 className="text-xl font-semibold mb-4">{o.installationSchedule}</h2>
             
             <div className="space-y-4">
               <div className="flex items-start gap-3">
@@ -220,7 +282,7 @@ export default function OrderDetailPage() {
           {/* Technician Info (if accepted) */}
           {order.technicianInfo ? (
             <div className="apple-card bg-primary/5 border-primary/30">
-              <h2 className="text-xl font-semibold mb-4">Your Technician</h2>
+              <h2 className="text-xl font-semibold mb-4">{o.yourTechnician}</h2>
               
               <div className="flex items-start gap-4 mb-6">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-2xl font-bold flex-shrink-0">
@@ -231,7 +293,7 @@ export default function OrderDetailPage() {
                   <div className="flex items-center gap-2 mt-1">
                     <Star className="w-4 h-4 text-warning fill-warning" />
                     <span className="font-medium">{order.technicianInfo.rating.toFixed(1)}</span>
-                    <span className="text-sm text-text-secondary">rating</span>
+                    <span className="text-sm text-text-secondary">{o.rating}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-2 text-sm text-text-secondary">
                     <Phone className="w-4 h-4" />
@@ -246,16 +308,16 @@ export default function OrderDetailPage() {
               className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-success hover:bg-success/90 text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
             >
               <MessageCircle className="w-5 h-5" />
-              Contact Technician on WhatsApp
+              {o.contactWhatsApp}
             </button>
             </div>
           ) : (
             <div className="apple-card bg-warning/5 border-warning/30">
               <div className="text-center py-8">
                 <Clock className="w-12 h-12 mx-auto mb-3 text-warning" />
-                <h3 className="font-semibold mb-1">Waiting for Technician</h3>
+                <h3 className="font-semibold mb-1">{o.waitingForTechnician}</h3>
                 <p className="text-sm text-text-secondary">
-                  Your order is pending. A technician will accept it soon and you'll be notified.
+                  {o.waitingDesc}
                 </p>
               </div>
             </div>
@@ -263,32 +325,32 @@ export default function OrderDetailPage() {
 
           {/* Payment Info */}
           <div className="apple-card">
-            <h2 className="text-xl font-semibold mb-4">Payment Summary</h2>
-            
+            <h2 className="text-xl font-semibold mb-4">{o.paymentSummary}</h2>
+
             <div className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-text-secondary">Product</span>
+                <span className="text-text-secondary">{o.product}</span>
                 <span className="font-medium">
                   {formatCurrency(order.payment.productPrice, order.payment.currency)}
                 </span>
               </div>
               {order.serviceSnapshot && (
                 <div className="flex justify-between">
-                  <span className="text-text-secondary">Service</span>
+                  <span className="text-text-secondary">{o.service}</span>
                   <span className="font-medium">
                     {formatCurrency(order.payment.servicePrice, order.payment.currency)}
                   </span>
                 </div>
               )}
               <div className="flex justify-between">
-                <span className="text-text-secondary">Tax</span>
+                <span className="text-text-secondary">{o.tax}</span>
                 <span className="font-medium">
                   {formatCurrency(order.payment.tax, order.payment.currency)}
                 </span>
               </div>
               <div className="pt-3 border-t border-border">
                 <div className="flex justify-between">
-                  <span className="text-lg font-semibold">Total Paid</span>
+                  <span className="text-lg font-semibold">{o.totalPaid}</span>
                   <span className="text-2xl font-bold text-success">
                     {formatCurrency(order.payment.amount, order.payment.currency)}
                   </span>
@@ -296,16 +358,16 @@ export default function OrderDetailPage() {
               </div>
               <div className="pt-3 border-t border-border">
                 <div className="flex justify-between text-sm">
-                  <span className="text-text-tertiary">Payment Status</span>
-                  <span className="text-success font-medium">✓ Paid</span>
+                  <span className="text-text-tertiary">{o.paymentStatus}</span>
+                  <span className="text-success font-medium">✓ {o.paid}</span>
                 </div>
                 <div className="flex justify-between text-sm mt-2">
-                  <span className="text-text-tertiary">Transaction ID</span>
+                  <span className="text-text-tertiary">{o.transactionId}</span>
                   <span className="font-mono text-xs">{order.payment.transactionId}</span>
                 </div>
                 {order.payment.paidAt && (
                   <div className="flex justify-between text-sm mt-2">
-                    <span className="text-text-tertiary">Payment Date</span>
+                    <span className="text-text-tertiary">{o.paymentDate}</span>
                     <span>{formatDateTime(order.payment.paidAt)}</span>
                   </div>
                 )}
@@ -316,12 +378,12 @@ export default function OrderDetailPage() {
           {/* Site Photos */}
           {order.sitePhotos && (
             <div className="apple-card">
-              <h2 className="text-xl font-semibold mb-4">Site Photos</h2>
+              <h2 className="text-xl font-semibold mb-4">{o.sitePhotosTitle}</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {order.sitePhotos.waterSource && (
                   <div>
-                    <p className="text-sm text-text-secondary mb-2">Water Source</p>
+                    <p className="text-sm text-text-secondary mb-2">{o.waterSourceLabel}</p>
                     <div className="w-full h-40 bg-surface-elevated rounded-apple overflow-hidden">
                       <img
                         src={order.sitePhotos.waterSource.url}
@@ -333,7 +395,7 @@ export default function OrderDetailPage() {
                 )}
                 {order.sitePhotos.productLocation && (
                   <div>
-                    <p className="text-sm text-text-secondary mb-2">Installation Location</p>
+                    <p className="text-sm text-text-secondary mb-2">{o.installationLocation}</p>
                     <div className="w-full h-40 bg-surface-elevated rounded-apple overflow-hidden">
                       <img
                         src={order.sitePhotos.productLocation.url}
@@ -345,7 +407,7 @@ export default function OrderDetailPage() {
                 )}
                 {order.sitePhotos.waterRunningVideo && (
                   <div>
-                    <p className="text-sm text-text-secondary mb-2">Water Running</p>
+                    <p className="text-sm text-text-secondary mb-2">{o.waterRunning}</p>
                     <video
                       src={order.sitePhotos.waterRunningVideo.url}
                       controls
@@ -360,7 +422,7 @@ export default function OrderDetailPage() {
           {/* Installation Photos (after completion) */}
           {order.installationPhotos && order.installationPhotos.length > 0 && (
             <div className="apple-card">
-              <h2 className="text-xl font-semibold mb-4">Installation Photos</h2>
+              <h2 className="text-xl font-semibold mb-4">{o.installationPhotos}</h2>
               
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {order.installationPhotos.map((photo, index) => (
@@ -383,7 +445,7 @@ export default function OrderDetailPage() {
 
           {/* Order Timeline */}
           <div className="apple-card">
-            <h2 className="text-xl font-semibold mb-4">Order Timeline</h2>
+            <h2 className="text-xl font-semibold mb-4">{o.orderTimeline}</h2>
             
             <div className="space-y-4">
               {order.statusHistory?.map((history, index) => (
@@ -410,32 +472,76 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
+          {/* Rating display */}
+          {order.rating && (
+            <div className="apple-card bg-warning/5 border-warning/30">
+              <h2 className="text-xl font-semibold mb-3">{o.yourReview}</h2>
+              <div className="flex items-center gap-1 mb-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    className={`w-5 h-5 ${star <= order.rating!.score ? 'text-warning fill-warning' : 'text-text-tertiary'}`}
+                  />
+                ))}
+                <span className="ml-2 font-medium">{order.rating.score}/5</span>
+              </div>
+              {order.rating.review && (
+                <p className="text-sm text-text-secondary">{order.rating.review}</p>
+              )}
+            </div>
+          )}
+
+          {/* Cancellation info */}
+          {order.cancellation && (
+            <div className="apple-card bg-error/5 border-error/30">
+              <h2 className="text-xl font-semibold mb-3 text-error">{o.orderCancelled}</h2>
+              <p className="text-sm text-text-secondary mb-1">{o.reason}: {order.cancellation.reason}</p>
+              {order.cancellation.refundIssued && (
+                <p className="text-sm text-success font-medium">{o.refundIssued}</p>
+              )}
+            </div>
+          )}
+
           {/* Actions */}
           {order.status === 'completed' && !order.rating && (
             <button
+              onClick={() => setShowRatingModal(true)}
               className="w-full px-8 py-4 bg-warning hover:bg-warning/90 text-black font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
             >
               <div className="flex items-center justify-center gap-2">
                 <Star className="w-5 h-5" />
-                Rate Your Experience
+                {o.rateExperience}
               </div>
             </button>
           )}
 
           {order.status === 'pending' && (
             <button
+              onClick={() => setShowCancelModal(true)}
               className="w-full px-6 py-3 bg-surface hover:bg-surface-elevated border border-error text-error font-medium rounded-apple transition-all"
-              onClick={() => {
-                if (confirm('Are you sure you want to cancel this order?')) {
-                  toast.success('Order cancellation requested');
-                }
-              }}
             >
-              Cancel Order
+              {o.cancelOrder}
             </button>
           )}
         </div>
       </div>
+
+      {showCancelModal && (
+        <CancelOrderModal
+          orderNumber={order.orderNumber}
+          onConfirm={handleCancelOrder}
+          onClose={() => setShowCancelModal(false)}
+        />
+      )}
+
+      {showRatingModal && (
+        <RatingModal
+          orderNumber={order.orderNumber}
+          technicianName={order.technicianInfo?.name || 'Technician'}
+          onSubmit={handleSubmitRating}
+          onClose={() => setShowRatingModal(false)}
+        />
+      )}
     </div>
   );
 }

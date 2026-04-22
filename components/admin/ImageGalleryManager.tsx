@@ -63,7 +63,6 @@ export default function ImageGalleryManager({
           });
           validFiles.push(optimized);
         } catch (error) {
-          console.error('Failed to optimize image:', error);
           toast.error(`Failed to optimize ${file.name}`);
         }
       }

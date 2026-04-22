@@ -1,34 +1,56 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { Search, Eye, Package as PackageIcon, Calendar, User } from 'lucide-react';
 import { Order } from '@/types';
-import { getAllOrders } from '@/lib/services/orderService';
+import { getOrdersPaginated } from '@/lib/services/orderService';
 import { formatCurrency, formatDate, formatOptionalString } from '@/lib/utils/formatters';
+import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import toast from 'react-hot-toast';
+import { useTranslation } from '@/hooks/useTranslation';
+
+const PAGE_SIZE = 20;
 
 export default function OrdersPage() {
+  const { t } = useTranslation();
+  const o = t.admin.orders;
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const lastDocRef = useRef<QueryDocumentSnapshot<DocumentData> | null>(null);
 
-  useEffect(() => {
-    loadOrders();
-  }, []);
-
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async (reset: boolean = true) => {
     try {
-      setLoading(true);
-      const data = await getAllOrders();
-      setOrders(data);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load orders');
+      if (reset) {
+        setLoading(true);
+        lastDocRef.current = null;
+      } else {
+        setLoadingMore(true);
+      }
+      const result = await getOrdersPaginated(
+        PAGE_SIZE,
+        reset ? null : lastDocRef.current,
+        statusFilter
+      );
+      lastDocRef.current = result.lastDoc;
+      setHasMore(result.hasMore);
+      setOrders((prev) => (reset ? result.items : [...prev, ...result.items]));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to load orders';
+      toast.error(message);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  };
+  }, [statusFilter]);
+
+  useEffect(() => {
+    loadOrders(true);
+  }, [loadOrders]);
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -56,7 +78,7 @@ export default function OrdersPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading orders...</p>
+          <p className="text-text-secondary">{o.loading}</p>
         </div>
       </div>
     );
@@ -66,8 +88,8 @@ export default function OrdersPage() {
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div>
-        <h1 className="text-4xl font-bold tracking-tight mb-2">Orders</h1>
-        <p className="text-text-secondary">Manage all installation orders</p>
+        <h1 className="text-4xl font-bold tracking-tight mb-2">{o.title}</h1>
+        <p className="text-text-secondary">{o.subtitle}</p>
       </div>
 
       {/* Filters */}
@@ -77,7 +99,7 @@ export default function OrdersPage() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
             <input
               type="text"
-              placeholder="Search by order number or customer name..."
+              placeholder={o.searchPlaceholder}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-12 pr-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
@@ -89,12 +111,12 @@ export default function OrdersPage() {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
           >
-            <option value="all">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="accepted">Accepted</option>
-            <option value="in_progress">In Progress</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
+            <option value="all">{o.allStatuses}</option>
+            <option value="pending">{o.pending}</option>
+            <option value="accepted">{o.accepted}</option>
+            <option value="in_progress">{o.inProgress}</option>
+            <option value="completed">{o.completed}</option>
+            <option value="cancelled">{o.cancelled}</option>
           </select>
         </div>
       </div>
@@ -103,11 +125,11 @@ export default function OrdersPage() {
       {filteredOrders.length === 0 ? (
         <div className="apple-card text-center py-16">
           <PackageIcon className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
-          <h3 className="text-xl font-semibold mb-2">No orders found</h3>
+          <h3 className="text-xl font-semibold mb-2">{o.noOrders}</h3>
           <p className="text-text-secondary">
             {searchTerm || statusFilter !== 'all'
-              ? 'Try adjusting your filters'
-              : 'Orders will appear here once customers place them'}
+              ? o.tryAdjusting
+              : o.ordersWillAppear}
           </p>
         </div>
       ) : (
@@ -130,15 +152,15 @@ export default function OrdersPage() {
                         </span>
                       </div>
                       <p className="text-sm text-text-secondary">
-                        {order.productSnapshot?.name?.en || 'N/A'} - {order.serviceSnapshot?.name?.en || 'N/A'}
+                        {order.productSnapshot?.name?.en || t.admin.orderDetail.na} - {order.serviceSnapshot?.name?.en || t.admin.orderDetail.na}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-bold text-primary">
-                        {order.payment?.amount ? formatCurrency(order.payment.amount, order.payment.currency) : 'N/A'}
+                        {order.payment?.amount ? formatCurrency(order.payment.amount, order.payment.currency) : t.admin.orderDetail.na}
                       </p>
                       <p className="text-xs text-text-tertiary mt-1">
-                        {order.payment?.status || 'N/A'}
+                        {order.payment?.status || t.admin.orderDetail.na}
                       </p>
                     </div>
                   </div>
@@ -150,7 +172,7 @@ export default function OrdersPage() {
                     </div>
                     <div className="flex items-center gap-2 text-text-secondary">
                       <Calendar className="w-4 h-4" />
-                      <span>{order.installationDate ? formatDate(order.installationDate, 'short') : 'N/A'}</span>
+                      <span>{order.installationDate ? formatDate(order.installationDate, 'short') : t.admin.orderDetail.na}</span>
                       {order.timeSlot && (
                         <span className="text-xs bg-surface-elevated px-2 py-0.5 rounded">
                           {order.timeSlot}
@@ -158,13 +180,13 @@ export default function OrdersPage() {
                       )}
                     </div>
                     <div className="text-text-tertiary">
-                      Created {order.createdAt ? formatDate(order.createdAt, 'short') : 'N/A'}
+                      {o.created} {order.createdAt ? formatDate(order.createdAt, 'short') : t.admin.orderDetail.na}
                     </div>
                   </div>
 
                   {order.technicianInfo && (
                     <div className="mt-3 pt-3 border-t border-border">
-                      <p className="text-xs text-text-tertiary mb-1">Technician</p>
+                      <p className="text-xs text-text-tertiary mb-1">{o.technician}</p>
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
                           <span className="text-sm font-semibold text-primary">
@@ -190,29 +212,42 @@ export default function OrdersPage() {
         </div>
       )}
 
+      {/* Load More */}
+      {hasMore && (
+        <div className="text-center">
+          <button
+            onClick={() => loadOrders(false)}
+            disabled={loadingMore}
+            className="px-8 py-3 bg-surface-elevated hover:bg-surface-secondary text-text-primary font-medium rounded-apple transition-all disabled:opacity-50"
+          >
+            {loadingMore ? t.common.loading : t.common.loadMore}
+          </button>
+        </div>
+      )}
+
       {/* Summary */}
       {filteredOrders.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="apple-card text-center">
-            <p className="text-text-tertiary text-sm">Total Orders</p>
+            <p className="text-text-tertiary text-sm">{o.loaded}</p>
             <p className="text-2xl font-bold mt-1">{filteredOrders.length}</p>
           </div>
           <div className="apple-card text-center">
-            <p className="text-text-tertiary text-sm">Pending</p>
+            <p className="text-text-tertiary text-sm">{o.pending}</p>
             <p className="text-2xl font-bold mt-1 text-warning">
-              {filteredOrders.filter((o) => o.status === 'pending').length}
+              {filteredOrders.filter((ord) => ord.status === 'pending').length}
             </p>
           </div>
           <div className="apple-card text-center">
-            <p className="text-text-tertiary text-sm">In Progress</p>
+            <p className="text-text-tertiary text-sm">{o.inProgress}</p>
             <p className="text-2xl font-bold mt-1 text-secondary">
-              {filteredOrders.filter((o) => o.status === 'in_progress').length}
+              {filteredOrders.filter((ord) => ord.status === 'in_progress').length}
             </p>
           </div>
           <div className="apple-card text-center">
-            <p className="text-text-tertiary text-sm">Completed</p>
+            <p className="text-text-tertiary text-sm">{o.completed}</p>
             <p className="text-2xl font-bold mt-1 text-success">
-              {filteredOrders.filter((o) => o.status === 'completed').length}
+              {filteredOrders.filter((ord) => ord.status === 'completed').length}
             </p>
           </div>
         </div>

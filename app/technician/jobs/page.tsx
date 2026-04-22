@@ -45,8 +45,9 @@ export default function MyJobsPage() {
 
       const technicianJobs = await getTechnicianJobs(user.uid, statuses);
       setJobs(technicianJobs);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load jobs');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to load jobs';
+      toast.error(message);
     } finally {
       setLoading(false);
     }

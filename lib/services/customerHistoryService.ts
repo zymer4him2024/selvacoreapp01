@@ -5,14 +5,14 @@ import { db } from '@/lib/firebase/config';
 export interface CustomerHistoryRecord {
   id?: string;
   customerId: string;
-  type: 'order_placed' | 'payment_made' | 'order_updated' | 'service_completed' | 'order_cancelled';
+  type: 'order_placed' | 'payment_made' | 'order_updated' | 'service_completed' | 'order_cancelled' | 'order_rated';
   title: string;
   description: string;
   amount?: number;
   currency?: string;
   orderId?: string;
   transactionId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   timestamp: Date;
 }
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, CreditCard, Lock, Check } from 'lucide-react';
+import { ArrowLeft, CreditCard, Lock, Check, ShoppingBag } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Product, Service } from '@/types';
 import { getProductById } from '@/lib/services/productService';
@@ -10,7 +10,6 @@ import { getServiceById } from '@/lib/services/serviceService';
 import { collection, doc, addDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { formatCurrency, generateOrderNumber } from '@/lib/utils/formatters';
-import { processFakePayment } from '@/lib/services/fakePaymentService';
 import { processAmazonPayment } from '@/lib/services/amazonPaymentService';
 import { logTransaction } from '@/lib/services/transactionService';
 import { addCustomerHistoryRecord } from '@/lib/services/customerHistoryService';
@@ -22,12 +21,11 @@ export default function PaymentPage() {
   const router = useRouter();
   const { user, userData } = useAuth();
   const { t } = useTranslation();
-  
+
   const [product, setProduct] = useState<Product | null>(null);
   const [service, setService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'fake' | 'amazon'>('amazon');
 
   useEffect(() => {
     loadOrderSummary();
@@ -45,9 +43,8 @@ export default function PaymentPage() {
       }
 
       const orderData = JSON.parse(orderDataStr);
-
       const productData = await getProductById(orderData.productId);
-      
+
       if (!productData) {
         toast.error('Product not found');
         router.push('/customer');
@@ -55,124 +52,70 @@ export default function PaymentPage() {
       }
 
       setProduct(productData);
-      
-      // Load service only if serviceId exists
+
       if (orderData.serviceId) {
         try {
           const serviceData = await getServiceById(orderData.serviceId);
           setService(serviceData);
-        } catch (error) {
-          console.warn('Service not found, continuing without service:', error);
+        } catch {
           setService(null);
         }
       } else {
         setService(null);
       }
-    } catch (error: any) {
-      toast.error('Failed to load order summary');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to load order summary';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
   const handlePayment = async () => {
-    console.log('🚀 PAYMENT DEBUG - Starting payment process...', {
-      user: !!user,
-      product: !!product,
-      service: !!service,
-      userId: user?.uid,
-      productId: product?.id,
-      serviceId: service?.id
-    });
-
     if (!user || !product) {
-      console.error('❌ PAYMENT DEBUG - Missing required data:', { user: !!user, product: !!product, service: !!service });
       toast.error('Missing required data');
       return;
     }
-    
-    console.log('✅ PAYMENT DEBUG - All required data present, proceeding with payment...');
 
     try {
       setProcessing(true);
-      console.log('🔄 PAYMENT DEBUG - Set processing to true');
 
-      // Get order data
       const orderDataStr = sessionStorage.getItem('orderData');
-      console.log('📋 PAYMENT DEBUG - Order data from session:', orderDataStr);
-      
-      if (!orderDataStr) {
-        console.error('❌ PAYMENT DEBUG - No order data in session storage');
-        throw new Error('No order data');
-      }
+      if (!orderDataStr) throw new Error('No order data');
 
       const orderData = JSON.parse(orderDataStr);
-      console.log('📋 PAYMENT DEBUG - Parsed order data:', orderData);
 
-      // Get customer data
-      console.log('👤 PAYMENT DEBUG - Loading customer data for:', user.uid);
-      const customerDoc = await getDoc(doc(db, 'customers', user.uid));
-      
-      if (!customerDoc.exists()) {
-        console.error('❌ PAYMENT DEBUG - Customer profile not found for:', user.uid);
-        throw new Error('Customer profile not found');
-      }
-
-      const customerData = customerDoc.data();
-      console.log('👤 PAYMENT DEBUG - Customer data loaded:', customerData);
-      
-      const selectedAddress = customerData.addresses.find((a: any) => a.id === orderData.addressId);
-      console.log('🏠 PAYMENT DEBUG - Selected address:', selectedAddress);
-
+      let selectedAddress = orderData.addressOverride ?? null;
       if (!selectedAddress) {
-        console.error('❌ PAYMENT DEBUG - Address not found for ID:', orderData.addressId);
-        throw new Error('Address not found');
+        const customerDoc = await getDoc(doc(db, 'customers', user.uid));
+        if (!customerDoc.exists()) throw new Error('Customer profile not found');
+        const customerData = customerDoc.data();
+        selectedAddress = customerData.addresses.find(
+          (a: { id: string }) => a.id === orderData.addressId
+        );
       }
+      if (!selectedAddress) throw new Error('Address not found');
 
       // Calculate total
       const productPrice = product.basePrice;
       const servicePrice = service?.price || 0;
       const subtotal = productPrice + servicePrice;
-      const tax = subtotal * 0.1; // 10% tax
+      const tax = subtotal * 0.1;
       const total = subtotal + tax;
 
-      console.log('💰 PAYMENT DEBUG - Price calculation:', {
-        productPrice,
-        servicePrice,
-        subtotal,
-        tax,
-        total,
-        currency: product.currency
-      });
-
-      // Process payment based on selected method
-      console.log('💳 PAYMENT DEBUG - Processing payment with method:', paymentMethod);
-      const paymentResult = paymentMethod === 'amazon' 
-        ? await processAmazonPayment(total, product.currency)
-        : await processFakePayment(total, product.currency);
-      
-      console.log('✅ PAYMENT DEBUG - Payment result:', paymentResult);
+      // Process payment via Amazon Pay (test mode)
+      const paymentResult = await processAmazonPayment(total, product.currency);
 
       // Create order in Firestore
-      console.log('📦 PAYMENT DEBUG - Creating order...');
       const orderNumber = generateOrderNumber();
       const variation = product.variations?.find((v) => v.id === orderData.variationId);
-      
-      console.log('📦 PAYMENT DEBUG - Order details:', {
-        orderNumber,
-        customerId: user.uid,
-        productId: product.id,
-        serviceId: service?.id || null,
-        variation: variation?.name || 'No variation',
-        total
-      });
 
       const newOrder = {
         orderNumber,
         customerId: user.uid,
         technicianId: null,
         subContractorId: null,
-        
+
         productId: product.id,
         productVariationId: orderData.variationId || '',
         productSnapshot: {
@@ -181,18 +124,18 @@ export default function PaymentPage() {
           price: productPrice,
           image: product.images?.[0] || '',
         },
-        
+
         serviceId: service?.id || null,
         serviceSnapshot: service ? {
           name: service.name,
           price: servicePrice,
           duration: service.duration,
         } : null,
-        
+
         installationAddress: selectedAddress,
         installationDate: Timestamp.fromDate(new Date(orderData.installationDate)),
         timeSlot: orderData.timeSlot,
-        
+
         sitePhotos: {
           waterSource: {
             url: orderData.sitePhotos.waterSource,
@@ -207,9 +150,9 @@ export default function PaymentPage() {
             uploadedAt: Timestamp.now(),
           },
         },
-        
+
         installationPhotos: [],
-        
+
         status: 'pending',
         statusHistory: [{
           status: 'pending',
@@ -217,7 +160,7 @@ export default function PaymentPage() {
           note: 'Order created',
           changedBy: user.uid,
         }],
-        
+
         payment: {
           amount: total,
           currency: product.currency,
@@ -226,41 +169,37 @@ export default function PaymentPage() {
           tax,
           discount: 0,
           status: 'completed',
-          method: 'fake_payment',
+          method: 'amazon_pay',
           transactionId: paymentResult.transactionId,
+          amazonOrderId: paymentResult.amazonOrderId,
           paidAt: Timestamp.now(),
         },
-        
+
         createdAt: Timestamp.now(),
         acceptedAt: null,
         startedAt: null,
         completedAt: null,
         cancelledAt: null,
-        
+
         customerInfo: {
           name: userData?.displayName || '',
           email: userData?.email || '',
           phone: userData?.phone || '',
           whatsapp: userData?.phone || '',
         },
-        
+
         technicianInfo: null,
         rating: null,
         cancellation: null,
         changeHistory: [],
       };
 
-      let orderRef: any;
-      let orderId: string;
-      
-      console.log('🔥 PAYMENT DEBUG - Attempting to create order in Firestore...');
+      let orderRefId: string;
+
       try {
-        // Try to create order in Firestore
-        orderRef = await addDoc(collection(db, 'orders'), newOrder);
-        orderId = orderRef.id;
-        console.log('✅ PAYMENT DEBUG - Order created in Firestore successfully:', orderId);
-        
-        // Log transaction
+        const orderRef = await addDoc(collection(db, 'orders'), newOrder);
+        orderRefId = orderRef.id;
+
         await logTransaction({
           type: 'order_created',
           orderId: orderRef.id,
@@ -286,12 +225,12 @@ export default function PaymentPage() {
           metadata: {
             transactionId: paymentResult.transactionId,
             method: paymentResult.method,
+            amazonOrderId: paymentResult.amazonOrderId,
           },
           performedBy: user.uid,
           performedByRole: 'customer',
         });
 
-        // Add to customer history
         await addCustomerHistoryRecord({
           customerId: user.uid,
           type: 'payment_made',
@@ -307,13 +246,11 @@ export default function PaymentPage() {
             paymentMethod: paymentResult.method
           }
         });
-        
-      } catch (firestoreError: any) {
-        console.error('❌ PAYMENT DEBUG - Firestore order creation failed:', firestoreError);
-        console.warn('⚠️ PAYMENT DEBUG - Using fallback system...');
-        
-        // Use fallback order system
-        console.log('💾 PAYMENT DEBUG - Saving order to local storage...');
+
+      } catch (firestoreError: unknown) {
+        const msg = firestoreError instanceof Error ? firestoreError.message : 'Firestore error';
+        // Firestore order creation failed, using fallback
+
         const fallbackOrderId = saveFallbackOrder({
           orderNumber,
           customerId: user.uid,
@@ -329,41 +266,27 @@ export default function PaymentPage() {
           paymentMethod: paymentResult.method,
           transactionId: paymentResult.transactionId
         });
-        
-        console.log('✅ PAYMENT DEBUG - Fallback order saved with ID:', fallbackOrderId);
-        orderId = fallbackOrderId;
-        orderRef = { id: fallbackOrderId };
-        
+
+        orderRefId = fallbackOrderId;
         toast.success('Order saved locally! Will sync to server when possible.');
       }
 
-      // Clear session storage
-      console.log('🧹 PAYMENT DEBUG - Clearing session storage');
       sessionStorage.removeItem('orderData');
 
-      // Redirect to confirmation page with payment details
-      console.log('🔄 PAYMENT DEBUG - Redirecting to confirmation page...');
       const confirmationParams = new URLSearchParams({
-        orderId: orderRef.id,
+        orderId: orderRefId,
         orderNumber,
         transactionId: paymentResult.transactionId,
         amount: total.toString(),
         currency: product.currency
       });
-      
-      console.log('🔄 PAYMENT DEBUG - Confirmation params:', confirmationParams.toString());
+
       router.push(`/customer/order/payment/confirmation?${confirmationParams.toString()}`);
-      
-    } catch (error: any) {
-      console.error('❌ PAYMENT DEBUG - Payment processing failed:', error);
-      console.error('❌ PAYMENT DEBUG - Error details:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      });
-      toast.error(error.message || t.payment.paymentFailed);
+
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t.payment.paymentFailed;
+      toast.error(message);
     } finally {
-      console.log('🏁 PAYMENT DEBUG - Payment process completed, setting processing to false');
       setProcessing(false);
     }
   };
@@ -398,7 +321,7 @@ export default function PaymentPage() {
             className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
-            Back
+            {t.orders.back}
           </button>
         </div>
       </div>
@@ -426,14 +349,14 @@ export default function PaymentPage() {
 
           {/* Header */}
           <div className="text-center">
-            <h1 className="text-3xl font-bold mb-2">Payment</h1>
-            <p className="text-text-secondary">Review and complete your order</p>
+            <h1 className="text-3xl font-bold mb-2">{t.orders.paymentTitle}</h1>
+            <p className="text-text-secondary">{t.orders.reviewOrder}</p>
           </div>
 
           {/* Order Summary */}
           <div className="apple-card">
-            <h2 className="text-xl font-semibold mb-6">Order Summary</h2>
-            
+            <h2 className="text-xl font-semibold mb-6">{t.orders.orderSummary}</h2>
+
             <div className="space-y-4">
               <div className="flex justify-between items-start">
                 <div>
@@ -447,7 +370,7 @@ export default function PaymentPage() {
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="font-medium">{service.name[lang]}</p>
-                    <p className="text-sm text-text-secondary">{service.duration}h installation</p>
+                    <p className="text-sm text-text-secondary">{service.duration}h {t.orders.installationService}</p>
                   </div>
                   <p className="font-semibold">{formatCurrency(servicePrice, service.currency)}</p>
                 </div>
@@ -455,15 +378,15 @@ export default function PaymentPage() {
 
               <div className="pt-4 border-t border-border space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-text-secondary">Subtotal</span>
+                  <span className="text-text-secondary">{t.orders.subtotal}</span>
                   <span>{formatCurrency(subtotal, product.currency)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-text-secondary">Tax (10%)</span>
+                  <span className="text-text-secondary">{t.orders.tax}</span>
                   <span>{formatCurrency(tax, product.currency)}</span>
                 </div>
                 <div className="flex justify-between pt-3 border-t border-border">
-                  <span className="text-xl font-semibold">Total</span>
+                  <span className="text-xl font-semibold">{t.orders.totalToPay}</span>
                   <span className="text-2xl font-bold text-primary">
                     {formatCurrency(total, product.currency)}
                   </span>
@@ -474,15 +397,15 @@ export default function PaymentPage() {
 
           {/* Payment Method */}
           <div className="apple-card">
-            <h2 className="text-xl font-semibold mb-6">Payment Method</h2>
-            
-            <div className="p-6 bg-warning/10 border border-warning/30 rounded-apple mb-6">
+            <h2 className="text-xl font-semibold mb-6">{t.orders.paymentMethod}</h2>
+
+            <div className="p-4 bg-warning/10 border border-warning/30 rounded-apple mb-6">
               <div className="flex items-start gap-3">
-                <CreditCard className="w-6 h-6 text-warning flex-shrink-0 mt-1" />
+                <CreditCard className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium text-warning mb-1">Development Mode</p>
-                  <p className="text-sm text-text-secondary">
-                    Choose your preferred payment method for testing.
+                  <p className="font-medium text-warning text-sm">{t.orders.sandboxMode}</p>
+                  <p className="text-xs text-text-secondary">
+                    {t.orders.sandboxDesc}
                   </p>
                 </div>
               </div>
@@ -491,12 +414,12 @@ export default function PaymentPage() {
             <div className="p-6 bg-surface rounded-apple border-2 border-primary">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-primary/20 rounded-apple flex items-center justify-center">
-                    <CreditCard className="w-6 h-6 text-primary" />
+                  <div className="w-12 h-12 bg-[#FF9900]/20 rounded-apple flex items-center justify-center">
+                    <ShoppingBag className="w-6 h-6 text-[#FF9900]" />
                   </div>
                   <div>
-                    <p className="font-medium">Fake Payment Gateway</p>
-                    <p className="text-sm text-text-secondary">Test payment (always succeeds)</p>
+                    <p className="font-medium">{t.orders.amazonPay}</p>
+                    <p className="text-sm text-text-secondary">{t.orders.payWithAmazon}</p>
                   </div>
                 </div>
                 <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
@@ -506,7 +429,7 @@ export default function PaymentPage() {
 
               <div className="flex items-center gap-2 text-sm text-text-tertiary">
                 <Lock className="w-4 h-4" />
-                <span>Secure payment processing</span>
+                <span>{t.orders.securePayment}</span>
               </div>
             </div>
           </div>
@@ -515,24 +438,23 @@ export default function PaymentPage() {
           <button
             onClick={handlePayment}
             disabled={processing}
-            className="w-full px-8 py-4 bg-success hover:bg-success/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple-lg"
+            className="w-full px-8 py-4 bg-[#FF9900] hover:bg-[#FF9900]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple-lg"
           >
             {processing ? (
               <div className="flex items-center justify-center gap-3">
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Processing Payment...
+                {t.orders.processingPayment}
               </div>
             ) : (
-              `Pay ${formatCurrency(total, product.currency)}`
+              `${t.orders.payWithAmazonBtn} — ${formatCurrency(total, product.currency)}`
             )}
           </button>
 
           <p className="text-center text-xs text-text-tertiary">
-            By placing this order, you agree to our Terms of Service and Privacy Policy
+            {t.orders.termsNotice}
           </p>
         </div>
       </div>
     </div>
   );
 }
-

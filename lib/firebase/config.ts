@@ -1,10 +1,15 @@
 // Firebase configuration and initialization for Next.js
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, browserLocalPersistence, setPersistence } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  Firestore,
+} from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 
-// Firebase configuration from environment variables
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -15,12 +20,12 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Log Firebase config (without sensitive data)
-console.log('🔥 Firebase Config:', {
-  projectId: firebaseConfig.projectId,
-  authDomain: firebaseConfig.authDomain,
-  hasApiKey: !!firebaseConfig.apiKey,
-});
+// Validate Firebase config at runtime using static references (Next.js only inlines static access)
+if (typeof window !== 'undefined' && !firebaseConfig.apiKey) {
+  throw new Error(
+    'Firebase configuration is missing. Ensure NEXT_PUBLIC_FIREBASE_* variables are set in .env.local.'
+  );
+}
 
 // Initialize Firebase (singleton pattern for Next.js)
 let app: FirebaseApp;
@@ -31,23 +36,22 @@ let storage: FirebaseStorage;
 if (!getApps().length) {
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
-  
-  // Set persistence to LOCAL to ensure auth state persists across redirects
+
   if (typeof window !== 'undefined') {
-    setPersistence(auth, browserLocalPersistence).catch((error) => {
-      console.error('Error setting persistence:', error);
+    setPersistence(auth, browserLocalPersistence).catch(() => {});
+    // Persistent IndexedDB cache — keeps reads available offline and across tabs
+    db = initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
     });
+  } else {
+    db = getFirestore(app);
   }
-  
-  db = getFirestore(app);
   storage = getStorage(app);
-  console.log('✅ Firebase initialized successfully');
 } else {
   app = getApps()[0];
   auth = getAuth(app);
   db = getFirestore(app);
   storage = getStorage(app);
-  console.log('✅ Firebase already initialized');
 }
 
 export { app, auth, db, storage };

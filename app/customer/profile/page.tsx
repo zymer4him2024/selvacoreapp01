@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase/config';
 import { ArrowLeft, Save, User as UserIcon, Mail, Phone, Globe } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { SUPPORTED_LANGUAGES } from '@/lib/utils/constants';
+import type { Language } from '@/types';
 import toast from 'react-hot-toast';
 
 export default function CustomerProfilePage() {
@@ -43,7 +44,7 @@ export default function CustomerProfilePage() {
         setCustomerData(customerDoc.data());
       }
     } catch (error) {
-      console.error('Error loading customer profile:', error);
+      // Profile loading failed silently
     }
   };
 
@@ -71,7 +72,7 @@ export default function CustomerProfilePage() {
 
       // Update language
       if (formData.preferredLanguage !== userData?.preferredLanguage) {
-        changeLanguage(formData.preferredLanguage as any);
+        changeLanguage(formData.preferredLanguage as Language);
       }
 
       // Update local state
@@ -79,15 +80,15 @@ export default function CustomerProfilePage() {
         await updateUserData({
           displayName: formData.displayName,
           phone: formData.phone,
-          preferredLanguage: formData.preferredLanguage as any,
+          preferredLanguage: formData.preferredLanguage as Language,
         });
       }
 
       toast.success(t.messages?.saved || 'Profile updated successfully');
       router.back();
-    } catch (error: any) {
-      console.error('Error updating profile:', error);
-      toast.error(error.message || 'Failed to update profile');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to update profile';
+      toast.error(message);
     } finally {
       setLoading(false);
     }

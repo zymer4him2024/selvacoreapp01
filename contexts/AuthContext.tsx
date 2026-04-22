@@ -28,29 +28,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userData, setUserData] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Listen to auth state changes - SIMPLE VERSION
   useEffect(() => {
-    console.log('👂 Setting up auth state listener...');
-    
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log('🔔 Auth state changed:', firebaseUser?.email || 'signed out');
       setUser(firebaseUser);
-      
+
       if (firebaseUser) {
-        // Fetch user data from Firestore
+        // Set session cookie for middleware auth checks
+        const token = await firebaseUser.getIdToken();
+        document.cookie = `__session=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax; Secure`;
+
         const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
         if (userDoc.exists()) {
-          setUserData(userDoc.data() as User);
-          console.log('✅ User data loaded:', userDoc.data());
-        } else {
-          console.log('ℹ️ No user data in Firestore yet');
+          setUserData({ id: userDoc.id, ...userDoc.data() } as User);
         }
       } else {
+        // Clear session cookie
+        document.cookie = '__session=; path=/; max-age=0';
         setUserData(null);
       }
-      
+
       setLoading(false);
-      console.log('✅ Auth loading complete');
     });
 
     return () => unsubscribe();
@@ -58,23 +55,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      console.log('🚀 Starting Google sign-in with POPUP...');
       const provider = new GoogleAuthProvider();
-      console.log('📝 Opening Google sign-in popup...');
-      
       const result = await signInWithPopup(auth, provider);
       const firebaseUser = result.user;
-      console.log('✅ Popup sign-in successful:', firebaseUser.email);
 
-      // Check if user exists in Firestore
       const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-      
+
       if (!userDoc.exists()) {
-        console.log('📝 Creating new user profile...');
-        // New user - create basic profile (role will be selected later)
         const newUser: User = {
           id: firebaseUser.uid,
-          role: 'customer', // Temporary default - user will select actual role
+          role: 'customer',
           email: firebaseUser.email || '',
           displayName: firebaseUser.displayName || '',
           photoURL: firebaseUser.photoURL || undefined,
@@ -82,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           preferredLanguage: 'en',
           active: true,
           emailVerified: firebaseUser.emailVerified,
-          roleSelected: false, // User needs to select their role
+          roleSelected: false,
           createdAt: Timestamp.now(),
           updatedAt: Timestamp.now(),
           lastLoginAt: Timestamp.now(),
@@ -90,11 +80,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
         setUserData(newUser);
-        console.log('✅ New user created successfully (role selection pending)');
       } else {
-        console.log('✅ Existing user found, updating last login...');
-        // Existing user - update last login
-        const existingUser = userDoc.data() as User;
+        const existingUser = { id: userDoc.id, ...userDoc.data() } as User;
         await setDoc(
           doc(db, 'users', firebaseUser.uid),
           { lastLoginAt: Timestamp.now() },
@@ -102,43 +89,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         );
         setUserData({ ...existingUser, lastLoginAt: Timestamp.now() });
       }
-      
-      console.log('🎉 Sign-in complete!');
-    } catch (error: any) {
-      console.error('❌ Error signing in with Google:', error);
-      // Ignore popup_closed_by_user errors - user cancelled
-      if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+    } catch (error: unknown) {
+      const firebaseError = error as { code?: string };
+      if (firebaseError.code !== 'auth/popup-closed-by-user' && firebaseError.code !== 'auth/cancelled-popup-request') {
         throw error;
       }
     }
   };
 
   const signOut = async () => {
-    try {
-      await firebaseSignOut(auth);
-      setUser(null);
-      setUserData(null);
-    } catch (error) {
-      console.error('Error signing out:', error);
-      throw error;
-    }
+    document.cookie = '__session=; path=/; max-age=0';
+    await firebaseSignOut(auth);
+    setUser(null);
+    setUserData(null);
   };
 
   const updateUserData = async (data: Partial<User>) => {
     if (!user) throw new Error('No user logged in');
 
-    try {
-      await setDoc(
-        doc(db, 'users', user.uid),
-        { ...data, updatedAt: Timestamp.now() },
-        { merge: true }
-      );
+    await setDoc(
+      doc(db, 'users', user.uid),
+      { ...data, updatedAt: Timestamp.now() },
+      { merge: true }
+    );
 
-      setUserData((prev) => (prev ? { ...prev, ...data } : null));
-    } catch (error) {
-      console.error('Error updating user data:', error);
-      throw error;
-    }
+    setUserData((prev) => (prev ? { ...prev, ...data } : null));
   };
 
   const value = {

@@ -34,14 +34,15 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
         phone: userData.phone || '',
         whatsapp: userData.whatsapp || userData.phone || '',
         photo: userData.photoURL || '',
-        rating: 4.8, // TODO: Get actual rating from technician profile
+        rating: 0,
       };
 
       await acceptJob(job.id, user.uid, technicianInfo);
       toast.success('Job accepted successfully!');
       onJobAccepted();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to accept job');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to accept job';
+      toast.error(message);
     } finally {
       setAccepting(false);
     }
@@ -55,8 +56,9 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
       await declineJob(job.id, user.uid);
       toast.success('Job declined');
       onClose();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to decline job');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to decline job';
+      toast.error(message);
     } finally {
       setDeclining(false);
     }

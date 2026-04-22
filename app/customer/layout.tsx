@@ -1,18 +1,15 @@
-'use client';
+import type { Metadata } from 'next';
+import CustomerLayoutClient from '@/components/customer/CustomerLayoutClient';
 
-import ProtectedRoute from '@/components/common/ProtectedRoute';
+export const metadata: Metadata = {
+  title: 'Customer Portal | Selvacore',
+  description: 'Browse products, place orders, and track installations',
+};
 
 export default function CustomerLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <ProtectedRoute allowedRoles={['customer']}>
-      <div className="customer-theme">
-        {children}
-      </div>
-    </ProtectedRoute>
-  );
+  return <CustomerLayoutClient>{children}</CustomerLayoutClient>;
 }
-

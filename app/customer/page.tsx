@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { Package, Search, ShoppingCart, Filter } from 'lucide-react';
+import { Package, Search, ShoppingCart, Filter, Cpu } from 'lucide-react';
 import { Product } from '@/types';
+import { MultiLanguageText } from '@/types/product';
 import { getActiveProducts, getAllProducts } from '@/lib/services/productService';
 import { formatCurrency } from '@/lib/utils/formatters';
 import { useTranslation } from '@/hooks/useTranslation';
 import UserProfileDropdown from '@/components/customer/UserProfileDropdown';
+import NotificationBell from '@/components/common/NotificationBell';
 import CustomerHistory from '@/components/customer/CustomerHistory';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
@@ -41,46 +43,35 @@ export default function CustomerHomePage() {
         setHasProfile(true);
       }
     } catch (error) {
-      console.error('Error checking profile:', error);
+      // Profile check failed silently
     }
   };
 
   const loadProducts = async () => {
     try {
       setLoading(true);
-      console.log('🔍 Loading products...');
-      
+
       // First try to get active products
       const activeData = await getActiveProducts();
-      console.log('📦 Active products found:', activeData.length);
-      console.log('📋 Active products data:', activeData);
-      
-      // If no active products, get all products for debugging
+
+      // If no active products, get all products
       if (activeData.length === 0) {
-        console.log('⚠️ No active products found, checking all products...');
         const allData = await getAllProducts();
-        console.log('📦 All products found:', allData.length);
-        console.log('📋 All products data:', allData);
-        
-        // Show all products if no active ones (for debugging)
+
+        // Show all products if no active ones
         setProducts(allData);
       } else {
         setProducts(activeData);
       }
-      
-      // Debug: Log the products that were set
-      console.log('✅ Products set in state:', activeData.length > 0 ? activeData : activeData);
-    } catch (error: any) {
-      console.error('❌ Error loading products:', error);
+    } catch (error: unknown) {
       toast.error('Failed to load products');
     } finally {
-      console.log('🔍 LOADING COMPLETE - Setting loading to false');
       setLoading(false);
     }
   };
 
   // Helper function to get translated text safely
-  const getTranslation = (text: any, lang?: string): string => {
+  const getTranslation = (text: MultiLanguageText | undefined | null, lang?: string): string => {
     if (!text) return '';
     const language = lang || userData?.preferredLanguage || 'en';
     // Try requested language, fallback to English, then any available language
@@ -120,10 +111,17 @@ export default function CustomerHomePage() {
                 Selvacore
               </h1>
               <p className="text-sm text-text-secondary mt-1">
-                Professional Installation Services
+                {t.customer.browseProducts}
               </p>
             </div>
             <div className="flex items-center gap-3">
+              <Link
+                href="/customer/devices"
+                className="flex items-center gap-2 px-4 py-2 hover:bg-surface-elevated rounded-apple transition-all"
+              >
+                <Cpu className="w-5 h-5" />
+                <span className="hidden sm:inline">{t.customer.myDevices}</span>
+              </Link>
               <Link
                 href="/customer/orders"
                 className="flex items-center gap-2 px-4 py-2 hover:bg-surface-elevated rounded-apple transition-all"
@@ -131,6 +129,7 @@ export default function CustomerHomePage() {
                 <ShoppingCart className="w-5 h-5" />
                 <span className="hidden sm:inline">{t.customer.myOrders}</span>
               </Link>
+              <NotificationBell />
               <UserProfileDropdown />
             </div>
           </div>

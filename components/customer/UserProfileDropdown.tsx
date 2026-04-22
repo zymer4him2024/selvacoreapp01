@@ -36,7 +36,6 @@ export default function UserProfileDropdown() {
       router.push('/login');
     } catch (error) {
       toast.error('Failed to log out');
-      console.error('Logout error:', error);
     }
   };
 

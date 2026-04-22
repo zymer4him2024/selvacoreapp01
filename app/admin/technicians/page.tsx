@@ -20,11 +20,14 @@ import {
   formatOptionalNumber,
   formatOptionalString
 } from '@/lib/utils/formatters';
+import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
 type TabType = 'all' | 'pending' | 'approved' | 'declined' | 'suspended';
 
 export default function TechniciansManagementPage() {
+  const { t } = useTranslation();
+  const tc = t.admin.technicians;
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [technicians, setTechnicians] = useState<TechnicianWithStats[]>([]);
@@ -56,8 +59,9 @@ export default function TechniciansManagementPage() {
       
       setTechnicians(techList);
       setStats(statsSummary);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load technicians');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to load technicians';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -96,10 +100,10 @@ export default function TechniciansManagementPage() {
 
   const getStatusLabel = (status?: TechnicianStatus) => {
     switch (status) {
-      case 'approved': return 'Approved';
-      case 'pending': return 'Pending';
-      case 'declined': return 'Declined';
-      case 'suspended': return 'Suspended';
+      case 'approved': return tc.approved;
+      case 'pending': return tc.pending;
+      case 'declined': return tc.declined;
+      case 'suspended': return tc.suspended;
       default: return 'Unknown';
     }
   };
@@ -109,7 +113,7 @@ export default function TechniciansManagementPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading technicians...</p>
+          <p className="text-text-secondary">{tc.loading}</p>
         </div>
       </div>
     );
@@ -119,9 +123,9 @@ export default function TechniciansManagementPage() {
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div>
-        <h1 className="text-4xl font-bold tracking-tight">Technician Management</h1>
+        <h1 className="text-4xl font-bold tracking-tight">{tc.title}</h1>
         <p className="text-text-secondary mt-2">
-          Manage technician applications and accounts
+          {tc.subtitle}
         </p>
       </div>
 
@@ -134,7 +138,7 @@ export default function TechniciansManagementPage() {
             </div>
             <div>
               <p className="text-2xl font-bold">{stats.totalTechnicians}</p>
-              <p className="text-sm text-text-secondary">Total</p>
+              <p className="text-sm text-text-secondary">{tc.total}</p>
             </div>
           </div>
         </div>
@@ -146,7 +150,7 @@ export default function TechniciansManagementPage() {
             </div>
             <div>
               <p className="text-2xl font-bold">{stats.pendingApplications}</p>
-              <p className="text-sm text-text-secondary">Pending</p>
+              <p className="text-sm text-text-secondary">{tc.pending}</p>
             </div>
           </div>
         </div>
@@ -158,7 +162,7 @@ export default function TechniciansManagementPage() {
             </div>
             <div>
               <p className="text-2xl font-bold">{stats.approvedTechnicians}</p>
-              <p className="text-sm text-text-secondary">Approved</p>
+              <p className="text-sm text-text-secondary">{tc.approved}</p>
             </div>
           </div>
         </div>
@@ -170,7 +174,7 @@ export default function TechniciansManagementPage() {
             </div>
             <div>
               <p className="text-2xl font-bold">{stats.activeTechnicians}</p>
-              <p className="text-sm text-text-secondary">Active</p>
+              <p className="text-sm text-text-secondary">{tc.active}</p>
             </div>
           </div>
         </div>
@@ -182,7 +186,7 @@ export default function TechniciansManagementPage() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
           <input
             type="text"
-            placeholder="Search by name, email, or phone..."
+            placeholder={tc.searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
@@ -192,18 +196,18 @@ export default function TechniciansManagementPage() {
           onClick={loadData}
           className="px-6 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all"
         >
-          Refresh
+          {t.common.refresh}
         </button>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-2 border-b border-border overflow-x-auto">
         {[
-          { id: 'all', label: 'All', count: technicians.length },
-          { id: 'pending', label: 'Pending', count: stats.pendingApplications },
-          { id: 'approved', label: 'Approved', count: stats.approvedTechnicians },
-          { id: 'declined', label: 'Declined', count: technicians.filter(t => t.technicianStatus === 'declined').length },
-          { id: 'suspended', label: 'Suspended', count: technicians.filter(t => t.technicianStatus === 'suspended').length },
+          { id: 'all', label: tc.all, count: technicians.length },
+          { id: 'pending', label: tc.pending, count: stats.pendingApplications },
+          { id: 'approved', label: tc.approved, count: stats.approvedTechnicians },
+          { id: 'declined', label: tc.declined, count: technicians.filter(tech => tech.technicianStatus === 'declined').length },
+          { id: 'suspended', label: tc.suspended, count: technicians.filter(tech => tech.technicianStatus === 'suspended').length },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -226,11 +230,11 @@ export default function TechniciansManagementPage() {
       {filteredTechnicians.length === 0 ? (
         <div className="apple-card text-center py-12">
           <Users className="w-16 h-16 text-text-tertiary mx-auto mb-4" />
-          <h3 className="text-xl font-semibold mb-2">No technicians found</h3>
+          <h3 className="text-xl font-semibold mb-2">{tc.noTechnicians}</h3>
           <p className="text-text-secondary">
             {searchTerm
-              ? 'Try adjusting your search term'
-              : 'No technicians match the selected filter'}
+              ? tc.tryAdjusting
+              : tc.noMatch}
           </p>
         </div>
       ) : (
@@ -273,14 +277,14 @@ export default function TechniciansManagementPage() {
                     <div className="flex items-center gap-2 text-sm">
                       <Calendar className="w-4 h-4 text-text-tertiary" />
                       <span className="text-text-secondary">
-                        Applied: {formatOptionalDate(technician.applicationDate, 'short')}
+                        {tc.applied} {formatOptionalDate(technician.applicationDate, 'short')}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2 text-sm">
                       <Award className="w-4 h-4 text-warning" />
                       <span className="text-text-secondary">
-                        {formatOptionalNumber(technician.completedJobs)} jobs • {technician.averageRating ? `${technician.averageRating.toFixed(1)}★` : 'N/A'}
+                        {formatOptionalNumber(technician.completedJobs)} {tc.jobs} • {technician.averageRating ? `${technician.averageRating.toFixed(1)}★` : 'N/A'}
                       </span>
                     </div>
 

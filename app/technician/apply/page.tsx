@@ -131,9 +131,9 @@ export default function TechnicianApplicationPage() {
       setTimeout(() => {
         router.push('/technician');
       }, 2000);
-    } catch (error: any) {
-      console.error('Error submitting application:', error);
-      toast.error(error.message || 'Failed to submit application');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to submit application';
+      toast.error(message);
     } finally {
       setLoading(false);
     }

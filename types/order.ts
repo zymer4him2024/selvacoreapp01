@@ -73,6 +73,10 @@ export interface Order {
   // Payment
   payment: OrderPayment;
   
+  // Scheduling (admin dispatcher)
+  scheduledAt: Timestamp | null;
+  estimatedDurationMinutes: number | null;
+
   // Timeline
   createdAt: Timestamp;
   acceptedAt: Timestamp | null;
@@ -97,6 +101,9 @@ export interface Order {
     rating: number;
   } | null;
   
+  // Source (customer-created or system-generated)
+  source?: 'customer' | 'system';
+
   // Notes & Communication
   customerNotes?: string;
   technicianNotes?: string;
@@ -151,8 +158,8 @@ export interface OrderPayment {
 
 export interface ChangeHistoryItem {
   field: string;
-  oldValue: any;
-  newValue: any;
+  oldValue: unknown;
+  newValue: unknown;
   changedAt: Timestamp;
   changedBy: string; // userId
 }

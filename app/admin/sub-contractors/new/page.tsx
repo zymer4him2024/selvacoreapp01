@@ -5,9 +5,12 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { createSubContractor } from '@/lib/services/subContractorService';
 import toast from 'react-hot-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function NewSubContractorPage() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const scn = t.admin.subContractorNew;
   const [loading, setLoading] = useState(false);
 
   // Form state
@@ -32,7 +35,7 @@ export default function NewSubContractorPage() {
 
     // Validation
     if (!name.trim() || !email.trim() || !phone.trim()) {
-      toast.error('Please fill in all required fields');
+      toast.error(scn.validationRequired);
       return;
     }
 
@@ -57,11 +60,11 @@ export default function NewSubContractorPage() {
         active,
       });
 
-      toast.success('Sub-contractor created successfully!');
+      toast.success(scn.created);
       router.push('/admin/sub-contractors');
-    } catch (error: any) {
-      console.error('Error creating sub-contractor:', error);
-      toast.error(error.message || 'Failed to create sub-contractor');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to create sub-contractor';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -78,26 +81,26 @@ export default function NewSubContractorPage() {
           <ArrowLeft className="w-6 h-6" />
         </button>
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Add New Sub-Contractor</h1>
-          <p className="text-text-secondary mt-1">Create a new sub-contractor account</p>
+          <h1 className="text-4xl font-bold tracking-tight">{scn.title}</h1>
+          <p className="text-text-secondary mt-1">{scn.subtitle}</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Information */}
         <div className="apple-card">
-          <h2 className="text-2xl font-semibold mb-6">Basic Information</h2>
+          <h2 className="text-2xl font-semibold mb-6">{scn.basicInfo}</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium mb-2">
-                Business Name <span className="text-error">*</span>
+                {scn.businessName} <span className="text-error">*</span>
               </label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Enter business name"
+                placeholder={scn.businessNamePlaceholder}
                 className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
                 required
               />
@@ -105,13 +108,13 @@ export default function NewSubContractorPage() {
 
             <div>
               <label className="block text-sm font-medium mb-2">
-                Email <span className="text-error">*</span>
+                {scn.email} <span className="text-error">*</span>
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="email@example.com"
+                placeholder={scn.emailPlaceholder}
                 className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
                 required
               />
@@ -119,54 +122,54 @@ export default function NewSubContractorPage() {
 
             <div>
               <label className="block text-sm font-medium mb-2">
-                Phone <span className="text-error">*</span>
+                {scn.phone} <span className="text-error">*</span>
               </label>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="+1 (555) 123-4567"
+                placeholder={scn.phonePlaceholder}
                 className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">WhatsApp</label>
+              <label className="block text-sm font-medium mb-2">{scn.whatsapp}</label>
               <input
                 type="tel"
                 value={whatsapp}
                 onChange={(e) => setWhatsapp(e.target.value)}
-                placeholder="+1 (555) 123-4567"
+                placeholder={scn.phonePlaceholder}
                 className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Business License</label>
+              <label className="block text-sm font-medium mb-2">{scn.businessLicense}</label>
               <input
                 type="text"
                 value={businessLicense}
                 onChange={(e) => setBusinessLicense(e.target.value)}
-                placeholder="License number"
+                placeholder={scn.licensePlaceholder}
                 className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Tax ID</label>
+              <label className="block text-sm font-medium mb-2">{scn.taxId}</label>
               <input
                 type="text"
                 value={taxId}
                 onChange={(e) => setTaxId(e.target.value)}
-                placeholder="Tax ID number"
+                placeholder={scn.taxIdPlaceholder}
                 className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-2">
-                Commission Rate (%) <span className="text-error">*</span>
+                {scn.commissionRate} <span className="text-error">*</span>
               </label>
               <input
                 type="number"
@@ -178,7 +181,7 @@ export default function NewSubContractorPage() {
                 required
               />
               <p className="text-xs text-text-tertiary mt-1">
-                Platform commission on each order
+                {scn.commissionHelp}
               </p>
             </div>
 
@@ -190,7 +193,7 @@ export default function NewSubContractorPage() {
                   onChange={(e) => setActive(e.target.checked)}
                   className="w-5 h-5 rounded accent-primary"
                 />
-                <span className="text-sm font-medium">Active</span>
+                <span className="text-sm font-medium">{scn.active}</span>
               </label>
             </div>
           </div>
@@ -198,44 +201,44 @@ export default function NewSubContractorPage() {
 
         {/* Address Information */}
         <div className="apple-card">
-          <h2 className="text-2xl font-semibold mb-6">Address Information</h2>
+          <h2 className="text-2xl font-semibold mb-6">{scn.addressInfo}</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-2">Street Address</label>
+              <label className="block text-sm font-medium mb-2">{scn.streetAddress}</label>
               <input
                 type="text"
                 value={street}
                 onChange={(e) => setStreet(e.target.value)}
-                placeholder="123 Main Street"
+                placeholder={scn.streetPlaceholder}
                 className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">City</label>
+              <label className="block text-sm font-medium mb-2">{scn.city}</label>
               <input
                 type="text"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                placeholder="City"
+                placeholder={scn.city}
                 className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">State/Province</label>
+              <label className="block text-sm font-medium mb-2">{scn.state}</label>
               <input
                 type="text"
                 value={state}
                 onChange={(e) => setState(e.target.value)}
-                placeholder="State"
+                placeholder={scn.state}
                 className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Postal Code</label>
+              <label className="block text-sm font-medium mb-2">{scn.postalCode}</label>
               <input
                 type="text"
                 value={postalCode}
@@ -246,12 +249,12 @@ export default function NewSubContractorPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Country</label>
+              <label className="block text-sm font-medium mb-2">{scn.country}</label>
               <input
                 type="text"
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
-                placeholder="Country"
+                placeholder={scn.country}
                 className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
               />
             </div>
@@ -265,14 +268,14 @@ export default function NewSubContractorPage() {
             disabled={loading}
             className="flex-1 px-8 py-4 bg-success hover:bg-success/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
           >
-            {loading ? 'Creating Sub-Contractor...' : 'Create Sub-Contractor'}
+            {loading ? scn.creatingSubContractor : scn.createSubContractor}
           </button>
           <button
             type="button"
             onClick={() => router.back()}
             className="px-8 py-4 bg-surface hover:bg-surface-elevated text-white font-semibold rounded-apple transition-all border border-border"
           >
-            Cancel
+            {t.common.cancel}
           </button>
         </div>
       </form>

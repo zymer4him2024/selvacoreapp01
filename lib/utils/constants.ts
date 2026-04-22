@@ -6,7 +6,7 @@ export const APP_DESCRIPTION = 'Professional Installation Management Platform';
 // Supported languages
 export const SUPPORTED_LANGUAGES = [
   { code: 'en', name: 'English', flag: '🇺🇸' },
-  { code: 'pt', name: 'Português', flag: '🇵🇹' },
+  { code: 'pt', name: 'Português (BR)', flag: '🇧🇷' },
   { code: 'es', name: 'Español', flag: '🇪🇸' },
   { code: 'ko', name: '한국어', flag: '🇰🇷' },
 ] as const;

@@ -79,9 +79,9 @@ export default function CustomerRegistrationPage() {
 
       toast.success('Profile created successfully!');
       router.push('/customer');
-    } catch (error: any) {
-      console.error('Error creating customer profile:', error);
-      toast.error(error.message || 'Failed to create profile');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to create profile';
+      toast.error(message);
     } finally {
       setLoading(false);
     }

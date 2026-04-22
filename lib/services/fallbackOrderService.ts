@@ -46,11 +46,8 @@ export function saveFallbackOrder(order: Omit<FallbackOrder, 'id' | 'createdAt'>
     orders.push(newOrder);
     localStorage.setItem(FALLBACK_ORDERS_KEY, JSON.stringify(orders));
     
-    console.log('✅ Order saved to fallback storage:', newOrder.id);
-    console.log('📋 Total fallback orders:', orders.length);
     return newOrder.id;
   } catch (error) {
-    console.error('❌ Failed to save fallback order:', error);
     throw new Error('Failed to save order locally');
   }
 }
@@ -71,7 +68,6 @@ export function getFallbackOrders(customerId?: string): FallbackOrder[] {
     
     return orders;
   } catch (error) {
-    console.error('❌ Failed to get fallback orders:', error);
     return [];
   }
 }
@@ -84,7 +80,6 @@ export function getFallbackOrder(orderId: string): FallbackOrder | null {
     const orders = getFallbackOrders();
     return orders.find(order => order.id === orderId) || null;
   } catch (error) {
-    console.error('❌ Failed to get fallback order:', error);
     return null;
   }
 }
@@ -102,10 +97,8 @@ export function updateFallbackOrderStatus(orderId: string, status: FallbackOrder
     orders[orderIndex].status = status;
     localStorage.setItem(FALLBACK_ORDERS_KEY, JSON.stringify(orders));
     
-    console.log('✅ Fallback order status updated:', orderId, status);
     return true;
   } catch (error) {
-    console.error('❌ Failed to update fallback order:', error);
     return false;
   }
 }
@@ -116,9 +109,8 @@ export function updateFallbackOrderStatus(orderId: string, status: FallbackOrder
 export function clearFallbackOrders(): void {
   try {
     localStorage.removeItem(FALLBACK_ORDERS_KEY);
-    console.log('✅ Fallback orders cleared');
-  } catch (error) {
-    console.error('❌ Failed to clear fallback orders:', error);
+  } catch {
+    // localStorage unavailable — no action needed
   }
 }
 
@@ -128,14 +120,13 @@ export function clearFallbackOrders(): void {
 export async function syncFallbackOrdersToFirestore(): Promise<number> {
   try {
     const orders = getFallbackOrders();
-    let syncedCount = 0;
-    
+    const syncedIds: string[] = [];
+
+    const { collection, addDoc } = await import('firebase/firestore');
+    const { db } = await import('@/lib/firebase/config');
+
     for (const order of orders) {
       try {
-        // Try to save to Firestore
-        const { collection, addDoc } = await import('firebase/firestore');
-        const { db } = await import('@/lib/firebase/config');
-        
         await addDoc(collection(db, 'orders'), {
           orderNumber: order.orderNumber,
           customerId: order.customerId,
@@ -151,24 +142,23 @@ export async function syncFallbackOrdersToFirestore(): Promise<number> {
           paymentMethod: order.paymentMethod,
           transactionId: order.transactionId,
           createdAt: order.createdAt,
-          isFallback: true // Mark as synced from fallback
+          isFallback: true,
         });
-        
-        // Remove from fallback storage after successful sync
-        const updatedOrders = orders.filter(o => o.id !== order.id);
-        localStorage.setItem(FALLBACK_ORDERS_KEY, JSON.stringify(updatedOrders));
-        syncedCount++;
-        
-        console.log('✅ Fallback order synced to Firestore:', order.id);
-      } catch (error) {
-        console.log('⚠️ Could not sync fallback order to Firestore:', order.id);
+
+        syncedIds.push(order.id);
+      } catch {
         // Keep in fallback storage if Firestore fails
       }
     }
-    
-    return syncedCount;
-  } catch (error) {
-    console.error('❌ Failed to sync fallback orders:', error);
+
+    // Remove all synced orders at once after iteration
+    if (syncedIds.length > 0) {
+      const remaining = orders.filter(o => !syncedIds.includes(o.id));
+      localStorage.setItem(FALLBACK_ORDERS_KEY, JSON.stringify(remaining));
+    }
+
+    return syncedIds.length;
+  } catch {
     return 0;
   }
 }

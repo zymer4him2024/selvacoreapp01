@@ -29,34 +29,37 @@ export default function VideoCapture({ onCapture, onCancel, title, description }
   const handleStartRecording = useCallback(() => {
     setIsRecording(true);
     setRecordedChunks([]);
-    
+
     const stream = webcamRef.current?.stream;
     if (!stream) return;
 
-    mediaRecorderRef.current = new MediaRecorder(stream, {
-      mimeType: 'video/webm',
+    const recorder = new MediaRecorder(stream, {
+      mimeType: MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : 'video/mp4',
     });
 
-    mediaRecorderRef.current.addEventListener('dataavailable', (event) => {
+    const chunks: Blob[] = [];
+
+    recorder.addEventListener('dataavailable', (event) => {
       if (event.data.size > 0) {
-        setRecordedChunks((prev) => [...prev, event.data]);
+        chunks.push(event.data);
       }
     });
 
-    mediaRecorderRef.current.start();
-  }, [webcamRef, setIsRecording, setRecordedChunks]);
+    recorder.addEventListener('stop', () => {
+      setRecordedChunks(chunks);
+      setMode('preview');
+    });
+
+    mediaRecorderRef.current = recorder;
+    recorder.start();
+  }, []);
 
   const handleStopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      
-      // Wait a bit for the final data to be available
-      setTimeout(() => {
-        setMode('preview');
-      }, 100);
     }
-  }, [mediaRecorderRef, isRecording]);
+  }, [isRecording]);
 
   const handleRetake = () => {
     setRecordedChunks([]);

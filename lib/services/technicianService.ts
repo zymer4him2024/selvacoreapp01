@@ -1,14 +1,15 @@
 // Technician Service - Handle all technician operations
-import { 
-  collection, 
-  doc, 
-  getDocs, 
+import {
+  collection,
+  doc,
+  getDocs,
   getDoc,
   updateDoc,
   query,
   where,
   orderBy,
-  Timestamp 
+  Timestamp,
+  runTransaction,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase/config';
@@ -37,59 +38,45 @@ export interface TechnicianStats {
  * Get all available jobs (pending orders)
  */
 export async function getAvailableJobs(): Promise<Order[]> {
-  try {
-    console.log('🔍 TECHNICIAN SERVICE - Fetching available jobs...');
-    const ordersRef = collection(db, 'orders');
-    const q = query(
-      ordersRef,
-      where('status', '==', 'pending'),
-      orderBy('createdAt', 'desc')
-    );
-    
-    console.log('🔍 TECHNICIAN SERVICE - Executing query...');
-    const snapshot = await getDocs(q);
-    console.log('🔍 TECHNICIAN SERVICE - Query result:', snapshot.size, 'orders found');
-    
-    const orders = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    } as Order));
-    
-    console.log('🔍 TECHNICIAN SERVICE - Returning', orders.length, 'orders');
-    return orders;
-  } catch (error: any) {
-    console.error('❌ TECHNICIAN SERVICE - Error fetching available jobs:', error);
-    console.error('❌ Error code:', error.code);
-    console.error('❌ Error message:', error.message);
-    throw error;
-  }
+  const ordersRef = collection(db, 'orders');
+  const q = query(
+    ordersRef,
+    where('status', '==', 'pending'),
+    orderBy('createdAt', 'desc')
+  );
+
+  const snapshot = await getDocs(q);
+
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+  } as Order));
 }
 
 /**
- * Accept a job
+ * Accept a job (uses Firestore transaction to prevent race conditions)
  */
 export async function acceptJob(
   orderId: string,
   technicianId: string,
   technicianInfo: TechnicianInfo
 ): Promise<void> {
-  try {
-    const orderRef = doc(db, 'orders', orderId);
-    const orderSnap = await getDoc(orderRef);
-    
+  const orderRef = doc(db, 'orders', orderId);
+
+  await runTransaction(db, async (transaction) => {
+    const orderSnap = await transaction.get(orderRef);
+
     if (!orderSnap.exists()) {
       throw new Error('Order not found');
     }
-    
+
     const order = orderSnap.data() as Order;
-    
-    // Check if order is still pending
+
     if (order.status !== 'pending') {
       throw new Error('This job has already been accepted by another technician');
     }
-    
-    // Update order with technician info
-    await updateDoc(orderRef, {
+
+    transaction.update(orderRef, {
       status: 'accepted',
       technicianId,
       technicianInfo: {
@@ -110,10 +97,7 @@ export async function acceptJob(
         },
       ],
     });
-  } catch (error) {
-    console.error('Error accepting job:', error);
-    throw error;
-  }
+  });
 }
 
 /**
@@ -125,11 +109,8 @@ export async function declineJob(
   reason?: string
 ): Promise<void> {
   try {
-    // For now, we just log it
-    // In future, could track declined jobs per technician
-    console.log(`Technician ${technicianId} declined order ${orderId}`, reason);
+    // No-op for now. Could track declined jobs per technician in the future.
   } catch (error) {
-    console.error('Error declining job:', error);
     throw error;
   }
 }
@@ -167,7 +148,6 @@ export async function getTechnicianJobs(
       ...doc.data(),
     } as Order));
   } catch (error) {
-    console.error('Error fetching technician jobs:', error);
     throw error;
   }
 }
@@ -205,7 +185,6 @@ export async function startJob(orderId: string, technicianId: string): Promise<v
       ],
     });
   } catch (error) {
-    console.error('Error starting job:', error);
     throw error;
   }
 }
@@ -228,7 +207,6 @@ export async function uploadInstallationPhoto(
     
     return downloadURL;
   } catch (error) {
-    console.error('Error uploading installation photo:', error);
     throw error;
   }
 }
@@ -280,7 +258,6 @@ export async function completeJob(
       ],
     });
   } catch (error) {
-    console.error('Error completing job:', error);
     throw error;
   }
 }
@@ -332,7 +309,6 @@ export async function getTechnicianStats(technicianId: string): Promise<Technici
       completionRate: Math.round(completionRate),
     };
   } catch (error) {
-    console.error('Error fetching technician stats:', error);
     return {
       totalJobs: 0,
       completedJobs: 0,
@@ -372,7 +348,6 @@ export async function getTechnicianJobById(
     
     return null;
   } catch (error) {
-    console.error('Error fetching job:', error);
     throw error;
   }
 }

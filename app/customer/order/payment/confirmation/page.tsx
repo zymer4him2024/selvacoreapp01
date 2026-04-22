@@ -86,13 +86,13 @@ export default function PaymentConfirmationPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold">Confirmation Not Found</h1>
-          <p className="text-text-secondary">The payment confirmation could not be found.</p>
+          <h1 className="text-2xl font-bold">{t.orders.confirmationNotFound}</h1>
+          <p className="text-text-secondary">{t.orders.confirmationNotFoundDesc}</p>
           <button
             onClick={() => router.push('/customer')}
             className="px-6 py-3 bg-primary text-white rounded-apple hover:bg-primary-hover transition-colors"
           >
-            Go to Dashboard
+            {t.orders.goToDashboard}
           </button>
         </div>
       </div>
@@ -109,7 +109,7 @@ export default function PaymentConfirmationPage() {
             className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
-            Back to Dashboard
+            {t.orders.backToDashboard}
           </button>
         </div>
       </div>
@@ -129,28 +129,28 @@ export default function PaymentConfirmationPage() {
 
           {/* Order Summary Card */}
           <div className="apple-card bg-success/5 border-success/30">
-            <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
-            
+            <h2 className="text-xl font-semibold mb-4">{t.orders.orderSummaryTitle}</h2>
+
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-text-secondary">Order Number</span>
+                <span className="text-text-secondary">{t.orders.orderNumber}</span>
                 <span className="font-mono font-semibold">{confirmationData.orderNumber}</span>
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-text-secondary">Transaction ID</span>
+                <span className="text-text-secondary">{t.orders.transactionId}</span>
                 <span className="font-mono text-sm">{confirmationData.transactionId}</span>
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-text-secondary">Amount Paid</span>
+                <span className="text-text-secondary">{t.orders.amountPaid}</span>
                 <span className="text-2xl font-bold text-success">
                   {formatCurrency(confirmationData.amount, confirmationData.currency)}
                 </span>
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-text-secondary">Payment Method</span>
+                <span className="text-text-secondary">{t.orders.paymentMethod}</span>
                 <div className="flex items-center gap-2">
                   <CreditCard className="w-4 h-4" />
                   <span>{confirmationData.paymentMethod}</span>
@@ -158,7 +158,7 @@ export default function PaymentConfirmationPage() {
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-text-secondary">Payment Date</span>
+                <span className="text-text-secondary">{t.orders.paymentDate}</span>
                 <span>{formatDateTime(confirmationData.paidAt)}</span>
               </div>
             </div>
@@ -166,14 +166,14 @@ export default function PaymentConfirmationPage() {
 
           {/* Installation Details */}
           <div className="apple-card">
-            <h2 className="text-xl font-semibold mb-4">Installation Details</h2>
-            
+            <h2 className="text-xl font-semibold mb-4">{t.orders.installationDetailsTitle}</h2>
+
             <div className="space-y-4">
               <div className="flex items-start gap-3">
                 <Clock className="w-5 h-5 text-primary mt-1" />
                 <div>
                   <p className="font-medium">{confirmationData.installationDate}</p>
-                  <p className="text-sm text-text-secondary">Time: {confirmationData.timeSlot}</p>
+                  <p className="text-sm text-text-secondary">{t.orders.time}: {confirmationData.timeSlot}</p>
                 </div>
               </div>
               
@@ -188,7 +188,7 @@ export default function PaymentConfirmationPage() {
               <div className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-primary mt-1" />
                 <div>
-                  <p className="font-medium">Installation Address</p>
+                  <p className="font-medium">{t.orders.installationAddressLabel}</p>
                   <p className="text-sm text-text-secondary">{confirmationData.address}</p>
                 </div>
               </div>
@@ -197,30 +197,30 @@ export default function PaymentConfirmationPage() {
 
           {/* Next Steps */}
           <div className="apple-card bg-primary/5 border-primary/30">
-            <h2 className="text-xl font-semibold mb-4">What's Next?</h2>
-            
+            <h2 className="text-xl font-semibold mb-4">{t.orders.whatsNext}</h2>
+
             <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">1</div>
                 <div>
-                  <p className="font-medium">Order Confirmation</p>
-                  <p className="text-sm text-text-secondary">You'll receive an email confirmation shortly</p>
+                  <p className="font-medium">{t.orders.step1Title}</p>
+                  <p className="text-sm text-text-secondary">{t.orders.step1Desc}</p>
                 </div>
               </div>
-              
+
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">2</div>
                 <div>
-                  <p className="font-medium">Technician Assignment</p>
-                  <p className="text-sm text-text-secondary">A qualified technician will be assigned to your order</p>
+                  <p className="font-medium">{t.orders.step2Title}</p>
+                  <p className="text-sm text-text-secondary">{t.orders.step2Desc}</p>
                 </div>
               </div>
-              
+
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">3</div>
                 <div>
-                  <p className="font-medium">Installation Day</p>
-                  <p className="text-sm text-text-secondary">Your technician will arrive at the scheduled time</p>
+                  <p className="font-medium">{t.orders.step3Title}</p>
+                  <p className="text-sm text-text-secondary">{t.orders.step3Desc}</p>
                 </div>
               </div>
             </div>
@@ -232,7 +232,7 @@ export default function PaymentConfirmationPage() {
               onClick={handleViewOrder}
               className="flex-1 px-8 py-4 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
             >
-              View Order Details
+              {t.orders.viewOrderDetails}
             </button>
             
             <button
@@ -240,7 +240,7 @@ export default function PaymentConfirmationPage() {
               className="flex-1 px-8 py-4 bg-surface hover:bg-surface-elevated border border-border text-text-primary font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple flex items-center justify-center gap-2"
             >
               <Download className="w-5 h-5" />
-              Download Receipt
+              {t.orders.downloadReceipt}
             </button>
           </div>
         </div>

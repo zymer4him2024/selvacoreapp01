@@ -1,16 +1,23 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { User, Mail, Phone, Star, Award, Briefcase, TrendingUp } from 'lucide-react';
+import { User, Mail, Phone, Star, Award, Briefcase, TrendingUp, ImageIcon, Save } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getTechnicianStats, TechnicianStats } from '@/lib/services/technicianService';
 import { formatCurrency } from '@/lib/utils/formatters';
+import LogoUpload from '@/components/common/LogoUpload';
 import toast from 'react-hot-toast';
 
 export default function TechnicianProfilePage() {
-  const { user, userData } = useAuth();
+  const { user, userData, updateUserData } = useAuth();
   const [stats, setStats] = useState<TechnicianStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [logoURL, setLogoURL] = useState('');
+  const [savingLogo, setSavingLogo] = useState(false);
+
+  useEffect(() => {
+    if (userData?.logoURL) setLogoURL(userData.logoURL);
+  }, [userData]);
 
   useEffect(() => {
     if (user) {
@@ -25,7 +32,7 @@ export default function TechnicianProfilePage() {
       setLoading(true);
       const techStats = await getTechnicianStats(user.uid);
       setStats(techStats);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error('Failed to load statistics');
     } finally {
       setLoading(false);
@@ -113,6 +120,41 @@ export default function TechnicianProfilePage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Logo Upload */}
+      <div className="apple-card">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <ImageIcon className="w-6 h-6 text-primary" />
+            <h2 className="text-2xl font-semibold">Business Logo</h2>
+          </div>
+          <button
+            onClick={async () => {
+              try {
+                setSavingLogo(true);
+                await updateUserData({ logoURL: logoURL || undefined });
+                toast.success('Logo saved!');
+              } catch {
+                toast.error('Failed to save logo');
+              } finally {
+                setSavingLogo(false);
+              }
+            }}
+            disabled={savingLogo}
+            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white text-sm font-semibold rounded-apple transition-all"
+          >
+            <Save className="w-4 h-4" />
+            {savingLogo ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+        <LogoUpload
+          currentLogoURL={logoURL}
+          onLogoUploaded={(url) => setLogoURL(url)}
+          onLogoRemoved={() => setLogoURL('')}
+          label="Your Logo"
+          hint="This logo will be displayed on your dashboard. Recommended size: 256x256px."
+        />
       </div>
 
       {/* Statistics */}

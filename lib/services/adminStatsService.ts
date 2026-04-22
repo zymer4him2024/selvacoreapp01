@@ -75,11 +75,10 @@ export async function getAdminStats(): Promise<AdminStats> {
       totalTechnicians: techniciansSnapshot.size,
       totalCustomers: customersSnapshot.size,
       revenueMTD,
-      revenueChange: `+${Math.floor(Math.random() * 20) + 10}%`, // Mock change percentage
-      orderChange: `+${Math.floor(Math.random() * 20) + 10}%`, // Mock change percentage
+      revenueChange: 'N/A',
+      orderChange: 'N/A',
     };
   } catch (error) {
-    console.error('Error fetching admin stats:', error);
     throw error;
   }
 }
@@ -111,7 +110,6 @@ export async function getRecentOrders(limitCount: number = 5): Promise<RecentOrd
       };
     });
   } catch (error) {
-    console.error('Error fetching recent orders:', error);
     return [];
   }
 }
@@ -159,7 +157,6 @@ export async function getTopProducts(limitCount: number = 10): Promise<TopProduc
     
     return topProducts;
   } catch (error) {
-    console.error('Error fetching top products:', error);
     return [];
   }
 }
@@ -203,7 +200,6 @@ export async function getAnalyticsMetrics(): Promise<AnalyticsMetrics> {
       conversionRate,
     };
   } catch (error) {
-    console.error('Error fetching analytics metrics:', error);
     return {
       totalRevenue: 0,
       totalOrders: 0,
