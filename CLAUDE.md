@@ -92,7 +92,7 @@ Google Sign-In only (Firebase Auth). New users go through a role selection flow 
 ```
 ┌─────────────────────────────────────────────────┐
 │                   Frontend (Next.js)             │
-│   /app/admin        — Admin dashboard, inventory, settings │
+│   /app/admin        — Admin dashboard, inventory, schedule, settings │
 │   /app/customer     — Customer ordering + device portal│
 │   /app/technician   — Technician jobs, profile, QR scan │
 │   /app/sub-admin    — Sub-contractor dashboard + settings │
@@ -176,11 +176,17 @@ cd functions && npm run build        # Build Cloud Functions only
 - Products can define `maintenanceTemplate` with default Ezer interval and filter schedules; auto-populates when creating devices
 - Customer Device Portal at `/customer/devices` shows registered devices with maintenance status (overdue/due-soon/ok)
 - Sub-Admin Portal at `/sub-admin` provides scoped views filtered by `subContractorId`, includes settings with logo upload
+- Dispatcher Schedule at `/admin/schedule` is a weekly calendar view for assigning technicians to orders via drag-and-drop (@dnd-kit/core). Uses `scheduledAt` field (coexists with customer-chosen `installationDate`). Supports keyboard navigation (J/K/arrows), print view, workload indicators, and optimistic UI with Firestore transaction rollback
 - Inventory Management at `/admin/inventory` manages internal parts/supplies stock with Items and Transactions tabs, stock adjustments, and audit trail
 - Device/Maintenance Tracking at `/admin/maintenance` tracks registered Ezer devices and filter schedules with urgency sorting
 - Technicians register devices via QR scan after job completion (`html5-qrcode` library); common QR triggers maintenance visit form
 - Logo Upload: Admin, sub-contractor, and technician can upload logos via settings/profile; logos display on dashboards. Stored in Firebase Storage at `logos/{userId}/`
 - Reusable `components/common/LogoUpload.tsx` handles image upload to Firebase Storage with preview
+- PWA enabled via `@serwist/next` — service worker in `app/sw.ts`, manifest in `app/manifest.ts`. Disabled in development (`disable: process.env.NODE_ENV === 'development'`). Generated `public/sw.js` is gitignored
+- Offline write queue in `lib/offline/writeQueue.ts` — queues `accept_job`, `start_job`, `complete_job` to IndexedDB when offline; auto-drains on reconnect via `useWriteQueueSync` hook in technician layout
+- `withOfflineFallback()` wrapper tries online first, queues on network error only — non-network errors (permission, validation) are re-thrown. Device registration is online-only (requires Firestore reads)
+- IndexedDB stores (`lib/offline/deviceCache.ts`): `devices`, `visits`, `writeQueue`, `photoQueue` — DB_VERSION=2
+- `NetworkStatusBar` component shows offline banner in technician portal; `useNetworkStatus` hook tracks connectivity
 
 ---
 

@@ -1,11 +1,26 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { Toaster } from 'react-hot-toast'
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#0071E3',
+}
+
 export const metadata: Metadata = {
   title: 'Selvacore - Installation Management Platform',
   description: 'Professional installation management for water filtration systems',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Selvacore',
+  },
+  icons: {
+    apple: '/icons/icon-192x192.svg',
+  },
 }
 
 export default function RootLayout({
@@ -15,6 +30,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+      </head>
       <body className="bg-background text-text-primary antialiased">
         <AuthProvider>
           {children}

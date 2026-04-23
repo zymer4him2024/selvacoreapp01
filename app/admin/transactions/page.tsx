@@ -18,10 +18,11 @@ import {
   CheckCircle2,
   Clock,
   TrendingUp,
+  Trash2,
 } from 'lucide-react';
 import { Transaction, Order, Device } from '@/types';
-import { getTransactionsPaginated } from '@/lib/services/transactionService';
-import { getOrdersPaginated, getAllOrders } from '@/lib/services/orderService';
+import { getTransactionsPaginated, deleteTransaction } from '@/lib/services/transactionService';
+import { getOrdersPaginated, getAllOrders, deleteOrder } from '@/lib/services/orderService';
 import { getAllDevices } from '@/lib/services/deviceService';
 import {
   getMaintenanceSummaryStats,
@@ -368,6 +369,7 @@ function OrdersTab() {
   const [hasMore, setHasMore] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const lastDocRef = useRef<QueryDocumentSnapshot<DocumentData> | null>(null);
 
   const load = useCallback(async (reset: boolean) => {
@@ -410,6 +412,21 @@ function OrdersTab() {
     );
   });
 
+  const handleDelete = async (orderId: string) => {
+    if (!confirm('Are you sure you want to delete this order? This action cannot be undone.')) return;
+    try {
+      setDeletingId(orderId);
+      await deleteOrder(orderId);
+      setOrders(prev => prev.filter(o => o.id !== orderId));
+      toast.success('Order deleted');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete order';
+      toast.error(message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Controls */}
@@ -450,7 +467,7 @@ function OrdersTab() {
       ) : (
         <div className="space-y-3">
           {filtered.map((order) => (
-            <OrderCard key={order.id} order={order} />
+            <OrderCard key={order.id} order={order} onDelete={handleDelete} deleting={deletingId === order.id} />
           ))}
           {hasMore && (
             <div className="text-center pt-4">
@@ -472,7 +489,7 @@ function OrdersTab() {
   );
 }
 
-function OrderCard({ order }: { order: Order }) {
+function OrderCard({ order, onDelete, deleting }: { order: Order; onDelete?: (id: string) => void; deleting?: boolean }) {
   const isCancelledOrRefunded = order.status === 'cancelled' || order.status === 'refunded';
   return (
     <Link
@@ -537,15 +554,27 @@ function OrderCard({ order }: { order: Order }) {
           )}
         </div>
 
-        <div className="text-right md:min-w-[140px]">
-          <p className="text-xl font-bold text-primary">
-            {order.payment?.amount
-              ? formatCurrency(order.payment.amount, order.payment.currency)
-              : 'N/A'}
-          </p>
-          <p className="text-xs text-text-tertiary mt-1">
-            Created {order.createdAt ? formatDate(order.createdAt, 'short') : 'N/A'}
-          </p>
+        <div className="flex items-start gap-3">
+          <div className="text-right md:min-w-[140px]">
+            <p className="text-xl font-bold text-primary">
+              {order.payment?.amount
+                ? formatCurrency(order.payment.amount, order.payment.currency)
+                : 'N/A'}
+            </p>
+            <p className="text-xs text-text-tertiary mt-1">
+              Created {order.createdAt ? formatDate(order.createdAt, 'short') : 'N/A'}
+            </p>
+          </div>
+          {onDelete && (
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(order.id); }}
+              disabled={deleting}
+              className="p-2 bg-surface-elevated hover:bg-error/20 text-text-secondary hover:text-error rounded-apple transition-all disabled:opacity-50"
+              aria-label="Delete order"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </div>
     </Link>
@@ -1013,6 +1042,7 @@ function ActivityTab() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const lastDocRef = useRef<QueryDocumentSnapshot<DocumentData> | null>(null);
 
   const load = useCallback(async (reset: boolean) => {
@@ -1040,6 +1070,21 @@ function ActivityTab() {
       setLoadingMore(false);
     }
   }, [typeFilter]);
+
+  const handleDeleteTransaction = async (txId: string) => {
+    if (!confirm('Are you sure you want to delete this transaction? This action cannot be undone.')) return;
+    try {
+      setDeletingId(txId);
+      await deleteTransaction(txId);
+      setTransactions(prev => prev.filter(tx => tx.id !== txId));
+      toast.success('Transaction deleted');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete transaction';
+      toast.error(message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   useEffect(() => {
     load(true);
@@ -1092,6 +1137,7 @@ function ActivityTab() {
                   <th className="px-4 py-3 text-left text-sm font-medium text-text-secondary">
                     {tr.timestamp}
                   </th>
+                  <th className="px-4 py-3 w-12"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -1138,6 +1184,16 @@ function ActivityTab() {
                       <span className="text-sm text-text-secondary">
                         {formatDateTime(tx.timestamp)}
                       </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <button
+                        onClick={() => handleDeleteTransaction(tx.id)}
+                        disabled={deletingId === tx.id}
+                        className="p-1.5 hover:bg-error/20 text-text-tertiary hover:text-error rounded-apple transition-all disabled:opacity-50"
+                        aria-label="Delete transaction"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </td>
                   </tr>
                 ))}

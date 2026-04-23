@@ -427,3 +427,39 @@ a:hover {
   color: #0fa968 !important; /* Bright medium green for prices */
 }
 
+/* Print styles for schedule page */
+@media print {
+  /* Hide non-essential UI */
+  nav, aside, .no-print,
+  [data-no-print],
+  .fixed { display: none !important; }
+
+  body, html {
+    background: white !important;
+    color: black !important;
+    font-size: 10pt !important;
+    overflow: visible !important;
+  }
+
+  /* Remove shadows and borders for clean print */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Schedule grid: full width, no scroll */
+  .schedule-print-area {
+    overflow: visible !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .schedule-print-area .min-w-\\[960px\\] {
+    min-width: 0 !important;
+  }
+
+  /* Ensure page breaks work */
+  .grid { break-inside: avoid; }
+  h1, h2, h3 { break-after: avoid; }
+}
+

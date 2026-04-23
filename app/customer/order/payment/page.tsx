@@ -14,6 +14,7 @@ import { processAmazonPayment } from '@/lib/services/amazonPaymentService';
 import { logTransaction } from '@/lib/services/transactionService';
 import { addCustomerHistoryRecord } from '@/lib/services/customerHistoryService';
 import { saveFallbackOrder } from '@/lib/services/fallbackOrderService';
+import { getFallbackAddress } from '@/lib/services/fallbackAddressService';
 import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
@@ -85,14 +86,25 @@ export default function PaymentPage() {
 
       const orderData = JSON.parse(orderDataStr);
 
-      let selectedAddress = orderData.addressOverride ?? null;
-      if (!selectedAddress) {
-        const customerDoc = await getDoc(doc(db, 'customers', user.uid));
-        if (!customerDoc.exists()) throw new Error('Customer profile not found');
-        const customerData = customerDoc.data();
-        selectedAddress = customerData.addresses.find(
-          (a: { id: string }) => a.id === orderData.addressId
-        );
+      // Prefer the full address object the details page stashed.
+      // Fall back to Firestore / localStorage for orders that were started
+      // under the old flow (no resolvedAddress in sessionStorage).
+      let selectedAddress = orderData.addressOverride ?? orderData.resolvedAddress ?? null;
+      if (!selectedAddress && orderData.addressId) {
+        try {
+          const customerDoc = await getDoc(doc(db, 'customers', user.uid));
+          if (customerDoc.exists()) {
+            const addresses = customerDoc.data().addresses ?? [];
+            selectedAddress = addresses.find(
+              (a: { id: string }) => a.id === orderData.addressId
+            ) ?? null;
+          }
+        } catch {
+          // Firestore unreachable — fall through to local fallback.
+        }
+      }
+      if (!selectedAddress && orderData.addressId) {
+        selectedAddress = getFallbackAddress(orderData.addressId);
       }
       if (!selectedAddress) throw new Error('Address not found');
 

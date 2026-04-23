@@ -200,6 +200,15 @@ export default function OrderDetailsPage() {
       return;
     }
 
+    // Resolve the full address object now so downstream steps don't need to
+    // hit Firestore or localStorage again. Override wins when present.
+    const resolvedAddress =
+      overrideSaved ?? addresses.find((a) => a.id === selectedAddressId) ?? null;
+    if (!resolvedAddress) {
+      toast.error(t.orders.selectAddress);
+      return;
+    }
+
     const orderData = JSON.parse(sessionStorage.getItem('orderData') || '{}');
     sessionStorage.setItem(
       'orderData',
@@ -207,6 +216,7 @@ export default function OrderDetailsPage() {
         ...orderData,
         addressId: selectedAddressId,
         addressOverride: overrideSaved ?? null,
+        resolvedAddress,
         installationDate,
         timeSlot,
       })

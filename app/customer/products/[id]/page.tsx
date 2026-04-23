@@ -222,7 +222,7 @@ export default function ProductDetailPage() {
             )}
 
             {/* Total and Order Button */}
-            <div className="sticky bottom-0 pt-6 pb-6 bg-background/80 backdrop-blur-lg border-t border-border -mx-4 px-4 lg:mx-0 lg:px-0">
+            <div className="sticky bottom-0 pt-6 pb-6 -mx-4 px-4 lg:mx-0 lg:px-0">
               <div className="p-6 bg-surface rounded-apple mb-4">
                 <div className="flex items-center justify-between">
                   <span className="text-lg font-semibold">{o.total}</span>

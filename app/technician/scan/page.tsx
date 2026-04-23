@@ -226,21 +226,40 @@ export default function TechnicianScanPage() {
         setStep('done');
         toast.success('Maintenance visit recorded');
       } catch (error) {
-        // Network error → fall back to queue
-        await enqueueVisit({
-          device,
-          technicianId: user.uid,
-          technicianName,
-          checks,
-          notes,
-          beforeBlob,
-          afterBlob,
-        });
-        setSavedOffline(true);
-        setStep('done');
-        refreshPending();
-        const message = error instanceof Error ? error.message : '';
-        toast.error(`Upload failed${message ? `: ${message}` : ''} — saved offline`);
+        // Only fall back to the offline queue for actual connectivity errors.
+        // Permission-denied, quota, validation, etc. must surface to the user
+        // so they don't sit forever in the queue hitting the same error.
+        const wentOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
+        const firebaseCode =
+          error && typeof error === 'object' && 'code' in error
+            ? String((error as { code?: unknown }).code ?? '')
+            : '';
+        const isNetworkError =
+          wentOffline ||
+          firebaseCode === 'unavailable' ||
+          firebaseCode === 'deadline-exceeded' ||
+          firebaseCode === 'cancelled' ||
+          (error instanceof TypeError && /fetch|network/i.test(error.message));
+
+        if (isNetworkError) {
+          await enqueueVisit({
+            device,
+            technicianId: user.uid,
+            technicianName,
+            checks,
+            notes,
+            beforeBlob,
+            afterBlob,
+          });
+          setSavedOffline(true);
+          setStep('done');
+          refreshPending();
+          toast.error('Network error — saved offline, will retry automatically');
+        } else {
+          const message = error instanceof Error ? error.message : 'Submission failed';
+          toast.error(`Submit failed: ${message}`);
+          // Stay on the form so the technician can retry or adjust.
+        }
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Submission failed';

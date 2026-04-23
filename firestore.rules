@@ -140,7 +140,18 @@ service cloud.firestore {
         (isAuthenticated() && resource.data.customerId == request.auth.uid);
       allow create: if isTechnician() &&
         request.resource.data.technicianId == request.auth.uid;
-      allow update, delete: if isAdmin();
+      // Admins can update any field. Technicians can only update the
+      // maintenance-denormalization fields written by completeMaintenance().
+      allow update: if isAdmin() || (
+        isTechnician() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'lastEzerMaintenanceAt',
+          'nextEzerMaintenanceDue',
+          'lastFilterReplacementAt',
+          'nextFilterReplacementDue'
+        ])
+      );
+      allow delete: if isAdmin();
     }
 
     // Notifications collection — in-app notifications per user

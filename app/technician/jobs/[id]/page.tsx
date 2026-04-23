@@ -3,21 +3,25 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOfflineQueue } from '@/contexts/OfflineQueueContext';
 import {
   getTechnicianJobById,
-  startJob,
-  completeJob,
-  uploadInstallationPhoto
+  uploadInstallationPhoto,
+  updateCompletionDetails,
 } from '@/lib/services/technicianService';
 import { getDeviceByOrderId } from '@/lib/services/deviceService';
+import { getVisitsByDeviceId, updateVisitNotes } from '@/lib/services/maintenanceService';
+import { enqueuePhoto } from '@/lib/offline/photoQueue';
 import { Order } from '@/types/order';
+import { Device, MaintenanceVisit } from '@/types/device';
 import DeviceRegistrationFlow from '@/components/technician/DeviceRegistrationFlow';
 import {
   ArrowLeft, MapPin, Calendar, Clock, DollarSign, User, Phone,
   MessageCircle, Image as ImageIcon, Video, Upload, X, Check,
-  Loader2, Play, CheckCircle, ExternalLink, QrCode
+  Loader2, Play, CheckCircle, ExternalLink, QrCode, Pencil,
+  CheckCircle2, XCircle
 } from 'lucide-react';
-import { formatCurrency, formatDate } from '@/lib/utils/formatters';
+import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils/formatters';
 import { useTranslation } from '@/hooks/useTranslation';
 import { generateWhatsAppLink, openWhatsApp } from '@/lib/utils/whatsappHelper';
 import toast from 'react-hot-toast';
@@ -28,6 +32,7 @@ export default function JobDetailPage() {
   const jobId = params.id as string;
   const { user, userData } = useAuth();
   const { t } = useTranslation();
+  const { enqueue } = useOfflineQueue();
   const [job, setJob] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
@@ -38,9 +43,18 @@ export default function JobDetailPage() {
   const [completionNotes, setCompletionNotes] = useState('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [showRegistration, setShowRegistration] = useState(false);
-  const [deviceRegistered, setDeviceRegistered] = useState<boolean | null>(null);
+  const [device, setDevice] = useState<Device | null>(null);
+  const [latestVisit, setLatestVisit] = useState<MaintenanceVisit | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editNotes, setEditNotes] = useState('');
+  const [editVisitNotes, setEditVisitNotes] = useState('');
+  const [newPhotos, setNewPhotos] = useState<File[]>([]);
+  const [newPhotoPreview, setNewPhotoPreview] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
   const lang = userData?.preferredLanguage || 'en';
+  const deviceRegistered = device !== null;
 
   useEffect(() => {
     if (user) {
@@ -54,7 +68,7 @@ export default function JobDetailPage() {
     try {
       setLoading(true);
       const jobData = await getTechnicianJobById(jobId, user.uid);
-      
+
       if (!jobData) {
         toast.error('Job not found or access denied');
         router.push('/technician/jobs');
@@ -63,10 +77,14 @@ export default function JobDetailPage() {
 
       setJob(jobData);
 
-      // Check if device is already registered for completed jobs
+      // Fetch device and latest maintenance visit for completed jobs
       if (jobData.status === 'completed') {
-        const device = await getDeviceByOrderId(jobData.id);
-        setDeviceRegistered(!!device);
+        const deviceData = await getDeviceByOrderId(jobData.id);
+        setDevice(deviceData);
+        if (deviceData) {
+          const visits = await getVisitsByDeviceId(deviceData.id);
+          setLatestVisit(visits.length > 0 ? visits[0] : null);
+        }
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to load job';
@@ -80,11 +98,12 @@ export default function JobDetailPage() {
   const handleStartJob = async () => {
     if (!user || !job) return;
 
+    setStarting(true);
     try {
-      setStarting(true);
-      await startJob(job.id, user.uid);
+      await enqueue('start_job', { orderId: job.id, technicianId: user.uid });
+      // Optimistic: update local state immediately
+      setJob(prev => prev ? { ...prev, status: 'in_progress' as const } : prev);
       toast.success('Job started!');
-      loadJob();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to start job';
       toast.error(message);
@@ -127,21 +146,42 @@ export default function JobDetailPage() {
       setCompleting(true);
       setUploadingPhotos(true);
 
-      // Upload all photos
-      const photoUrls: string[] = [];
-      for (const photo of installationPhotos) {
-        const url = await uploadInstallationPhoto(job.id, photo);
-        photoUrls.push(url);
+      const isOnline = typeof navigator === 'undefined' || navigator.onLine;
+
+      if (isOnline) {
+        // Online: upload photos to Storage directly, then queue the Firestore write
+        const photoUrls: string[] = [];
+        for (const photo of installationPhotos) {
+          const url = await uploadInstallationPhoto(job.id, photo);
+          photoUrls.push(url);
+        }
+        setUploadingPhotos(false);
+
+        await enqueue('complete_job', {
+          orderId: job.id,
+          technicianId: user.uid,
+          photoUrls,
+          notes: completionNotes,
+        });
+      } else {
+        // Offline: store photo blobs in IDB photoQueue, then queue the write
+        for (const photo of installationPhotos) {
+          await enqueuePhoto(job.id, photo);
+        }
+        setUploadingPhotos(false);
+
+        await enqueue('complete_job', {
+          orderId: job.id,
+          technicianId: user.uid,
+          notes: completionNotes,
+          // No photoUrls — flush handler will read blobs from photoQueue
+        });
       }
 
-      setUploadingPhotos(false);
-
-      // Complete the job
-      await completeJob(job.id, user.uid, photoUrls, completionNotes);
-
-      toast.success('Job completed! Now register the device.');
+      // Optimistic: show completed UI
+      setJob(prev => prev ? { ...prev, status: 'completed' as const } : prev);
+      toast.success('Job completed!');
       setShowRegistration(true);
-      loadJob();
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Failed to complete job';
       toast.error(msg);
@@ -257,7 +297,7 @@ export default function JobDetailPage() {
           <ImageIcon className="w-6 h-6" />
           Customer Site Photos
         </h2>
-        
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {job.sitePhotos?.waterSource && (
             <div className="group relative">
@@ -433,7 +473,7 @@ export default function JobDetailPage() {
       {job.status === 'in_progress' && (
         <div className="apple-card">
           <h2 className="text-2xl font-bold mb-6">Complete Installation</h2>
-          
+
           {/* Upload Installation Photos */}
           <div className="space-y-4">
             <div>
@@ -517,32 +557,260 @@ export default function JobDetailPage() {
       )}
 
       {/* Completed Job Info */}
-      {job.status === 'completed' && job.installationPhotos && job.installationPhotos.length > 0 && (
+      {job.status === 'completed' && (job.installationPhotos?.length || latestVisit) && (
         <div className="apple-card">
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-            <CheckCircle className="w-6 h-6 text-success" />
-            Installation Complete
-          </h2>
-          
-          <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
-            {job.installationPhotos.map((photo, index) => (
-              <div key={index} className="group relative">
-                <div className="aspect-square bg-surface-elevated rounded-apple overflow-hidden cursor-pointer">
-                  <img
-                    src={photo.url}
-                    alt={`Installation ${index + 1}`}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                    onClick={() => setPreviewImage(photo.url)}
-                  />
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <CheckCircle className="w-6 h-6 text-success" />
+              Installation Complete
+            </h2>
+            {!isEditing && (
+              <button
+                onClick={() => {
+                  setIsEditing(true);
+                  setEditNotes(job.technicianNotes || '');
+                  setEditVisitNotes(latestVisit?.notes || '');
+                  setNewPhotos([]);
+                  setNewPhotoPreview([]);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-primary hover:bg-primary/10 rounded-apple transition-all"
+              >
+                <Pencil className="w-4 h-4" />
+                Edit
+              </button>
+            )}
           </div>
 
-          {job.technicianNotes && (
-            <div className="mt-4 p-4 bg-surface-elevated rounded-apple">
-              <p className="text-sm text-text-secondary mb-1">Completion Notes</p>
-              <p className="text-sm">{job.technicianNotes}</p>
+          {/* Installation Photos */}
+          {job.installationPhotos && job.installationPhotos.length > 0 && (
+            <div className="mb-6">
+              <p className="text-sm font-medium text-text-secondary mb-3">Installation Photos</p>
+              <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
+                {job.installationPhotos.map((photo, index) => (
+                  <div key={index} className="group relative">
+                    <div className="aspect-square bg-surface-elevated rounded-apple overflow-hidden cursor-pointer">
+                      <img
+                        src={photo.url}
+                        alt={`Installation ${index + 1}`}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        onClick={() => setPreviewImage(photo.url)}
+                      />
+                    </div>
+                  </div>
+                ))}
+                {/* New photo previews in edit mode */}
+                {isEditing && newPhotoPreview.map((preview, index) => (
+                  <div key={`new-${index}`} className="relative group">
+                    <div className="aspect-square bg-surface-elevated rounded-apple overflow-hidden border-2 border-primary/30">
+                      <img src={preview} alt={`New ${index + 1}`} className="w-full h-full object-cover" />
+                    </div>
+                    <button
+                      onClick={() => {
+                        setNewPhotos(prev => prev.filter((_, i) => i !== index));
+                        setNewPhotoPreview(prev => prev.filter((_, i) => i !== index));
+                      }}
+                      className="absolute top-1 right-1 p-1 bg-error hover:bg-error/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {isEditing && (
+                <div className="mt-3">
+                  <input
+                    ref={editFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      setNewPhotos(prev => [...prev, ...files]);
+                      files.forEach(file => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => setNewPhotoPreview(prev => [...prev, reader.result as string]);
+                        reader.readAsDataURL(file);
+                      });
+                    }}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => editFileInputRef.current?.click()}
+                    className="flex items-center gap-2 px-3 py-2 text-sm bg-surface-elevated hover:bg-surface-secondary border border-dashed border-border rounded-apple transition-all"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Add Photos
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Technician Notes */}
+          {(job.technicianNotes || isEditing) && (
+            <div className="mb-6">
+              <p className="text-sm font-medium text-text-secondary mb-2">Completion Notes</p>
+              {isEditing ? (
+                <textarea
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all resize-none"
+                  rows={3}
+                  placeholder="Add completion notes..."
+                />
+              ) : (
+                <div className="p-4 bg-surface-elevated rounded-apple">
+                  <p className="text-sm">{job.technicianNotes}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Maintenance Visit Summary */}
+          {latestVisit && (
+            <div className="border-t border-border pt-6">
+              <p className="text-sm font-medium text-text-secondary mb-4">Maintenance Visit</p>
+
+              <div className="flex items-center gap-2 text-sm text-text-secondary mb-4">
+                <Calendar className="w-4 h-4" />
+                <span>{formatDateTime(latestVisit.createdAt)}</span>
+                <span className="text-text-tertiary">by {latestVisit.technicianName}</span>
+              </div>
+
+              {/* Checklist */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+                {[
+                  { key: 'installationOk' as const, label: 'Installation OK' },
+                  { key: 'operationOk' as const, label: 'Operation OK' },
+                  { key: 'waterPressureOk' as const, label: 'Water Pressure OK' },
+                  { key: 'sedimentFilterReplaced' as const, label: 'Sediment Filter Replaced' },
+                  { key: 'carbonFilterReplaced' as const, label: 'Carbon Filter Replaced' },
+                ].map(({ key, label }) => (
+                  <div key={key} className="flex items-center gap-2 text-sm">
+                    {latestVisit.checks[key] ? (
+                      <CheckCircle2 className="w-4 h-4 text-success" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-text-tertiary" />
+                    )}
+                    <span className={latestVisit.checks[key] ? '' : 'text-text-tertiary'}>{label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Before/After Photos */}
+              {(latestVisit.beforePhotoUrl || latestVisit.afterPhotoUrl) && (
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  {latestVisit.beforePhotoUrl && (
+                    <div>
+                      <p className="text-xs text-text-secondary mb-2 text-center">Before</p>
+                      <div className="aspect-video bg-surface-elevated rounded-apple overflow-hidden cursor-pointer">
+                        <img
+                          src={latestVisit.beforePhotoUrl}
+                          alt="Before"
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                          onClick={() => setPreviewImage(latestVisit.beforePhotoUrl!)}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  {latestVisit.afterPhotoUrl && (
+                    <div>
+                      <p className="text-xs text-text-secondary mb-2 text-center">After</p>
+                      <div className="aspect-video bg-surface-elevated rounded-apple overflow-hidden cursor-pointer">
+                        <img
+                          src={latestVisit.afterPhotoUrl}
+                          alt="After"
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                          onClick={() => setPreviewImage(latestVisit.afterPhotoUrl!)}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Visit Notes */}
+              {(latestVisit.notes || isEditing) && (
+                <div>
+                  <p className="text-sm font-medium text-text-secondary mb-2">Visit Notes</p>
+                  {isEditing ? (
+                    <textarea
+                      value={editVisitNotes}
+                      onChange={(e) => setEditVisitNotes(e.target.value)}
+                      className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all resize-none"
+                      rows={3}
+                      placeholder="Add visit notes..."
+                    />
+                  ) : (
+                    <div className="p-4 bg-surface-elevated rounded-apple">
+                      <p className="text-sm">{latestVisit.notes}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Edit mode actions */}
+          {isEditing && (
+            <div className="flex gap-3 mt-6 pt-6 border-t border-border">
+              <button
+                onClick={() => {
+                  setIsEditing(false);
+                  setNewPhotos([]);
+                  setNewPhotoPreview([]);
+                }}
+                disabled={saving}
+                className="flex-1 px-4 py-3 bg-surface-elevated hover:bg-surface-secondary text-text-primary font-medium rounded-apple transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!user || !job) return;
+                  setSaving(true);
+                  try {
+                    let newPhotoUrls: string[] = [];
+                    if (newPhotos.length > 0) {
+                      for (const photo of newPhotos) {
+                        const url = await uploadInstallationPhoto(job.id, photo);
+                        newPhotoUrls.push(url);
+                      }
+                    }
+
+                    await updateCompletionDetails(job.id, user.uid, {
+                      technicianNotes: editNotes,
+                      newPhotoUrls: newPhotoUrls.length > 0 ? newPhotoUrls : undefined,
+                    });
+
+                    if (latestVisit && editVisitNotes !== latestVisit.notes) {
+                      await updateVisitNotes(latestVisit.id, editVisitNotes);
+                    }
+
+                    toast.success('Changes saved');
+                    setIsEditing(false);
+                    setNewPhotos([]);
+                    setNewPhotoPreview([]);
+                    await loadJob();
+                  } catch (error: unknown) {
+                    const message = error instanceof Error ? error.message : 'Failed to save changes';
+                    toast.error(message);
+                  } finally {
+                    setSaving(false);
+                  }
+                }}
+                disabled={saving}
+                className="flex-1 px-4 py-3 bg-primary hover:bg-primary-hover disabled:opacity-50 text-white font-medium rounded-apple transition-all flex items-center justify-center gap-2"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
+              </button>
             </div>
           )}
         </div>
@@ -564,7 +832,7 @@ export default function JobDetailPage() {
       )}
 
       {/* Register Device button for completed jobs without device */}
-      {!showRegistration && job.status === 'completed' && deviceRegistered === false && user && (
+      {!showRegistration && job.status === 'completed' && !deviceRegistered && user && (
         <div className="apple-card border-l-4 border-warning">
           <div className="flex items-center justify-between">
             <div>
@@ -596,7 +864,7 @@ export default function JobDetailPage() {
           >
             <X className="w-6 h-6 text-white" />
           </button>
-          
+
           <img
             src={previewImage}
             alt="Preview"
@@ -608,4 +876,3 @@ export default function JobDetailPage() {
     </div>
   );
 }
-

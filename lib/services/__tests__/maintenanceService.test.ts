@@ -19,6 +19,7 @@ vi.mock('../transactionService', () => ({
 const mockGetDoc = vi.fn();
 const mockGetDocs = vi.fn();
 const mockDoc = vi.fn();
+const mockUpdateDoc = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('firebase/firestore', () => ({
   collection: vi.fn((_db: unknown, path: string) => path),
@@ -29,7 +30,8 @@ vi.mock('firebase/firestore', () => ({
   where: vi.fn((...args: unknown[]) => args),
   orderBy: vi.fn(),
   limit: vi.fn(),
-  updateDoc: vi.fn(),
+  updateDoc: (...args: unknown[]) => mockUpdateDoc(...args),
+  addDoc: vi.fn().mockResolvedValue({ id: 'mail-1' }),
   writeBatch: vi.fn(() => mockBatch),
   Timestamp: {
     now: vi.fn(() => mockNow),
@@ -42,6 +44,7 @@ import {
   getSchedulesByDeviceId,
   getOverdueMaintenance,
   getMaintenanceSummaryStats,
+  updateVisitNotes,
 } from '../maintenanceService';
 import { logTransaction } from '../transactionService';
 
@@ -69,12 +72,24 @@ function createScheduleData(overrides: Record<string, unknown> = {}) {
   };
 }
 
+// Helper: mock the two extra getDoc calls that completeMaintenance makes after batch commit
+// (device for email, user for technician name)
+function mockEmailLookups() {
+  mockGetDoc.mockResolvedValueOnce(
+    createMockDocSnapshot('device-1', { customerInfo: { email: 'test@example.com' }, productSnapshot: { name: { en: 'Ezer' } } })
+  );
+  mockGetDoc.mockResolvedValueOnce(
+    createMockDocSnapshot('admin-1', { displayName: 'Admin' })
+  );
+}
+
 describe('completeMaintenance', () => {
   it('updates schedule with new nextDueDate and appended completion history', async () => {
     const scheduleData = createScheduleData({ intervalDays: 90 });
     mockGetDoc.mockResolvedValueOnce(
       createMockDocSnapshot('schedule-1', scheduleData)
     );
+    mockEmailLookups();
 
     await completeMaintenance('schedule-1', 'admin-1', 'Routine check');
 
@@ -105,6 +120,7 @@ describe('completeMaintenance', () => {
     mockGetDoc.mockResolvedValueOnce(
       createMockDocSnapshot('schedule-1', scheduleData)
     );
+    mockEmailLookups();
 
     await completeMaintenance('schedule-1', 'admin-3', 'Third');
 
@@ -121,6 +137,7 @@ describe('completeMaintenance', () => {
     mockGetDoc.mockResolvedValueOnce(
       createMockDocSnapshot('schedule-1', scheduleData)
     );
+    mockEmailLookups();
 
     await completeMaintenance('schedule-1', 'admin-1');
 
@@ -148,6 +165,7 @@ describe('completeMaintenance', () => {
 
     // getFilterSchedulesForDevice call — no sibling filters
     mockGetDocs.mockResolvedValueOnce(createMockQuerySnapshot([]));
+    mockEmailLookups();
 
     await completeMaintenance('schedule-1', 'admin-1');
 
@@ -186,6 +204,7 @@ describe('completeMaintenance', () => {
         },
       ])
     );
+    mockEmailLookups();
 
     await completeMaintenance('schedule-1', 'admin-1');
 
@@ -214,6 +233,7 @@ describe('completeMaintenance', () => {
       createMockDocSnapshot('schedule-1', scheduleData)
     );
     mockGetDocs.mockResolvedValueOnce(createMockQuerySnapshot([]));
+    mockEmailLookups();
 
     await completeMaintenance('schedule-1', 'admin-1', 'Done');
 
@@ -238,6 +258,7 @@ describe('completeMaintenance', () => {
     mockGetDoc.mockResolvedValueOnce(
       createMockDocSnapshot('schedule-1', scheduleData)
     );
+    mockEmailLookups();
 
     await completeMaintenance('schedule-1', 'admin-1', 'Replaced filter cartridge');
 
@@ -250,6 +271,7 @@ describe('completeMaintenance', () => {
     mockGetDoc.mockResolvedValueOnce(
       createMockDocSnapshot('schedule-1', scheduleData)
     );
+    mockEmailLookups();
 
     await completeMaintenance('schedule-1', 'admin-1');
 
@@ -340,5 +362,22 @@ describe('getMaintenanceSummaryStats', () => {
       upcomingThisWeek: 5,
       upcomingThisMonth: 8,
     });
+  });
+});
+
+describe('updateVisitNotes', () => {
+  it('calls updateDoc with the correct notes', async () => {
+    await updateVisitNotes('visit-1', 'Updated notes');
+
+    expect(mockDoc).toHaveBeenCalledWith({}, 'maintenanceVisits', 'visit-1');
+    expect(mockUpdateDoc).toHaveBeenCalledTimes(1);
+    expect(mockUpdateDoc.mock.calls[0][1]).toEqual({ notes: 'Updated notes' });
+  });
+
+  it('handles empty string notes', async () => {
+    await updateVisitNotes('visit-1', '');
+
+    expect(mockUpdateDoc).toHaveBeenCalledTimes(1);
+    expect(mockUpdateDoc.mock.calls[0][1]).toEqual({ notes: '' });
   });
 });

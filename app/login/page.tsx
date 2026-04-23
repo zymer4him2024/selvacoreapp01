@@ -11,10 +11,15 @@ import { translations, Language } from '@/lib/translations';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
-  const { user, userData, signInWithGoogle, loading } = useAuth();
+  const { user, userData, signInWithGoogle, signInWithEmail, signUpWithEmail, loading } = useAuth();
   const router = useRouter();
   const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [showLanguageSelection, setShowLanguageSelection] = useState(false);
+  const [authMode, setAuthMode] = useState<'signIn' | 'signUp'>('signIn');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const { t, changeLanguage } = useTranslation();
 
   useEffect(() => {
@@ -51,6 +56,53 @@ export default function LoginPage() {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to sign in';
       toast.error(message);
+    }
+  };
+
+  const mapAuthError = (error: unknown): string => {
+    const code =
+      error && typeof error === 'object' && 'code' in error
+        ? String((error as { code?: unknown }).code ?? '')
+        : '';
+    switch (code) {
+      case 'auth/invalid-email':
+        return 'Invalid email address';
+      case 'auth/user-not-found':
+      case 'auth/wrong-password':
+      case 'auth/invalid-credential':
+        return 'Incorrect email or password';
+      case 'auth/email-already-in-use':
+        return 'An account with this email already exists';
+      case 'auth/weak-password':
+        return 'Password must be at least 6 characters';
+      case 'auth/too-many-requests':
+        return 'Too many attempts. Try again later.';
+      default:
+        return error instanceof Error ? error.message : 'Failed to sign in';
+    }
+  };
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !password) {
+      toast.error('Enter email and password');
+      return;
+    }
+    if (authMode === 'signUp' && !displayName.trim()) {
+      toast.error('Enter your name');
+      return;
+    }
+    try {
+      setSubmitting(true);
+      if (authMode === 'signIn') {
+        await signInWithEmail(email.trim(), password);
+      } else {
+        await signUpWithEmail(email.trim(), password, displayName.trim());
+      }
+    } catch (error: unknown) {
+      toast.error(mapAuthError(error));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -168,6 +220,66 @@ export default function LoginPage() {
               />
             </svg>
             {t.login.signInWithGoogle}
+          </button>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs text-text-tertiary uppercase tracking-wider">
+              {authMode === 'signIn' ? 'or sign in with email' : 'or create an account'}
+            </span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+
+          {/* Email/password form */}
+          <form onSubmit={handleEmailSubmit} className="space-y-4">
+            {authMode === 'signUp' && (
+              <input
+                type="text"
+                placeholder="Your name"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                autoComplete="name"
+                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
+              />
+            )}
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete={authMode === 'signIn' ? 'current-password' : 'new-password'}
+              className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
+            />
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full px-6 py-3 bg-primary hover:bg-primary/90 disabled:opacity-60 text-white font-semibold rounded-apple transition-all hover:scale-[1.01] shadow-apple"
+            >
+              {submitting
+                ? t.login.signingIn
+                : authMode === 'signIn'
+                  ? 'Sign in'
+                  : 'Create account'}
+            </button>
+          </form>
+
+          <button
+            type="button"
+            onClick={() => setAuthMode(authMode === 'signIn' ? 'signUp' : 'signIn')}
+            className="w-full text-sm text-text-secondary hover:text-text-primary transition-colors"
+          >
+            {authMode === 'signIn'
+              ? "Don't have an account? Create one"
+              : 'Already have an account? Sign in'}
           </button>
         </div>
 

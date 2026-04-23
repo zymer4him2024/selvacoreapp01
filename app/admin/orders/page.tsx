@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { Search, Eye, Package as PackageIcon, Calendar, User } from 'lucide-react';
+import { Search, Eye, Trash2, Package as PackageIcon, Calendar, User } from 'lucide-react';
 import { Order } from '@/types';
-import { getOrdersPaginated } from '@/lib/services/orderService';
+import { getOrdersPaginated, deleteOrder } from '@/lib/services/orderService';
 import { formatCurrency, formatDate, formatOptionalString } from '@/lib/utils/formatters';
 import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import toast from 'react-hot-toast';
@@ -21,6 +21,7 @@ export default function OrdersPage() {
   const [hasMore, setHasMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const lastDocRef = useRef<QueryDocumentSnapshot<DocumentData> | null>(null);
 
   const loadOrders = useCallback(async (reset: boolean = true) => {
@@ -62,6 +63,21 @@ export default function OrdersPage() {
       refunded: 'bg-text-tertiary/20 text-text-tertiary',
     };
     return colors[status] || colors.pending;
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    if (!confirm('Are you sure you want to delete this order? This action cannot be undone.')) return;
+    try {
+      setDeletingId(orderId);
+      await deleteOrder(orderId);
+      setOrders(prev => prev.filter(o => o.id !== orderId));
+      toast.success('Order deleted');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete order';
+      toast.error(message);
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const filteredOrders = orders.filter((order) => {
@@ -199,13 +215,23 @@ export default function OrdersPage() {
                   )}
                 </div>
 
-                {/* Action */}
-                <Link
-                  href={`/admin/orders/${order.id}`}
-                  className="ml-4 p-2 bg-surface-elevated hover:bg-surface-secondary rounded-apple transition-all"
-                >
-                  <Eye className="w-5 h-5" />
-                </Link>
+                {/* Actions */}
+                <div className="ml-4 flex flex-col gap-2">
+                  <Link
+                    href={`/admin/orders/${order.id}`}
+                    className="p-2 bg-surface-elevated hover:bg-surface-secondary rounded-apple transition-all"
+                  >
+                    <Eye className="w-5 h-5" />
+                  </Link>
+                  <button
+                    onClick={() => handleDeleteOrder(order.id)}
+                    disabled={deletingId === order.id}
+                    className="p-2 bg-surface-elevated hover:bg-error/20 text-text-secondary hover:text-error rounded-apple transition-all disabled:opacity-50"
+                    aria-label="Delete order"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}

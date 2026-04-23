@@ -8,54 +8,66 @@ interface TechnicianRowProps {
   technician: TechnicianWithStats;
   weekDays: Date[];
   orders: Order[];
-  today: string;
+  todayStr: string;
   timeTbdLabel: string;
-  dropHereLabel: string;
+  workloadLabel: string;
+  onReschedule?: (order: Order) => void;
+  onUnassign?: (order: Order) => void;
+  rescheduleLabel?: string;
+  unassignLabel?: string;
 }
 
-function isSameDay(d1: Date, d2: Date): boolean {
-  return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
+function isSameDay(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
-function getOrderDate(order: Order): Date | null {
+function getEffectiveDate(order: Order): Date | null {
   const ts = order.scheduledAt || order.installationDate;
   if (!ts) return null;
   return ts.toDate ? ts.toDate() : new Date(ts as unknown as string);
 }
 
-export default function TechnicianRow({ technician, weekDays, orders, today, timeTbdLabel, dropHereLabel }: TechnicianRowProps) {
+export default function TechnicianRow({
+  technician, weekDays, orders, todayStr, timeTbdLabel, workloadLabel,
+  onReschedule, onUnassign, rescheduleLabel, unassignLabel,
+}: TechnicianRowProps) {
+  const totalMinutes = orders.reduce((sum, o) => sum + (o.estimatedDurationMinutes || 0), 0);
+  const hrs = Math.round((totalMinutes / 60) * 10) / 10;
+  const workload = workloadLabel.replace('{jobs}', String(orders.length)).replace('{hrs}', String(hrs));
+
   return (
-    <div className="grid grid-cols-[200px_repeat(7,1fr)] gap-1 items-stretch">
-      {/* Technician name */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-surface rounded-apple border border-border">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center flex-shrink-0">
+    <div className="grid grid-cols-[200px_repeat(7,1fr)] gap-px">
+      <div className="sticky left-0 z-[2] flex items-center gap-2.5 px-3 py-3 bg-white rounded-[12px] border border-[#E5E5EA] shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#0071E3] to-[#34C759] flex items-center justify-center flex-shrink-0">
           <span className="text-xs font-semibold text-white">
             {technician.displayName?.charAt(0) || '?'}
           </span>
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-medium truncate">{technician.displayName}</p>
-          <p className="text-xs text-text-tertiary truncate">{technician.phone || ''}</p>
+          <p className="text-sm font-semibold text-[#1D1D1F] truncate">{technician.displayName}</p>
+          <p className="text-[10px] text-[#86868B] truncate">{workload}</p>
         </div>
       </div>
 
-      {/* Day cells */}
       {weekDays.map((day) => {
+        const dateStr = day.toISOString().split('T')[0];
         const dayOrders = orders.filter((o) => {
-          const d = getOrderDate(o);
+          const d = getEffectiveDate(o);
           return d && isSameDay(d, day);
         });
-        const dateStr = day.toISOString().split('T')[0];
-        const cellId = `${technician.id}_${dateStr}`;
 
         return (
           <DroppableCell
-            key={cellId}
-            id={cellId}
+            key={dateStr}
+            technicianId={technician.id}
+            date={day}
+            isToday={dateStr === todayStr}
             orders={dayOrders}
-            isToday={dateStr === today}
             timeTbdLabel={timeTbdLabel}
-            dropHereLabel={dropHereLabel}
+            onReschedule={onReschedule}
+            onUnassign={onUnassign}
+            rescheduleLabel={rescheduleLabel}
+            unassignLabel={unassignLabel}
           />
         );
       })}

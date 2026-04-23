@@ -208,6 +208,13 @@ export async function cancelOrder(
 }
 
 /**
+ * Get orders in a date range (convenience alias used by schedule views)
+ */
+export async function getOrdersInDateRange(start: Date, end: Date): Promise<Order[]> {
+  return getOrdersForWeek(start, end);
+}
+
+/**
  * Get orders for a given week (by scheduledAt, falling back to installationDate)
  */
 export async function getOrdersForWeek(weekStart: Date, weekEnd: Date): Promise<Order[]> {
@@ -388,5 +395,124 @@ export async function reassignOrder(
   }
 
   return { previousTechnicianId };
+}
+
+/**
+ * Get unscheduled orders (pending, no scheduledAt)
+ */
+export async function getUnscheduledOrders(): Promise<Order[]> {
+  const ordersRef = collection(db, 'orders');
+  const q = query(
+    ordersRef,
+    where('status', '==', 'pending'),
+    orderBy('createdAt', 'desc'),
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs
+    .map((d) => ({ id: d.id, ...d.data() } as Order))
+    .filter((o) => !o.scheduledAt);
+}
+
+/**
+ * Schedule an order — assign technician + date (admin dispatch, lightweight)
+ */
+export async function scheduleOrder(
+  orderId: string,
+  technicianId: string,
+  scheduledAt: Date,
+  adminId: string,
+): Promise<void> {
+  const orderRef = doc(db, 'orders', orderId);
+
+  await runTransaction(db, async (transaction) => {
+    const snap = await transaction.get(orderRef);
+    if (!snap.exists()) throw new Error('Order not found');
+    const order = snap.data() as Order;
+
+    transaction.update(orderRef, {
+      technicianId,
+      scheduledAt: Timestamp.fromDate(scheduledAt),
+      status: order.status === 'pending' ? 'accepted' : order.status,
+      acceptedAt: order.status === 'pending' ? Timestamp.now() : (order.acceptedAt ?? null),
+      statusHistory: [
+        ...(order.statusHistory || []),
+        {
+          status: order.status === 'pending' ? 'accepted' : order.status,
+          timestamp: Timestamp.now(),
+          note: 'Scheduled by admin',
+          changedBy: adminId,
+        },
+      ],
+    });
+  });
+}
+
+/**
+ * Reschedule an order — change technician and/or date
+ */
+export async function rescheduleOrder(
+  orderId: string,
+  technicianId: string,
+  scheduledAt: Date,
+  adminId: string,
+): Promise<void> {
+  const orderRef = doc(db, 'orders', orderId);
+
+  await runTransaction(db, async (transaction) => {
+    const snap = await transaction.get(orderRef);
+    if (!snap.exists()) throw new Error('Order not found');
+    const order = snap.data() as Order;
+
+    transaction.update(orderRef, {
+      technicianId,
+      scheduledAt: Timestamp.fromDate(scheduledAt),
+      statusHistory: [
+        ...(order.statusHistory || []),
+        {
+          status: order.status,
+          timestamp: Timestamp.now(),
+          note: 'Rescheduled by admin',
+          changedBy: adminId,
+        },
+      ],
+    });
+  });
+}
+
+/**
+ * Unschedule an order — clear technician + scheduledAt, revert to pending
+ */
+export async function unscheduleOrder(
+  orderId: string,
+  adminId: string,
+): Promise<void> {
+  const orderRef = doc(db, 'orders', orderId);
+
+  await runTransaction(db, async (transaction) => {
+    const snap = await transaction.get(orderRef);
+    if (!snap.exists()) throw new Error('Order not found');
+    const order = snap.data() as Order;
+
+    transaction.update(orderRef, {
+      technicianId: null,
+      technicianInfo: null,
+      scheduledAt: null,
+      status: 'pending',
+      acceptedAt: null,
+      statusHistory: [
+        ...(order.statusHistory || []),
+        {
+          status: 'pending',
+          timestamp: Timestamp.now(),
+          note: 'Unscheduled by admin',
+          changedBy: adminId,
+        },
+      ],
+    });
+  });
+}
+
+export async function deleteOrder(orderId: string): Promise<void> {
+  await deleteDoc(doc(db, 'orders', orderId));
 }
 

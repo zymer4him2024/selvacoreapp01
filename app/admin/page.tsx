@@ -3,7 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import {
+  signInWithPopup,
+  GoogleAuthProvider,
+  signInWithEmailAndPassword,
+} from 'firebase/auth';
 import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/config';
 import { Package, Wrench, Building2, ShoppingCart, TrendingUp, Users } from 'lucide-react';
@@ -49,57 +53,95 @@ export default function AdminDashboard() {
   const d = t.admin.dashboard;
   const l = t.admin.login;
 
-  if (!authLoading && !user) {
-    return <AdminLoginView t={l} onSignIn={async () => {
-      try {
-        setLoading(true);
+  const verifyAdminRole = async (uid: string, isNew: boolean) => {
+    const userDoc = await getDoc(doc(db, 'users', uid));
 
-        const provider = new GoogleAuthProvider();
-        const result = await signInWithPopup(auth, provider);
-
-        const userDoc = await getDoc(doc(db, 'users', result.user.uid));
-
-        if (!userDoc.exists()) {
-          const newAdminUser = {
-            id: result.user.uid,
-            role: 'admin',
-            email: result.user.email || '',
-            displayName: result.user.displayName || '',
-            photoURL: result.user.photoURL || undefined,
-            phone: '',
-            preferredLanguage: 'en',
-            active: true,
-            emailVerified: result.user.emailVerified,
-            roleSelected: true,
-            createdAt: Timestamp.now(),
-            updatedAt: Timestamp.now(),
-            lastLoginAt: Timestamp.now(),
-          };
-          
-          await setDoc(doc(db, 'users', result.user.uid), newAdminUser);
-          toast.success(l.accountCreated);
-          return;
-        }
-        
-        const userDataFromDb = userDoc.data();
-        
-        if (userDataFromDb.role !== 'admin') {
-          toast.error(l.accessDenied);
-          await auth.signOut();
-          setLoading(false);
-        } else {
-          toast.success(l.welcomeAdmin);
-        }
-      } catch (error: unknown) {
-        const isFirebaseError = error instanceof Error && 'code' in error;
-        const code = isFirebaseError ? (error as { code: string }).code : '';
-        if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') {
-          const message = error instanceof Error ? error.message : 'Failed to sign in';
-          toast.error(message);
-        }
-        setLoading(false);
+    if (!userDoc.exists()) {
+      if (!isNew) {
+        toast.error(l.accessDenied);
+        await auth.signOut();
+        return;
       }
-    }} loading={loading} />;
+      const newAdminUser = {
+        id: uid,
+        role: 'admin',
+        email: auth.currentUser?.email || '',
+        displayName: auth.currentUser?.displayName || '',
+        photoURL: auth.currentUser?.photoURL || undefined,
+        phone: '',
+        preferredLanguage: 'en',
+        active: true,
+        emailVerified: auth.currentUser?.emailVerified ?? false,
+        roleSelected: true,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+        lastLoginAt: Timestamp.now(),
+      };
+      await setDoc(doc(db, 'users', uid), newAdminUser);
+      toast.success(l.accountCreated);
+      return;
+    }
+
+    const userDataFromDb = userDoc.data();
+    if (userDataFromDb.role !== 'admin') {
+      toast.error(l.accessDenied);
+      await auth.signOut();
+    } else {
+      toast.success(l.welcomeAdmin);
+    }
+  };
+
+  if (!authLoading && !user) {
+    return (
+      <AdminLoginView
+        t={l}
+        loading={loading}
+        onSignIn={async () => {
+          try {
+            setLoading(true);
+            const provider = new GoogleAuthProvider();
+            const result = await signInWithPopup(auth, provider);
+            await verifyAdminRole(result.user.uid, true);
+          } catch (error: unknown) {
+            const isFirebaseError = error instanceof Error && 'code' in error;
+            const code = isFirebaseError ? (error as { code: string }).code : '';
+            if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') {
+              const message = error instanceof Error ? error.message : 'Failed to sign in';
+              toast.error(message);
+            }
+          } finally {
+            setLoading(false);
+          }
+        }}
+        onEmailSignIn={async (email, password) => {
+          try {
+            setLoading(true);
+            const result = await signInWithEmailAndPassword(auth, email, password);
+            await verifyAdminRole(result.user.uid, false);
+          } catch (error: unknown) {
+            const code =
+              error && typeof error === 'object' && 'code' in error
+                ? String((error as { code?: unknown }).code ?? '')
+                : '';
+            let message = error instanceof Error ? error.message : 'Failed to sign in';
+            if (
+              code === 'auth/invalid-credential' ||
+              code === 'auth/wrong-password' ||
+              code === 'auth/user-not-found'
+            ) {
+              message = 'Incorrect email or password';
+            } else if (code === 'auth/invalid-email') {
+              message = 'Invalid email address';
+            } else if (code === 'auth/too-many-requests') {
+              message = 'Too many attempts. Try again later.';
+            }
+            toast.error(message);
+          } finally {
+            setLoading(false);
+          }
+        }}
+      />
+    );
   }
 
   // If logged in but not admin, deny access
@@ -278,8 +320,29 @@ export default function AdminDashboard() {
 }
 
 // Admin Login View Component
-function AdminLoginView({ onSignIn, loading, t }: { onSignIn: () => Promise<void>; loading: boolean; t: typeof import('@/lib/translations/en').en.admin.login }) {
+function AdminLoginView({
+  onSignIn,
+  onEmailSignIn,
+  loading,
+  t,
+}: {
+  onSignIn: () => Promise<void>;
+  onEmailSignIn: (email: string, password: string) => Promise<void>;
+  loading: boolean;
+  t: typeof import('@/lib/translations/en').en.admin.login;
+}) {
   const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleEmailSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !password) {
+      toast.error('Enter email and password');
+      return;
+    }
+    onEmailSignIn(email.trim(), password);
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -332,6 +395,42 @@ function AdminLoginView({ onSignIn, loading, t }: { onSignIn: () => Promise<void
             </svg>
             {loading ? t.verifying : t.continueWithGoogle}
           </button>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs text-text-tertiary uppercase tracking-wider">
+              or sign in with email
+            </span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+
+          {/* Email/password form */}
+          <form onSubmit={handleEmailSubmit} className="space-y-4">
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full px-6 py-3 bg-primary hover:bg-primary/90 disabled:opacity-60 text-white font-semibold rounded-apple transition-all hover:scale-[1.01] shadow-apple"
+            >
+              {loading ? t.verifying : 'Sign in'}
+            </button>
+          </form>
 
           {/* Warning */}
           <div className="p-4 bg-warning/10 border border-warning/30 rounded-apple">

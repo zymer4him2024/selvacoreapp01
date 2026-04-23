@@ -7,16 +7,21 @@ import {
   signInWithPopup,
   signOut as firebaseSignOut,
   onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/config';
-import { User, UserRole } from '@/types';
+import { User } from '@/types';
 
 interface AuthContextType {
   user: FirebaseUser | null;
   userData: User | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string, displayName: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateUserData: (data: Partial<User>) => Promise<void>;
 }
@@ -97,6 +102,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signInWithEmail = async (email: string, password: string) => {
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    const firebaseUser = result.user;
+    await setDoc(
+      doc(db, 'users', firebaseUser.uid),
+      { lastLoginAt: Timestamp.now() },
+      { merge: true }
+    );
+  };
+
+  const signUpWithEmail = async (email: string, password: string, displayName: string) => {
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    const firebaseUser = result.user;
+
+    if (displayName) {
+      try {
+        await updateProfile(firebaseUser, { displayName });
+      } catch {
+        // Non-fatal — profile update is best-effort
+      }
+    }
+
+    const existing = await getDoc(doc(db, 'users', firebaseUser.uid));
+    if (!existing.exists()) {
+      const newUser: User = {
+        id: firebaseUser.uid,
+        role: 'customer',
+        email: firebaseUser.email || email,
+        displayName: displayName || firebaseUser.displayName || '',
+        phone: '',
+        preferredLanguage: 'en',
+        active: true,
+        emailVerified: firebaseUser.emailVerified,
+        roleSelected: false,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+        lastLoginAt: Timestamp.now(),
+      };
+      await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
+      setUserData(newUser);
+    }
+  };
+
   const signOut = async () => {
     document.cookie = '__session=; path=/; max-age=0';
     await firebaseSignOut(auth);
@@ -121,6 +169,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     userData,
     loading,
     signInWithGoogle,
+    signInWithEmail,
+    signUpWithEmail,
     signOut,
     updateUserData,
   };

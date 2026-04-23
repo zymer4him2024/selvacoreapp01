@@ -62,30 +62,45 @@ export default function OrderDetailPage() {
 
   const handleCancelOrder = async (reason: string) => {
     if (!order || !userData) return;
+
+    // Step 1: cancel the order itself — if this fails, show error and stop.
     try {
       await cancelOrder(orderId, reason, 'customer', userData.id);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to cancel order';
+      toast.error(message);
+      return;
+    }
 
-      if (order.payment.transactionId) {
+    // Cancel succeeded — finalize UI immediately. Downstream failures are non-fatal.
+    toast.success(o.cancelSuccess);
+    setShowCancelModal(false);
+
+    // Step 2: best-effort refund (mock in sandbox).
+    if (order.payment?.transactionId && order.payment?.amount != null) {
+      try {
         await refundAmazonPayment(order.payment.transactionId, order.payment.amount);
+      } catch {
+        // Refund failure is logged on the order already; no user-facing error.
       }
+    }
 
+    // Step 3: best-effort activity-log entry.
+    try {
       await addCustomerHistoryRecord({
         customerId: userData.id,
         type: 'order_cancelled',
         title: 'Order Cancelled',
         description: `Order ${order.orderNumber} cancelled. Reason: ${reason}`,
-        amount: order.payment.amount,
-        currency: order.payment.currency,
+        amount: order.payment?.amount ?? 0,
+        currency: order.payment?.currency ?? 'USD',
         orderId,
       });
-
-      toast.success(o.cancelSuccess);
-      setShowCancelModal(false);
-      await loadOrder();
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to cancel order';
-      toast.error(message);
+    } catch {
+      // History write is audit-only; do not block the user flow.
     }
+
+    await loadOrder();
   };
 
   const handleSubmitRating = async (data: { score: number; review: string; categories: { punctuality: number; professionalism: number; quality: number; cleanliness: number } }) => {

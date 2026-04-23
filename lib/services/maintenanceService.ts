@@ -319,3 +319,7 @@ export async function getVisitsByDeviceId(deviceId: string): Promise<Maintenance
   const snapshot = await getDocs(q);
   return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as MaintenanceVisit));
 }
+
+export async function updateVisitNotes(visitId: string, notes: string): Promise<void> {
+  await updateDoc(doc(db, 'maintenanceVisits', visitId), { notes });
+}

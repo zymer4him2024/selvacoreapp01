@@ -4,6 +4,7 @@ import {
   doc,
   getDocs,
   addDoc,
+  deleteDoc,
   query,
   orderBy,
   limit,
@@ -125,5 +126,9 @@ export async function getTransactionsByOrderId(orderId: string): Promise<Transac
     id: doc.id,
     ...doc.data(),
   } as Transaction));
+}
+
+export async function deleteTransaction(transactionId: string): Promise<void> {
+  await deleteDoc(doc(db, 'transactions', transactionId));
 }
 

@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { CheckCircle, ArrowRight } from 'lucide-react';
 import QRScanner from './QRScanner';
 import MaintenanceScheduleForm from './MaintenanceScheduleForm';
-import { registerDevice, getDeviceByQrCode } from '@/lib/services/deviceService';
+import { getDeviceByQrCode } from '@/lib/services/deviceService';
+import { useOfflineQueue } from '@/contexts/OfflineQueueContext';
 import { DeviceRegistrationInput } from '@/types/device';
 import toast from 'react-hot-toast';
 
@@ -26,10 +27,15 @@ export default function DeviceRegistrationFlow({
   const [step, setStep] = useState<RegistrationStep>('scan');
   const [scannedQrCode, setScannedQrCode] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const { enqueue } = useOfflineQueue();
 
   const handleScan = async (data: string) => {
     try {
-      // Check for duplicate QR code
+      // Duplicate check requires online — if offline, warn and bail
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        toast.error('Device registration requires internet for QR verification');
+        return;
+      }
       const existing = await getDeviceByQrCode(data);
       if (existing) {
         toast.error('This QR code is already registered to another device');
@@ -46,8 +52,13 @@ export default function DeviceRegistrationFlow({
   const handleSubmit = async (input: DeviceRegistrationInput) => {
     try {
       setSubmitting(true);
-      await registerDevice(orderId, technicianId, input);
-      toast.success('Device registered successfully!');
+      await enqueue('register_device', {
+        orderId,
+        technicianId,
+        input,
+      });
+      // Optimistic — show success immediately
+      toast.success('Device registered!');
       setStep('done');
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to register device';

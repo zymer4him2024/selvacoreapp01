@@ -73,6 +73,13 @@ export async function getAllTechnicians(status?: TechnicianStatus): Promise<Tech
 }
 
 /**
+ * Get all approved technicians (convenience alias for schedule views)
+ */
+export async function getApprovedTechnicians(): Promise<TechnicianWithStats[]> {
+  return getAllTechnicians('approved');
+}
+
+/**
  * Get technician job statistics
  */
 async function getTechnicianJobStats(technicianId: string) {

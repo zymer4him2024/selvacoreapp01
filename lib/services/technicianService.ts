@@ -322,6 +322,42 @@ export async function getTechnicianStats(technicianId: string): Promise<Technici
 }
 
 /**
+ * Update completion details (notes and/or additional photos)
+ */
+export async function updateCompletionDetails(
+  orderId: string,
+  technicianId: string,
+  updates: { technicianNotes?: string; newPhotoUrls?: string[] }
+): Promise<void> {
+  const orderRef = doc(db, 'orders', orderId);
+  const orderSnap = await getDoc(orderRef);
+
+  if (!orderSnap.exists()) throw new Error('Order not found');
+
+  const order = orderSnap.data() as Order;
+  if (order.technicianId !== technicianId) throw new Error('Unauthorized: This is not your job');
+
+  const updateData: Record<string, unknown> = {};
+
+  if (updates.technicianNotes !== undefined) {
+    updateData.technicianNotes = updates.technicianNotes;
+  }
+
+  if (updates.newPhotoUrls && updates.newPhotoUrls.length > 0) {
+    const newPhotos = updates.newPhotoUrls.map((url) => ({
+      url,
+      uploadedAt: Timestamp.now(),
+      description: 'Installation photo',
+    }));
+    updateData.installationPhotos = [...(order.installationPhotos || []), ...newPhotos];
+  }
+
+  if (Object.keys(updateData).length > 0) {
+    await updateDoc(orderRef, updateData);
+  }
+}
+
+/**
  * Get job by ID (for technician view)
  */
 export async function getTechnicianJobById(

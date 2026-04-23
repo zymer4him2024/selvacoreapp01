@@ -10,6 +10,7 @@ import { formatCurrency, formatDate } from '@/lib/utils/formatters';
 import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 import JobDetailModal from '@/components/technician/JobDetailModal';
+import InstallAppBanner from '@/components/technician/InstallAppBanner';
 
 export default function TechnicianDashboard() {
   const { user, userData } = useAuth();
@@ -156,6 +157,8 @@ export default function TechnicianDashboard() {
 
   return (
     <div className="space-y-8 animate-fade-in">
+      <InstallAppBanner />
+
       {/* Welcome Header */}
       <div className="flex items-center gap-4">
         {userData?.logoURL && (

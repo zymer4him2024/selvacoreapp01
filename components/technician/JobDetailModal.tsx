@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { Order } from '@/types/order';
 import { useAuth } from '@/contexts/AuthContext';
-import { acceptJob, declineJob } from '@/lib/services/technicianService';
+import { useOfflineQueue } from '@/contexts/OfflineQueueContext';
+import { declineJob } from '@/lib/services/technicianService';
 import { X, MapPin, Calendar, Clock, DollarSign, User, Phone, Image as ImageIcon, Video, Loader2, ExternalLink } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils/formatters';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -18,6 +19,7 @@ interface JobDetailModalProps {
 export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetailModalProps) {
   const { user, userData } = useAuth();
   const { t } = useTranslation();
+  const { enqueue } = useOfflineQueue();
   const [accepting, setAccepting] = useState(false);
   const [declining, setDeclining] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -26,22 +28,26 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
   const handleAccept = async () => {
     if (!user || !userData) return;
 
-    try {
-      setAccepting(true);
-      
-      const technicianInfo = {
-        name: userData.displayName || 'Technician',
-        phone: userData.phone || '',
-        whatsapp: userData.whatsapp || userData.phone || '',
-        photo: userData.photoURL || '',
-        rating: 0,
-      };
+    const technicianInfo = {
+      name: userData.displayName || 'Technician',
+      phone: userData.phone || '',
+      whatsapp: userData.whatsapp || userData.phone || '',
+      photo: userData.photoURL || '',
+      rating: 0,
+    };
 
-      await acceptJob(job.id, user.uid, technicianInfo);
-      toast.success('Job accepted successfully!');
+    setAccepting(true);
+    try {
+      await enqueue('accept_job', {
+        orderId: job.id,
+        technicianId: user.uid,
+        technicianInfo,
+      });
+      // Optimistic — navigate immediately, flush happens in background
+      toast.success('Job accepted!');
       onJobAccepted();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to accept job';
+      const message = error instanceof Error ? error.message : 'Failed to queue job acceptance';
       toast.error(message);
     } finally {
       setAccepting(false);
@@ -79,37 +85,37 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
       >
         {/* Modal Content */}
         <div
-          className="bg-surface rounded-apple max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-apple-xl"
+          className="bg-white rounded-apple max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-apple-xl"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="sticky top-0 bg-surface/95 backdrop-blur-sm border-b border-border p-6 flex items-center justify-between z-10">
+          <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-gray-200 p-6 flex items-center justify-between z-10">
             <div>
-              <h2 className="text-2xl font-bold">Job Details</h2>
-              <p className="text-sm text-text-secondary">Order #{job.orderNumber}</p>
+              <h2 className="text-2xl font-bold text-gray-900">Job Details</h2>
+              <p className="text-sm text-gray-500">Order #{job.orderNumber}</p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-surface-elevated rounded-apple transition-all"
+              className="p-2 hover:bg-gray-100 rounded-apple transition-all"
             >
               <X className="w-6 h-6" />
             </button>
           </div>
 
           {/* Content */}
-          <div className="p-6 space-y-6">
+          <div className="p-6 space-y-6 text-gray-900">
             {/* Customer Site Photos */}
             <div>
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <ImageIcon className="w-5 h-5" />
                 Customer Site Photos
               </h3>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+              <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
                 {/* Water Source Photo */}
                 {job.sitePhotos?.waterSource && (
                   <div className="group relative">
-                    <div className="aspect-square bg-surface-elevated rounded-apple overflow-hidden cursor-pointer">
+                    <div className="aspect-square bg-gray-100 rounded-apple overflow-hidden cursor-pointer">
                       <img
                         src={job.sitePhotos.waterSource.url}
                         alt="Water Source"
@@ -117,14 +123,14 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
                         onClick={() => setPreviewImage(job.sitePhotos.waterSource!.url)}
                       />
                     </div>
-                    <p className="text-xs text-text-secondary mt-2 text-center">Water Source</p>
+                    <p className="text-xs text-gray-500 mt-2 text-center">Water Source</p>
                   </div>
                 )}
 
                 {/* Product Location Photo */}
                 {job.sitePhotos?.productLocation && (
                   <div className="group relative">
-                    <div className="aspect-square bg-surface-elevated rounded-apple overflow-hidden cursor-pointer">
+                    <div className="aspect-square bg-gray-100 rounded-apple overflow-hidden cursor-pointer">
                       <img
                         src={job.sitePhotos.productLocation.url}
                         alt="Equipment Location"
@@ -132,14 +138,14 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
                         onClick={() => setPreviewImage(job.sitePhotos.productLocation!.url)}
                       />
                     </div>
-                    <p className="text-xs text-text-secondary mt-2 text-center">Equipment Location</p>
+                    <p className="text-xs text-gray-500 mt-2 text-center">Equipment Location</p>
                   </div>
                 )}
 
                 {/* Full Shot Photo */}
                 {job.sitePhotos?.fullShot && (
                   <div className="group relative">
-                    <div className="aspect-square bg-surface-elevated rounded-apple overflow-hidden cursor-pointer">
+                    <div className="aspect-square bg-gray-100 rounded-apple overflow-hidden cursor-pointer">
                       <img
                         src={job.sitePhotos.fullShot.url}
                         alt="Full Shot"
@@ -147,21 +153,21 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
                         onClick={() => setPreviewImage(job.sitePhotos.fullShot!.url)}
                       />
                     </div>
-                    <p className="text-xs text-text-secondary mt-2 text-center">Full Shot</p>
+                    <p className="text-xs text-gray-500 mt-2 text-center">Full Shot</p>
                   </div>
                 )}
 
                 {/* Water Running Video */}
                 {job.sitePhotos?.waterRunningVideo && (
                   <div className="group relative">
-                    <div className="aspect-square bg-surface-elevated rounded-apple overflow-hidden cursor-pointer">
+                    <div className="aspect-square bg-gray-100 rounded-apple overflow-hidden cursor-pointer">
                       <video
                         src={job.sitePhotos.waterRunningVideo.url}
                         className="w-full h-full object-contain"
                         controls
                       />
                     </div>
-                    <p className="text-xs text-text-secondary mt-2 text-center flex items-center justify-center gap-1">
+                    <p className="text-xs text-gray-500 mt-2 text-center flex items-center justify-center gap-1">
                       <Video className="w-3 h-3" />
                       Water Running
                     </p>
@@ -170,30 +176,30 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
               </div>
 
               {!job.sitePhotos?.waterSource && !job.sitePhotos?.productLocation && !job.sitePhotos?.fullShot && !job.sitePhotos?.waterRunningVideo && (
-                <p className="text-text-secondary text-center py-8">No site photos uploaded yet</p>
+                <p className="text-gray-500 text-center py-8">No site photos uploaded yet</p>
               )}
             </div>
 
             {/* Product Details */}
-            <div className="apple-card">
+            <div className="border border-gray-200 rounded-apple p-5">
               <h3 className="text-lg font-semibold mb-4">Product Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-text-secondary">Product</p>
+                  <p className="text-sm text-gray-500">Product</p>
                   <p className="font-semibold">{job.productSnapshot.name[lang] || job.productSnapshot.name.en}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-text-secondary">Variation</p>
+                  <p className="text-sm text-gray-500">Variation</p>
                   <p className="font-semibold">{job.productSnapshot.variation}</p>
                 </div>
                 {job.serviceSnapshot && (
                   <>
                     <div>
-                      <p className="text-sm text-text-secondary">Service</p>
+                      <p className="text-sm text-gray-500">Service</p>
                       <p className="font-semibold">{job.serviceSnapshot.name[lang] || job.serviceSnapshot.name.en}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-text-secondary">Estimated Duration</p>
+                      <p className="text-sm text-gray-500">Estimated Duration</p>
                       <p className="font-semibold">{job.serviceSnapshot.duration} hours</p>
                     </div>
                   </>
@@ -202,19 +208,19 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
             </div>
 
             {/* Installation Details */}
-            <div className="apple-card">
+            <div className="border border-gray-200 rounded-apple p-5">
               <h3 className="text-lg font-semibold mb-4">Installation Details</h3>
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
                   <MapPin className="w-5 h-5 text-primary mt-0.5" />
                   <div className="flex-1">
-                    <p className="text-sm text-text-secondary">Address</p>
+                    <p className="text-sm text-gray-500">Address</p>
                     <p className="font-medium">
                       {job.installationAddress.street}<br />
                       {job.installationAddress.city}, {job.installationAddress.state} {job.installationAddress.postalCode}
                     </p>
                     {job.installationAddress.landmark && (
-                      <p className="text-sm text-text-secondary mt-1">
+                      <p className="text-sm text-gray-500 mt-1">
                         Landmark: {job.installationAddress.landmark}
                       </p>
                     )}
@@ -231,7 +237,7 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
                 <div className="flex items-center gap-3">
                   <Calendar className="w-5 h-5 text-primary" />
                   <div>
-                    <p className="text-sm text-text-secondary">Installation Date</p>
+                    <p className="text-sm text-gray-500">Installation Date</p>
                     <p className="font-medium">{formatDate(job.installationDate, 'long')}</p>
                   </div>
                 </div>
@@ -239,7 +245,7 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
                 <div className="flex items-center gap-3">
                   <Clock className="w-5 h-5 text-primary" />
                   <div>
-                    <p className="text-sm text-text-secondary">Time Slot</p>
+                    <p className="text-sm text-gray-500">Time Slot</p>
                     <p className="font-medium">{job.timeSlot}</p>
                   </div>
                 </div>
@@ -247,13 +253,13 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
             </div>
 
             {/* Customer Information */}
-            <div className="apple-card">
+            <div className="border border-gray-200 rounded-apple p-5">
               <h3 className="text-lg font-semibold mb-4">Customer Information</h3>
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
                   <User className="w-5 h-5 text-primary" />
                   <div>
-                    <p className="text-sm text-text-secondary">Name</p>
+                    <p className="text-sm text-gray-500">Name</p>
                     <p className="font-medium">{job.customerInfo.name}</p>
                   </div>
                 </div>
@@ -261,25 +267,25 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
                 <div className="flex items-center gap-3">
                   <Phone className="w-5 h-5 text-primary" />
                   <div>
-                    <p className="text-sm text-text-secondary">Phone</p>
+                    <p className="text-sm text-gray-500">Phone</p>
                     <p className="font-medium">{job.customerInfo.phone}</p>
                   </div>
                 </div>
 
                 {job.customerNotes && (
                   <div>
-                    <p className="text-sm text-text-secondary mb-1">Customer Notes</p>
-                    <p className="text-sm bg-surface-elevated p-3 rounded-apple">{job.customerNotes}</p>
+                    <p className="text-sm text-gray-500 mb-1">Customer Notes</p>
+                    <p className="text-sm bg-gray-50 p-3 rounded-apple">{job.customerNotes}</p>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Earnings */}
-            <div className="apple-card bg-success/10 border-2 border-success/20">
+            <div className="border-2 border-success/20 rounded-apple p-5 bg-success/5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-text-secondary">Your Earnings</p>
+                  <p className="text-sm text-gray-500">Your Earnings</p>
                   <p className="text-3xl font-bold text-success">
                     {formatCurrency(job.serviceSnapshot?.price || 0, job.payment.currency)}
                   </p>
@@ -290,11 +296,11 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
           </div>
 
           {/* Actions */}
-          <div className="sticky bottom-0 bg-surface/95 backdrop-blur-sm border-t border-border p-6 flex gap-3">
+          <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 p-6 flex gap-3">
             <button
               onClick={handleDecline}
               disabled={declining || accepting}
-              className="flex-1 px-6 py-4 bg-surface-elevated hover:bg-surface-secondary disabled:opacity-50 text-text-primary font-semibold rounded-apple transition-all"
+              className="flex-1 px-6 py-4 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-900 font-semibold rounded-apple transition-all"
             >
               {declining ? 'Declining...' : 'Decline'}
             </button>
@@ -328,7 +334,7 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
           >
             <X className="w-6 h-6 text-white" />
           </button>
-          
+
           <img
             src={previewImage}
             alt="Preview"
@@ -340,4 +346,3 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
     </>
   );
 }
-

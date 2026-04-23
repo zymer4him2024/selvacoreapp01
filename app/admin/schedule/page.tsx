@@ -1,24 +1,38 @@
 'use client';
 
 import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { DndContext, DragOverlay, DragStartEvent, DragEndEvent, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useAuth } from '@/contexts/AuthContext';
 import { useScheduleData } from '@/hooks/useScheduleData';
-import { Order } from '@/types';
-import { TimeSlot } from '@/types/user';
-import WeekNavigator from '@/components/admin/schedule/WeekNavigator';
+import { useDragHandlers } from '@/hooks/useDragHandlers';
+import { useScheduleKeyboard } from '@/hooks/useScheduleKeyboard';
+import WeekHeader from '@/components/admin/schedule/WeekHeader';
 import ScheduleGrid from '@/components/admin/schedule/ScheduleGrid';
-import UnassignedSidebar from '@/components/admin/schedule/UnassignedSidebar';
-import AssignModal from '@/components/admin/schedule/AssignModal';
-import toast from 'react-hot-toast';
+import UnscheduledJobsSidebar from '@/components/admin/schedule/UnscheduledJobsSidebar';
+import DragOverlayCard from '@/components/admin/schedule/DragOverlayCard';
+import { Order } from '@/types';
+
 export default function SchedulePage() {
-  const { userData } = useAuth();
   const { t } = useTranslation();
+  const { user } = useAuth();
   const s = t.admin.schedule;
   const data = useScheduleData();
-
   const [scFilter, setScFilter] = useState('all');
-  const [modal, setModal] = useState<{ order: Order; techId: string; date: Date } | null>(null);
+  const [activeOrder, setActiveOrder] = useState<Order | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+  );
+
+  const adminId = user?.uid || 'admin';
+  const labels = { success: s.scheduleSuccess, fail: s.scheduleFailed };
+  const { handleDragEnd } = useDragHandlers(data, adminId, labels);
+  const { focusedDayIdx } = useScheduleKeyboard(data.weekDays, data.prevWeek, data.nextWeek);
+
+  const onDragStart = (e: DragStartEvent) => setActiveOrder((e.active.data.current as { order: Order })?.order ?? null);
+  const onDragEnd = (e: DragEndEvent) => { handleDragEnd(e); setActiveOrder(null); };
 
   const filteredTechs = scFilter === 'all'
     ? data.technicians
@@ -26,75 +40,51 @@ export default function SchedulePage() {
       ? data.technicians.filter((tc) => !tc.subContractorId)
       : data.technicians.filter((tc) => tc.subContractorId === scFilter);
 
-  const handleDrop = (orderId: string, techId: string, date: Date) => {
-    const all = [...data.unassignedOrders, ...data.activeOrders, ...data.weekOrders];
-    const order = all.find((o) => o.id === orderId);
-    if (order) setModal({ order, techId, date });
-  };
-
-  const handleConfirm = async (timeSlot: TimeSlot, durationMinutes: number) => {
-    if (!modal || !userData) return;
-    try {
-      const { isReassign } = await data.assignOrder(modal.order, modal.techId, modal.date, timeSlot, durationMinutes, userData.id);
-      toast.success(isReassign ? s.reassignSuccess : s.assignSuccess);
-      setModal(null);
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : s.assignFailed);
-    }
-  };
-
   if (data.loading) {
     return (
       <div className="flex items-center justify-center py-24">
         <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-text-secondary">{s.loading}</p>
+          <div className="w-16 h-16 border-4 border-[#0071E3] border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-[#86868B]">{s.loading}</p>
         </div>
       </div>
     );
   }
 
-  const modalTech = modal ? data.technicians.find((tc) => tc.id === modal.techId) : null;
-  const defaultDur = modal?.order.serviceSnapshot?.duration ? modal.order.serviceSnapshot.duration * 60 : 60;
-
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">{s.title}</h1>
-        <p className="text-text-secondary mt-1">{s.subtitle}</p>
+        <h1 className="text-3xl font-bold text-[#1D1D1F]">{s.title}</h1>
+        <p className="text-[#86868B] mt-1">{s.subtitle}</p>
       </div>
 
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <WeekNavigator weekStart={data.weekStart} onPrev={data.prevWeek} onNext={data.nextWeek}
-          onToday={data.goToday} todayLabel={s.today} weekOfLabel={s.weekOf} />
-        <select value={scFilter} onChange={(e) => setScFilter(e.target.value)}
-          className="px-4 py-2 border border-border rounded-apple bg-surface focus:border-primary focus:outline-none text-sm">
-          <option value="all">{s.allSubContractors}</option>
-          <option value="independent">{s.independent}</option>
-          {data.subContractors.map((sc) => <option key={sc.id} value={sc.id}>{sc.name}</option>)}
-        </select>
-      </div>
+      <WeekHeader
+        weekStart={data.weekStart} onPrev={data.prevWeek} onNext={data.nextWeek} onToday={data.goToday}
+        subContractors={data.subContractors} scFilter={scFilter} onScFilterChange={setScFilter}
+        showScFilter={data.subContractors.length > 0}
+        labels={{ today: s.today, weekOf: s.weekOf, allSubContractors: s.allSubContractors, independent: s.independent, printWeek: s.printWeek }}
+      />
 
-      <div className="flex gap-4 items-start">
-        <div className="flex-1 min-w-0">
-          <ScheduleGrid technicians={filteredTechs} weekDays={data.weekDays} orders={data.weekOrders}
-            labels={{ noTechnicians: s.noTechnicians, noOrders: s.noOrders, timeTbd: s.timeTbd, dropHere: s.dropHere, orderNumber: s.orderNumber }}
-            onDrop={handleDrop} sidebarOrders={[...data.unassignedOrders, ...data.activeOrders]} />
+      <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+        <div className="flex gap-4">
+          <div className="flex-1 min-w-0 schedule-print-area">
+            <ScheduleGrid
+              technicians={filteredTechs} weekDays={data.weekDays} orders={data.weekOrders}
+              focusedDayIdx={focusedDayIdx}
+              noTechsLink={s.manageTechnicians}
+              labels={{ noTechnicians: s.noTechnicians, noOrders: s.noOrders, timeTbd: s.timeTbd, reschedule: s.reschedule, unassign: s.unassign, workload: s.workload }}
+              onUnassign={(order) => data.handleUnschedule(order, adminId, { success: s.unscheduleSuccess, fail: s.scheduleFailed })}
+            />
+          </div>
+          <UnscheduledJobsSidebar
+            orders={data.unscheduled} isDraggingOver={!!activeOrder}
+            labels={{ unscheduledOrders: s.unscheduledOrders, noUnscheduled: s.noUnscheduled, dropToUnschedule: s.dropToUnschedule, collapsePanel: s.collapsePanel, expandPanel: s.expandPanel, timeTbd: s.timeTbd }}
+          />
         </div>
-        <UnassignedSidebar unassignedOrders={data.unassignedOrders} activeOrders={data.activeOrders}
-          labels={{ unassigned: s.unassigned, allActive: s.allActive, noUnassigned: s.noUnassigned,
-            dragToAssign: s.dragToAssign, scheduled: s.scheduled, orderNumber: s.orderNumber }} />
-      </div>
-
-      {modal && modalTech && (
-        <AssignModal order={modal.order} technicianName={modalTech.displayName} date={modal.date}
-          existingSlotCounts={data.getSlotCounts(modal.techId, modal.date)} defaultDuration={defaultDur}
-          isReassign={!!modal.order.technicianId && modal.order.technicianId !== modal.techId}
-          labels={{ assignOrder: s.assignOrder, reassignOrder: s.reassignOrder, selectTimeSlot: s.selectTimeSlot,
-            estimatedDuration: s.estimatedDuration, jobsScheduled: s.jobsScheduled, confirm: s.confirm,
-            cancel: s.cancel, orderNumber: s.orderNumber }}
-          onConfirm={handleConfirm} onClose={() => setModal(null)} />
-      )}
+        <DragOverlay>
+          {activeOrder && <DragOverlayCard order={activeOrder} timeTbdLabel={s.timeTbd} />}
+        </DragOverlay>
+      </DndContext>
     </div>
   );
 }

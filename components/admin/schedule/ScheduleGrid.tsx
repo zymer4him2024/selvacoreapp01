@@ -1,71 +1,62 @@
 'use client';
 
-import { DndContext, DragEndEvent, DragOverlay, MouseSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { useState } from 'react';
+import { useMemo } from 'react';
 import { Order } from '@/types';
 import { TechnicianWithStats } from '@/lib/services/technicianAdminService';
 import TechnicianRow from './TechnicianRow';
-import DraggableOrder from './DraggableOrder';
 
 interface ScheduleGridProps {
   technicians: TechnicianWithStats[];
   weekDays: Date[];
   orders: Order[];
-  labels: { noTechnicians: string; noOrders: string; timeTbd: string; dropHere: string; orderNumber: string };
-  onDrop: (orderId: string, technicianId: string, date: Date) => void;
-  sidebarOrders: Order[];
+  labels: { noTechnicians: string; noOrders: string; timeTbd: string; reschedule: string; unassign: string; workload: string };
+  noTechsLink?: string;
+  onReschedule?: (order: Order) => void;
+  onUnassign?: (order: Order) => void;
+  focusedDayIdx?: number | null;
 }
 
-export default function ScheduleGrid({ technicians, weekDays, orders, labels, onDrop, sidebarOrders }: ScheduleGridProps) {
-  const [activeOrder, setActiveOrder] = useState<Order | null>(null);
-  const today = new Date().toISOString().split('T')[0];
+export default function ScheduleGrid({ technicians, weekDays, orders, labels, noTechsLink, onReschedule, onUnassign, focusedDayIdx }: ScheduleGridProps) {
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
-  const mouseSensor = useSensor(MouseSensor, { activationConstraint: { distance: 8 } });
-  const touchSensor = useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } });
-  const sensors = useSensors(mouseSensor, touchSensor);
-
-  const handleDragStart = (event: { active: { id: string | number; data: { current?: { order?: Order } } } }) => {
-    const order = event.active.data.current?.order
-      || sidebarOrders.find((o) => o.id === event.active.id)
-      || orders.find((o) => o.id === event.active.id);
-    setActiveOrder(order || null);
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    setActiveOrder(null);
-    const { active, over } = event;
-    if (!over) return;
-    const cellId = over.id as string;
-    const [techId, dateStr] = cellId.split('_');
-    if (!techId || !dateStr) return;
-    onDrop(active.id as string, techId, new Date(dateStr + 'T00:00:00'));
-  };
-
-  const dayHeaders = weekDays.map((d) => ({
-    label: d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' }),
-    isToday: d.toISOString().split('T')[0] === today,
-  }));
+  const dayHeaders = useMemo(() =>
+    weekDays.map((d) => ({
+      label: d.toLocaleDateString(undefined, { weekday: 'short' }),
+      date: d.getDate(),
+      isToday: d.toISOString().split('T')[0] === todayStr,
+    })), [weekDays, todayStr]);
 
   if (technicians.length === 0) {
-    return <p className="text-text-tertiary text-center py-12">{labels.noTechnicians}</p>;
+    return (
+      <div className="text-center py-16">
+        <p className="text-[#86868B] text-lg">{labels.noTechnicians}</p>
+        {noTechsLink && (
+          <a href="/admin/technicians" className="inline-block mt-3 text-sm font-medium text-[#0071E3] hover:underline">
+            {noTechsLink}
+          </a>
+        )}
+      </div>
+    );
   }
 
   return (
-    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="space-y-1 overflow-x-auto">
-        {/* Day headers */}
-        <div className="grid grid-cols-[200px_repeat(7,1fr)] gap-1 sticky top-0 z-5">
+    <div className="overflow-x-auto">
+      <div className="min-w-[960px] space-y-1">
+        <div className="grid grid-cols-[200px_repeat(7,1fr)] gap-px">
           <div />
           {dayHeaders.map((dh, i) => (
-            <div key={i} className={`text-center text-sm font-semibold py-2 rounded-apple ${
-              dh.isToday ? 'bg-primary text-white' : 'bg-surface-elevated text-text-secondary'
-            }`}>
-              {dh.label}
+            <div
+              key={i}
+              className={`text-center py-2.5 rounded-[8px] transition-colors ${
+                dh.isToday ? 'bg-[#0071E3] text-white' : 'bg-[#F5F5F7] text-[#86868B]'
+              } ${focusedDayIdx === i ? 'ring-2 ring-[#0071E3] ring-offset-1' : ''}`}
+            >
+              <p className="text-xs font-medium uppercase">{dh.label}</p>
+              <p className={`text-lg font-bold ${dh.isToday ? 'text-white' : 'text-[#1D1D1F]'}`}>{dh.date}</p>
             </div>
           ))}
         </div>
 
-        {/* Technician rows */}
         {technicians.map((tech) => {
           const techOrders = orders.filter((o) => o.technicianId === tech.id);
           return (
@@ -74,22 +65,23 @@ export default function ScheduleGrid({ technicians, weekDays, orders, labels, on
               technician={tech}
               weekDays={weekDays}
               orders={techOrders}
-              today={today}
+              todayStr={todayStr}
               timeTbdLabel={labels.timeTbd}
-              dropHereLabel={labels.dropHere}
+              workloadLabel={labels.workload}
+              onReschedule={onReschedule}
+              onUnassign={onUnassign}
+              rescheduleLabel={labels.reschedule}
+              unassignLabel={labels.unassign}
             />
           );
         })}
-      </div>
 
-      {/* Drag overlay */}
-      <DragOverlay>
-        {activeOrder && (
-          <div className="w-64 opacity-90">
-            <DraggableOrder order={activeOrder} isScheduled={false} orderNumberLabel={labels.orderNumber} />
+        {orders.length === 0 && technicians.length > 0 && (
+          <div className="text-center py-8">
+            <p className="text-sm text-[#86868B]">{labels.noOrders}</p>
           </div>
         )}
-      </DragOverlay>
-    </DndContext>
+      </div>
+    </div>
   );
 }

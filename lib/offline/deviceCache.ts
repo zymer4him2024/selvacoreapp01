@@ -1,9 +1,11 @@
 import { Device } from '@/types/device';
 
 const DB_NAME = 'selvacore-offline';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const DEVICE_STORE = 'devices';
 const VISIT_STORE = 'visits';
+const WRITE_QUEUE_STORE = 'writeQueue';
+const PHOTO_QUEUE_STORE = 'photoQueue';
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -16,6 +18,12 @@ function openDb(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(VISIT_STORE)) {
         db.createObjectStore(VISIT_STORE, { keyPath: 'id' });
       }
+      if (!db.objectStoreNames.contains(WRITE_QUEUE_STORE)) {
+        db.createObjectStore(WRITE_QUEUE_STORE, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(PHOTO_QUEUE_STORE)) {
+        db.createObjectStore(PHOTO_QUEUE_STORE, { keyPath: 'id' });
+      }
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -23,7 +31,7 @@ function openDb(): Promise<IDBDatabase> {
 }
 
 // Shared opener so visitQueue can reuse the same DB + schema
-export { openDb, DEVICE_STORE, VISIT_STORE };
+export { openDb, DEVICE_STORE, VISIT_STORE, WRITE_QUEUE_STORE, PHOTO_QUEUE_STORE };
 
 interface CachedDevice {
   qrCodeData: string;
