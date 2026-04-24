@@ -66,6 +66,7 @@ const config: Config = {
         'fade-in': 'fadeIn 0.3s ease-in-out',
         'slide-up': 'slideUp 0.3s ease-out',
         'scale-in': 'scaleIn 0.2s ease-out',
+        'star-pop': 'starPop 150ms ease-out',
       },
       keyframes: {
         fadeIn: {
@@ -79,6 +80,11 @@ const config: Config = {
         scaleIn: {
           '0%': { transform: 'scale(0.95)', opacity: '0' },
           '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+        starPop: {
+          '0%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(1.15)' },
+          '100%': { transform: 'scale(1)' },
         },
       },
     },

@@ -4,13 +4,16 @@ import { useAuth } from '@/contexts/AuthContext';
 import { User, Mail, Phone, Star, Award, Briefcase, TrendingUp, ImageIcon, Save } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getTechnicianStats, TechnicianStats } from '@/lib/services/technicianService';
-import { formatCurrency } from '@/lib/utils/formatters';
+import { getReviewsForTechnician } from '@/lib/services/reviewService';
+import { Review } from '@/types';
+import { formatCurrency, formatDate } from '@/lib/utils/formatters';
 import LogoUpload from '@/components/common/LogoUpload';
 import toast from 'react-hot-toast';
 
 export default function TechnicianProfilePage() {
   const { user, userData, updateUserData } = useAuth();
   const [stats, setStats] = useState<TechnicianStats | null>(null);
+  const [recentReviews, setRecentReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [logoURL, setLogoURL] = useState('');
   const [savingLogo, setSavingLogo] = useState(false);
@@ -30,8 +33,12 @@ export default function TechnicianProfilePage() {
 
     try {
       setLoading(true);
-      const techStats = await getTechnicianStats(user.uid);
+      const [techStats, reviewsResult] = await Promise.all([
+        getTechnicianStats(user.uid),
+        getReviewsForTechnician(user.uid, 5),
+      ]);
       setStats(techStats);
+      setRecentReviews(reviewsResult.items);
     } catch (error: unknown) {
       toast.error('Failed to load statistics');
     } finally {
@@ -230,6 +237,43 @@ export default function TechnicianProfilePage() {
             <p className="text-2xl font-bold text-success">{stats?.completionRate || 0}%</p>
           </div>
         </div>
+      </div>
+
+      {/* Recent Reviews */}
+      <div>
+        <h2 className="text-2xl font-bold mb-6">Recent Reviews</h2>
+        {recentReviews.length === 0 ? (
+          <div className="apple-card text-center py-8">
+            <Star className="w-10 h-10 mx-auto mb-3 text-text-tertiary" />
+            <p className="text-text-secondary">No reviews yet</p>
+            <p className="text-sm text-text-tertiary mt-1">Reviews from customers will appear here</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {recentReviews.map(review => (
+              <div key={review.id} className="apple-card">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="text-xs text-text-tertiary">
+                      Order {review.orderId} | {formatDate(review.createdAt, 'short')}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <Star
+                        key={star}
+                        className={`w-4 h-4 ${star <= review.rating ? 'text-warning fill-warning' : 'text-text-tertiary'}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                {review.comment && (
+                  <p className="text-sm text-text-secondary">{review.comment}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

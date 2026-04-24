@@ -51,13 +51,24 @@ body {
   border-radius: 8px;
 }
 
-/* Smooth transitions */
+/* Smooth transitions — Apple 200ms ease-out for all interactive elements */
 button,
 a,
 input,
 select,
 textarea {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Apple-style tap feedback for technician/customer themes */
+.technician-theme button:active:not(:disabled),
+.customer-theme button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.technician-theme .apple-card:active,
+.customer-theme .apple-card:active {
+  transform: scale(0.98);
 }
 
 /* Apple-style button */

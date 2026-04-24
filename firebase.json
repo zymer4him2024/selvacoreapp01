@@ -18,5 +18,17 @@
     "source": "functions",
     "codebase": "default",
     "runtime": "nodejs20"
+  },
+  "emulators": {
+    "auth": {
+      "port": 9099
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "ui": {
+      "enabled": false
+    },
+    "singleProjectMode": true
   }
 }

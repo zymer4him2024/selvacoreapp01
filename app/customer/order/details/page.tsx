@@ -25,6 +25,7 @@ import { TIME_SLOTS } from '@/lib/utils/constants';
 import { formatCurrency } from '@/lib/utils/formatters';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getFallbackAddresses, saveFallbackAddress } from '@/lib/services/fallbackAddressService';
+import AddressAutocompleteField from '@/components/common/AddressAutocompleteField';
 import toast from 'react-hot-toast';
 
 type AddressForm = Omit<Address, 'id'>;
@@ -519,55 +520,11 @@ export default function OrderDetailsPage() {
                             {t.orders.oneOffDesc}
                           </p>
 
-                          <div>
-                            <label className="block text-xs font-medium mb-1">{t.orders.street} *</label>
-                            <input
-                              type="text"
-                              value={overrideDraft.street}
-                              onChange={(e) => setOverrideDraft((p) => ({ ...p, street: e.target.value }))}
-                              className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none text-sm"
-                            />
-                          </div>
-
-                          <div className="grid grid-cols-3 gap-3">
-                            <div>
-                              <label className="block text-xs font-medium mb-1">{t.orders.city} *</label>
-                              <input
-                                type="text"
-                                value={overrideDraft.city}
-                                onChange={(e) => setOverrideDraft((p) => ({ ...p, city: e.target.value }))}
-                                className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none text-sm"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium mb-1">{t.orders.state}</label>
-                              <input
-                                type="text"
-                                value={overrideDraft.state}
-                                onChange={(e) => setOverrideDraft((p) => ({ ...p, state: e.target.value }))}
-                                className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none text-sm"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium mb-1">{t.orders.postal}</label>
-                              <input
-                                type="text"
-                                value={overrideDraft.postalCode}
-                                onChange={(e) => setOverrideDraft((p) => ({ ...p, postalCode: e.target.value }))}
-                                className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none text-sm"
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-medium mb-1">{t.orders.landmarkOptional}</label>
-                            <input
-                              type="text"
-                              value={overrideDraft.landmark ?? ''}
-                              onChange={(e) => setOverrideDraft((p) => ({ ...p, landmark: e.target.value }))}
-                              className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none text-sm"
-                            />
-                          </div>
+                          <AddressAutocompleteField
+                            value={overrideDraft}
+                            onChange={setOverrideDraft}
+                            showLabel={false}
+                          />
 
                           <div className="flex gap-2">
                             <button
@@ -607,82 +564,10 @@ export default function OrderDetailsPage() {
                 <div className="space-y-3 p-4 bg-surface-elevated rounded-apple border border-border">
                   <h3 className="font-semibold">{t.orders.addSavedAddress}</h3>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium mb-1">{t.orders.label}</label>
-                      <select
-                        value={newAddress.label}
-                        onChange={(e) =>
-                          setNewAddress((p) => ({ ...p, label: e.target.value as 'home' | 'office' | 'other' }))
-                        }
-                        className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none text-sm"
-                      >
-                        <option value="home">{t.orders.home}</option>
-                        <option value="office">{t.orders.office}</option>
-                        <option value="other">{t.orders.other}</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium mb-1">{t.orders.country}</label>
-                      <input
-                        type="text"
-                        value={newAddress.country}
-                        onChange={(e) => setNewAddress((p) => ({ ...p, country: e.target.value }))}
-                        className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium mb-1">{t.orders.street} *</label>
-                    <input
-                      type="text"
-                      value={newAddress.street}
-                      onChange={(e) => setNewAddress((p) => ({ ...p, street: e.target.value }))}
-                      placeholder="123 Main Street"
-                      className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none text-sm"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium mb-1">{t.orders.city} *</label>
-                      <input
-                        type="text"
-                        value={newAddress.city}
-                        onChange={(e) => setNewAddress((p) => ({ ...p, city: e.target.value }))}
-                        className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium mb-1">{t.orders.state}</label>
-                      <input
-                        type="text"
-                        value={newAddress.state}
-                        onChange={(e) => setNewAddress((p) => ({ ...p, state: e.target.value }))}
-                        className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium mb-1">{t.orders.postal}</label>
-                      <input
-                        type="text"
-                        value={newAddress.postalCode}
-                        onChange={(e) => setNewAddress((p) => ({ ...p, postalCode: e.target.value }))}
-                        className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium mb-1">{t.orders.landmark}</label>
-                    <input
-                      type="text"
-                      value={newAddress.landmark ?? ''}
-                      onChange={(e) => setNewAddress((p) => ({ ...p, landmark: e.target.value }))}
-                      className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none text-sm"
-                    />
-                  </div>
+                  <AddressAutocompleteField
+                    value={newAddress}
+                    onChange={setNewAddress}
+                  />
 
                   <div className="flex gap-2">
                     <button

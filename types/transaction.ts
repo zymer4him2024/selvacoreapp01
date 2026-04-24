@@ -24,7 +24,12 @@ export type TransactionType =
   | 'maintenance_visit'
   | 'inventory_created'
   | 'inventory_updated'
-  | 'stock_adjusted';
+  | 'stock_adjusted'
+  | 'review_created'
+  | 'review_updated'
+  | 'review_flagged'
+  | 'review_hidden'
+  | 'review_unhidden';
 
 export interface Transaction {
   id: string;
@@ -53,24 +58,4 @@ export interface Transaction {
   timestamp: Timestamp;
 }
 
-export interface Review {
-  id: string;
-  orderId: string;
-  customerId: string;
-  installerId: string;
-  subContractorId: string;
-  rating: number;
-  review: string;
-  categories: {
-    punctuality: number;
-    professionalism: number;
-    quality: number;
-    cleanliness: number;
-  };
-  images: string[];
-  response?: string;
-  respondedAt?: Timestamp;
-  helpful: number;
-  createdAt: Timestamp;
-}
 

@@ -8,8 +8,12 @@ import {
   query,
   where,
   orderBy,
+  limit as firestoreLimit,
+  startAfter,
   Timestamp,
   runTransaction,
+  QueryDocumentSnapshot,
+  DocumentData,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase/config';
@@ -51,6 +55,64 @@ export async function getAvailableJobs(): Promise<Order[]> {
     id: doc.id,
     ...doc.data(),
   } as Order));
+}
+
+export interface PaginatedResult<T> {
+  items: T[];
+  lastDoc: QueryDocumentSnapshot<DocumentData> | null;
+  hasMore: boolean;
+}
+
+/**
+ * Get available jobs with cursor-based pagination
+ */
+export async function getAvailableJobsPaginated(
+  pageSize: number = 10,
+  cursor?: QueryDocumentSnapshot<DocumentData> | null
+): Promise<PaginatedResult<Order>> {
+  const ordersRef = collection(db, 'orders');
+
+  const q = cursor
+    ? query(ordersRef, where('status', '==', 'pending'), orderBy('createdAt', 'desc'), startAfter(cursor), firestoreLimit(pageSize + 1))
+    : query(ordersRef, where('status', '==', 'pending'), orderBy('createdAt', 'desc'), firestoreLimit(pageSize + 1));
+
+  const snapshot = await getDocs(q);
+
+  const hasMore = snapshot.docs.length > pageSize;
+  const docs = hasMore ? snapshot.docs.slice(0, pageSize) : snapshot.docs;
+
+  return {
+    items: docs.map(d => ({ id: d.id, ...d.data() } as Order)),
+    lastDoc: docs.length > 0 ? docs[docs.length - 1] : null,
+    hasMore,
+  };
+}
+
+/**
+ * Get technician jobs with cursor-based pagination
+ */
+export async function getTechnicianJobsPaginated(
+  technicianId: string,
+  statuses: OrderStatus[],
+  pageSize: number = 10,
+  cursor?: QueryDocumentSnapshot<DocumentData> | null
+): Promise<PaginatedResult<Order>> {
+  const ordersRef = collection(db, 'orders');
+
+  const q = cursor
+    ? query(ordersRef, where('technicianId', '==', technicianId), where('status', 'in', statuses), orderBy('installationDate', 'asc'), startAfter(cursor), firestoreLimit(pageSize + 1))
+    : query(ordersRef, where('technicianId', '==', technicianId), where('status', 'in', statuses), orderBy('installationDate', 'asc'), firestoreLimit(pageSize + 1));
+
+  const snapshot = await getDocs(q);
+
+  const hasMore = snapshot.docs.length > pageSize;
+  const docs = hasMore ? snapshot.docs.slice(0, pageSize) : snapshot.docs;
+
+  return {
+    items: docs.map(d => ({ id: d.id, ...d.data() } as Order)),
+    lastDoc: docs.length > 0 ? docs[docs.length - 1] : null,
+    hasMore,
+  };
 }
 
 /**
@@ -285,11 +347,26 @@ export async function getTechnicianStats(technicianId: string): Promise<Technici
       return sum + (job.serviceSnapshot?.price || 0);
     }, 0);
     
-    // Calculate average rating
-    const ratedJobs = completedJobs.filter(job => job.rating && job.rating.score > 0);
-    const averageRating = ratedJobs.length > 0
-      ? ratedJobs.reduce((sum, job) => sum + (job.rating?.score || 0), 0) / ratedJobs.length
-      : 0;
+    // Use denormalized averageRating from user doc (updated by Cloud Function)
+    let averageRating = 0;
+    try {
+      const userDoc = await getDoc(doc(db, 'users', technicianId));
+      const userData = userDoc.data();
+      if (userData && (userData.totalReviews ?? 0) > 0) {
+        averageRating = userData.averageRating ?? 0;
+      } else {
+        // Fallback: compute from orders (for technicians without Cloud Function stats yet)
+        const ratedJobs = completedJobs.filter(job => job.rating && job.rating.score > 0);
+        averageRating = ratedJobs.length > 0
+          ? ratedJobs.reduce((sum, job) => sum + (job.rating?.score || 0), 0) / ratedJobs.length
+          : 0;
+      }
+    } catch {
+      const ratedJobs = completedJobs.filter(job => job.rating && job.rating.score > 0);
+      averageRating = ratedJobs.length > 0
+        ? ratedJobs.reduce((sum, job) => sum + (job.rating?.score || 0), 0) / ratedJobs.length
+        : 0;
+    }
     
     // Calculate completion rate
     const totalStartedJobs = jobs.filter(job => 

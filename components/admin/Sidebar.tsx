@@ -16,6 +16,7 @@ import {
   CalendarClock,
   CalendarDays,
   Boxes,
+  Star,
   LogOut,
   Menu,
   X
@@ -45,6 +46,7 @@ const navigationItems: NavItem[] = [
   { key: 'schedule', href: '/admin/schedule', icon: CalendarDays },
   { key: 'inventory', href: '/admin/inventory', icon: Boxes },
   { key: 'maintenance', href: '/admin/maintenance', icon: CalendarClock },
+  { key: 'reviews', href: '/admin/reviews', icon: Star },
   { key: 'transactions', href: '/admin/transactions', icon: Receipt },
   { key: 'analytics', href: '/admin/analytics', icon: BarChart3 },
   { key: 'settings', href: '/admin/settings', icon: Settings },

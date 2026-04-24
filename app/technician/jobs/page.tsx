@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { getTechnicianJobs } from '@/lib/services/technicianService';
+import { getTechnicianJobsPaginated, PaginatedResult } from '@/lib/services/technicianService';
 import { Order, OrderStatus } from '@/types/order';
+import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { MapPin, Calendar, DollarSign, Package, Phone, MessageCircle } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils/formatters';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -20,7 +21,17 @@ export default function MyJobsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
   const [jobs, setJobs] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
   const lang = userData?.preferredLanguage || 'en';
+
+  const getStatuses = (tab: TabType): OrderStatus[] => {
+    if (tab === 'upcoming') return ['accepted'];
+    if (tab === 'in_progress') return ['in_progress'];
+    return ['completed'];
+  };
 
   useEffect(() => {
     if (user) {
@@ -33,18 +44,10 @@ export default function MyJobsPage() {
 
     try {
       setLoading(true);
-      
-      let statuses: OrderStatus[];
-      if (activeTab === 'upcoming') {
-        statuses = ['accepted'];
-      } else if (activeTab === 'in_progress') {
-        statuses = ['in_progress'];
-      } else {
-        statuses = ['completed'];
-      }
-
-      const technicianJobs = await getTechnicianJobs(user.uid, statuses);
-      setJobs(technicianJobs);
+      const result = await getTechnicianJobsPaginated(user.uid, getStatuses(activeTab), 10);
+      setJobs(result.items);
+      setLastDoc(result.lastDoc);
+      setHasMore(result.hasMore);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to load jobs';
       toast.error(message);
@@ -52,6 +55,39 @@ export default function MyJobsPage() {
       setLoading(false);
     }
   };
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore || !lastDoc || !user) return;
+    try {
+      setLoadingMore(true);
+      const result = await getTechnicianJobsPaginated(user.uid, getStatuses(activeTab), 10, lastDoc);
+      setJobs(prev => [...prev, ...result.items]);
+      setLastDoc(result.lastDoc);
+      setHasMore(result.hasMore);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to load more jobs';
+      toast.error(message);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loadingMore, hasMore, lastDoc, user, activeTab]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          loadMore();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loadMore]);
 
   const handleContactCustomer = (job: Order) => {
     const whatsappLink = generateWhatsAppLink(
@@ -108,7 +144,7 @@ export default function MyJobsPage() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-6 py-3 font-semibold border-b-2 transition-all whitespace-nowrap ${
+            className={`px-6 py-3 min-h-[44px] font-semibold border-b-2 transition-all whitespace-nowrap ${
               activeTab === tab.id
                 ? 'border-primary text-primary'
                 : 'border-transparent text-text-secondary hover:text-text-primary'
@@ -198,7 +234,7 @@ export default function MyJobsPage() {
                       e.stopPropagation();
                       handleContactCustomer(job);
                     }}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-success hover:bg-success/80 text-white font-medium rounded-apple transition-all"
+                    className="flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] bg-success hover:bg-success/80 text-white font-medium rounded-apple transition-all"
                   >
                     <MessageCircle className="w-4 h-4" />
                     <span className="hidden md:inline">Contact</span>
@@ -209,7 +245,7 @@ export default function MyJobsPage() {
                       e.stopPropagation();
                       handleViewDetails(job.id);
                     }}
-                    className="flex-1 md:flex-initial px-4 py-2 bg-primary hover:bg-primary-hover text-white font-medium rounded-apple transition-all"
+                    className="flex-1 md:flex-initial px-4 py-2 min-h-[44px] bg-primary hover:bg-primary-hover text-white font-medium rounded-apple transition-all"
                   >
                     View Details
                   </button>
@@ -217,6 +253,14 @@ export default function MyJobsPage() {
               </div>
             </div>
           ))}
+
+          {/* Infinite scroll sentinel */}
+          <div ref={sentinelRef} className="h-1" />
+          {loadingMore && (
+            <div className="flex justify-center py-6">
+              <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
         </div>
       )}
     </div>

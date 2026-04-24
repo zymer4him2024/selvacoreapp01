@@ -77,14 +77,15 @@ export default function JobDetailPage() {
 
       setJob(jobData);
 
-      // Fetch device and latest maintenance visit for completed jobs
-      if (jobData.status === 'completed') {
-        const deviceData = await getDeviceByOrderId(jobData.id);
-        setDevice(deviceData);
-        if (deviceData) {
-          const visits = await getVisitsByDeviceId(deviceData.id);
-          setLatestVisit(visits.length > 0 ? visits[0] : null);
-        }
+      // Fetch device and latest maintenance visit for completed/in-progress jobs
+      const deviceData = await getDeviceByOrderId(jobData.id);
+      setDevice(deviceData);
+      if (deviceData) {
+        const visits = await getVisitsByDeviceId(deviceData.id);
+        setLatestVisit(visits.length > 0 ? visits[0] : null);
+      } else {
+        setDevice(null);
+        setLatestVisit(null);
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to load job';
@@ -484,6 +485,7 @@ export default function JobDetailPage() {
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
+                capture="environment"
                 multiple
                 onChange={handlePhotoSelect}
                 className="hidden"
@@ -622,6 +624,7 @@ export default function JobDetailPage() {
                     ref={editFileInputRef}
                     type="file"
                     accept="image/*"
+                    capture="environment"
                     multiple
                     onChange={(e) => {
                       const files = Array.from(e.target.files || []);

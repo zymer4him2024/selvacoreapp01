@@ -6,10 +6,14 @@ import {
 } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/lib/firebase/config';
+import { useRouter } from 'next/navigation';
 import QRScanner from '@/components/technician/QRScanner';
 import { getDeviceByQrCode, getDevicesByTechnicianId } from '@/lib/services/deviceService';
+import { getTechnicianJobs } from '@/lib/services/technicianService';
 import { completeVisitAndResetSchedules } from '@/lib/services/maintenanceService';
+import { getCustomerContactInfo, getCustomerContactMap } from '@/lib/services/userService';
 import { Device, MaintenanceVisitChecks } from '@/types/device';
+import { Order } from '@/types/order';
 import { useAuth } from '@/contexts/AuthContext';
 import { compressImage } from '@/lib/utils/imageCompression';
 import { cacheDevice, cacheDevices, getCachedDevice } from '@/lib/offline/deviceCache';
@@ -63,6 +67,7 @@ async function submitVisitOnline(visit: QueuedVisit): Promise<void> {
 }
 
 export default function TechnicianScanPage() {
+  const router = useRouter();
   const { user, userData } = useAuth();
   const [step, setStep] = useState<ScanStep>('idle');
   const [device, setDevice] = useState<Device | null>(null);
@@ -74,6 +79,7 @@ export default function TechnicianScanPage() {
   const [savedOffline, setSavedOffline] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [techDevices, setTechDevices] = useState<Device[]>([]);
+  const [techOrders, setTechOrders] = useState<Order[]>([]);
   const [loadingDevices, setLoadingDevices] = useState(false);
 
   const refreshPending = useCallback(async () => {
@@ -122,6 +128,10 @@ export default function TechnicianScanPage() {
       } else {
         foundDevice = await getDeviceByQrCode(qrData);
         if (foundDevice) {
+          const live = await getCustomerContactInfo(foundDevice.customerId);
+          if (live) {
+            foundDevice = { ...foundDevice, customerInfo: { ...foundDevice.customerInfo, ...live } };
+          }
           cacheDevice(foundDevice).catch(() => {});
         } else {
           // Might be a device we've seen before but is temporarily unreachable
@@ -154,9 +164,31 @@ export default function TechnicianScanPage() {
         setStep('idle');
         return;
       }
-      const devices = await getDevicesByTechnicianId(user.uid);
-      setTechDevices(devices);
-      cacheDevices(devices).catch(() => {});
+      const [devices, orders] = await Promise.all([
+        getDevicesByTechnicianId(user.uid),
+        getTechnicianJobs(user.uid, ['accepted', 'in_progress', 'completed']),
+      ]);
+
+      const ids = [
+        ...devices.map((d) => d.customerId),
+        ...orders.map((o) => o.customerId),
+      ].filter(Boolean) as string[];
+      const customerMap = await getCustomerContactMap(ids);
+
+      const enrichedDevices = devices.map((d) => {
+        const live = customerMap.get(d.customerId);
+        return live ? { ...d, customerInfo: { ...d.customerInfo, ...live } } : d;
+      });
+      const enrichedOrders = orders.map((o) => {
+        const live = customerMap.get(o.customerId);
+        return live
+          ? { ...o, customerInfo: { ...o.customerInfo, ...live } }
+          : o;
+      });
+
+      setTechDevices(enrichedDevices);
+      setTechOrders(enrichedOrders);
+      cacheDevices(enrichedDevices).catch(() => {});
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to load devices';
       toast.error(message);
@@ -276,6 +308,7 @@ export default function TechnicianScanPage() {
     setBeforeFile(null);
     setAfterFile(null);
     setTechDevices([]);
+    setTechOrders([]);
     setSavedOffline(false);
     setStep('idle');
   };
@@ -348,23 +381,105 @@ export default function TechnicianScanPage() {
           <div className="apple-card">
             <h2 className="text-xl font-bold mb-4">Choose a site</h2>
             {loadingDevices ? (
-              <p className="text-text-secondary py-4">Loading devices...</p>
-            ) : techDevices.length === 0 ? (
-              <p className="text-text-secondary py-4">No registered devices found for your account.</p>
+              <p className="text-text-secondary py-4">Loading sites...</p>
+            ) : techOrders.length === 0 && techDevices.length === 0 ? (
+              <p className="text-text-secondary py-4">No jobs found for your account.</p>
             ) : (
               <div className="space-y-2">
-                {techDevices.map((d) => (
-                  <button
-                    key={d.id}
-                    onClick={() => openForm(d)}
-                    className="w-full text-left p-4 bg-surface-elevated rounded-apple hover:bg-surface-elevated/80 border border-border transition-all"
-                  >
-                    <p className="font-medium">{d.customerInfo.name}</p>
-                    <p className="text-sm text-text-secondary">
-                      {d.installationAddress.street}, {d.installationAddress.city}
-                    </p>
-                  </button>
-                ))}
+                {(() => {
+                  // Build a map of orderId → device for quick lookup
+                  const deviceByOrderId = new Map<string, Device>();
+                  for (const d of techDevices) {
+                    deviceByOrderId.set(d.orderId, d);
+                  }
+                  // Show orders (each with device status)
+                  const orderIds = new Set<string>();
+                  const items: { order: Order; device: Device | null }[] = [];
+                  for (const order of techOrders) {
+                    orderIds.add(order.id);
+                    items.push({ order, device: deviceByOrderId.get(order.id) || null });
+                  }
+                  // Include orphan devices (device exists but order wasn't in the fetched list)
+                  for (const d of techDevices) {
+                    if (!orderIds.has(d.orderId)) {
+                      items.push({ order: null as unknown as Order, device: d });
+                    }
+                  }
+
+                  return items.map((item) => {
+                    const hasDevice = !!item.device;
+                    const name = item.order?.customerInfo?.name || item.device?.customerInfo?.name || 'Unknown';
+                    const addr = item.order?.installationAddress ?? item.device!.installationAddress;
+                    const addressLine1 = addr.street;
+                    const addressLine2 = [addr.city, addr.state, addr.postalCode].filter(Boolean).join(', ');
+                    const phone = item.order?.customerInfo?.phone || item.device?.customerInfo?.phone || '';
+                    const appointment = (() => {
+                      const order = item.order;
+                      if (!order) return null;
+                      const when = order.scheduledAt?.toDate() ?? order.installationDate?.toDate();
+                      if (!when) return null;
+                      const date = when.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                      if (order.scheduledAt) {
+                        const time = when.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+                        return `${date} · ${time}`;
+                      }
+                      return order.timeSlot ? `${date} · ${order.timeSlot}h` : date;
+                    })();
+                    const key = item.device?.id || item.order?.id;
+
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => {
+                          if (hasDevice) {
+                            openForm(item.device!);
+                          } else {
+                            toast.error('Device not registered yet. Complete the job and register the device first.');
+                          }
+                        }}
+                        className={`w-full text-left p-4 rounded-apple border transition-all ${
+                          hasDevice
+                            ? 'bg-surface-elevated hover:bg-surface-elevated/80 border-border'
+                            : 'bg-surface-elevated/50 border-border/50 opacity-70'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <p className="font-medium truncate">{name}</p>
+                            {phone && (
+                              <p className="text-xs text-text-tertiary truncate">{phone}</p>
+                            )}
+                            <div className="text-sm text-text-secondary">
+                              <p className="truncate">{addressLine1}</p>
+                              {addressLine2 && <p className="truncate">{addressLine2}</p>}
+                            </div>
+                            {appointment && (
+                              <p className="text-xs font-medium text-primary">{appointment}</p>
+                            )}
+                            {item.order && (
+                              <p className="text-xs text-text-tertiary">
+                                Order #{item.order.orderNumber}
+                              </p>
+                            )}
+                          </div>
+                          <div className="ml-3 flex-shrink-0">
+                            {hasDevice ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-success/10 text-success text-xs font-medium rounded-full">
+                                <CheckCircle className="w-3 h-3" />
+                                Registered
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-warning/10 text-warning text-xs font-medium rounded-full">
+                                <QrCode className="w-3 h-3" />
+                                No Device
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  });
+                })()}
               </div>
             )}
           </div>
@@ -488,6 +603,14 @@ export default function TechnicianScanPage() {
             </p>
           </div>
           <div className="flex flex-col gap-3 max-w-xs mx-auto">
+            {device?.orderId && !savedOffline && (
+              <button
+                onClick={() => router.push(`/technician/jobs/${device.orderId}`)}
+                className="px-8 py-3 bg-success hover:bg-success/90 text-white font-semibold rounded-apple transition-all"
+              >
+                View Job Details
+              </button>
+            )}
             <button
               onClick={handleScanAnother}
               className="px-8 py-3 bg-primary hover:bg-primary/90 text-white font-semibold rounded-apple transition-all"

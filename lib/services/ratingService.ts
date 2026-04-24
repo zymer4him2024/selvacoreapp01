@@ -1,3 +1,4 @@
+// @deprecated Use reviewService.ts instead. This file is kept for backward compatibility.
 import { doc, updateDoc, addDoc, collection, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { addCustomerHistoryRecord } from './customerHistoryService';

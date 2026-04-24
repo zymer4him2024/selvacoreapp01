@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Package as PackageIcon, Calendar, MapPin } from 'lucide-react';
+import { ArrowLeft, Package as PackageIcon, Calendar, Star } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Order, OrderStatus } from '@/types';
+import { useTranslation } from '@/hooks/useTranslation';
+import { Order, OrderStatus, Review } from '@/types';
+import { getReviewForOrder } from '@/lib/services/reviewService';
 
 // Simple display type for fallback orders
 interface FallbackOrderDisplay {
@@ -35,8 +37,10 @@ import toast from 'react-hot-toast';
 export default function CustomerOrdersPage() {
   const router = useRouter();
   const { user, userData } = useAuth();
+  const { t } = useTranslation();
   const [orders, setOrders] = useState<(Order | FallbackOrderDisplay)[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reviews, setReviews] = useState<Record<string, Review>>({});
 
   useEffect(() => {
     if (user) {
@@ -133,11 +137,30 @@ export default function CustomerOrdersPage() {
         toast.success(`${fallbackOrders.length} orders saved locally. Will sync when possible.`);
       }
 
+      // Load reviews for completed Firestore orders (O(1) doc read each — review ID = order ID)
+      const completedOrderIds = firestoreOrders
+        .filter((o) => o.status === 'completed')
+        .map((o) => o.id);
+      if (completedOrderIds.length > 0) {
+        const results = await Promise.all(
+          completedOrderIds.map(async (id) => [id, await getReviewForOrder(id)] as const)
+        );
+        const map: Record<string, Review> = {};
+        for (const [id, review] of results) {
+          if (review) map[id] = review;
+        }
+        setReviews(map);
+      }
     } catch (error: unknown) {
       toast.error('Failed to load orders');
     } finally {
       setLoading(false);
     }
+  };
+
+  const isWithinEditWindow = (review: Review) => {
+    const until = review.editableUntil?.toDate?.();
+    return until ? until.getTime() > Date.now() : false;
   };
 
   const getStatusColor = (status: string) => {
@@ -311,9 +334,9 @@ export default function CustomerOrdersPage() {
 
                         <div className="flex items-center justify-between mt-4">
                           <p className="text-xl font-bold text-primary">
-                            {'payment' in order && order.payment 
+                            {'payment' in order && order.payment
                               ? formatCurrency(order.payment.amount, order.payment.currency)
-                              : 'total' in order 
+                              : 'total' in order
                                 ? formatCurrency(order.total, order.currency)
                                 : 'N/A'
                             }
@@ -324,6 +347,64 @@ export default function CustomerOrdersPage() {
                         </div>
                       </div>
                     </div>
+
+                    {order.status === 'completed' && !('isFallback' in order && order.isFallback) && (
+                      (() => {
+                        const review = reviews[order.id];
+                        if (!review) {
+                          return (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                router.push(`/customer/orders/${order.id}/review`);
+                              }}
+                              className="mt-4 w-full min-h-[44px] px-4 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-colors flex items-center justify-center gap-2"
+                            >
+                              <Star className="w-4 h-4" aria-hidden />
+                              {t.orders.reviewFlow.leaveCta}
+                            </button>
+                          );
+                        }
+                        const within = isWithinEditWindow(review);
+                        return (
+                          <div className="mt-4 pt-4 border-t border-border">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="flex items-center gap-0.5" role="img" aria-label={`${review.rating}/5`}>
+                                  {[1, 2, 3, 4, 5].map((n) => (
+                                    <Star
+                                      key={n}
+                                      className={`w-4 h-4 ${n <= review.rating ? 'text-warning fill-warning' : 'text-text-tertiary'}`}
+                                      aria-hidden
+                                    />
+                                  ))}
+                                </div>
+                                {review.comment && (
+                                  <p className="text-sm text-text-secondary truncate min-w-0">
+                                    {review.comment}
+                                  </p>
+                                )}
+                              </div>
+                              {within && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    router.push(`/customer/orders/${order.id}/review`);
+                                  }}
+                                  className="text-sm font-medium text-primary hover:text-primary-hover whitespace-nowrap min-h-[44px] px-2"
+                                >
+                                  {t.orders.reviewFlow.edit}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()
+                    )}
                   </Link>
                 ))}
               </div>

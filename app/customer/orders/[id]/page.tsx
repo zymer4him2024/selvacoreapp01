@@ -13,8 +13,8 @@ import { cancelOrder } from '@/lib/services/orderService';
 import { refundAmazonPayment } from '@/lib/services/amazonPaymentService';
 import { addCustomerHistoryRecord } from '@/lib/services/customerHistoryService';
 import CancelOrderModal from '@/components/customer/CancelOrderModal';
-import RatingModal from '@/components/customer/RatingModal';
-import { submitRating } from '@/lib/services/ratingService';
+import { getReviewForOrder } from '@/lib/services/reviewService';
+import { Review } from '@/types';
 import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
@@ -31,7 +31,8 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [existingReview, setExistingReview] = useState<Review | null>(null);
+  const [canEditReview, setCanEditReview] = useState(false);
 
   useEffect(() => {
     loadOrder();
@@ -52,7 +53,23 @@ export default function OrderDetailPage() {
         return;
       }
 
-      setOrder({ id: orderDoc.id, ...orderDoc.data() } as Order);
+      const orderData = { id: orderDoc.id, ...orderDoc.data() } as Order;
+      setOrder(orderData);
+
+      // Check for existing review
+      if (orderData.status === 'completed') {
+        try {
+          const review = await getReviewForOrder(orderId);
+          setExistingReview(review);
+          if (review) {
+            const windowEnd = review.editableUntil?.toDate?.() ??
+              new Date(review.createdAt.toDate().getTime() + 14 * 24 * 60 * 60 * 1000);
+            setCanEditReview(new Date() < windowEnd);
+          }
+        } catch {
+          // Non-fatal: review lookup failure shouldn't block order display
+        }
+      }
     } catch (error: unknown) {
       toast.error('Failed to load order');
     } finally {
@@ -101,29 +118,6 @@ export default function OrderDetailPage() {
     }
 
     await loadOrder();
-  };
-
-  const handleSubmitRating = async (data: { score: number; review: string; categories: { punctuality: number; professionalism: number; quality: number; cleanliness: number } }) => {
-    if (!order || !userData) return;
-    try {
-      await submitRating({
-        orderId,
-        orderNumber: order.orderNumber,
-        customerId: userData.id,
-        installerId: order.technicianId || '',
-        subContractorId: order.subContractorId || '',
-        score: data.score,
-        review: data.review,
-        categories: data.categories,
-      });
-
-      toast.success('Thank you for your review!');
-      setShowRatingModal(false);
-      await loadOrder();
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to submit rating';
-      toast.error(message);
-    }
   };
 
   const handleWhatsAppContact = () => {
@@ -490,7 +484,17 @@ export default function OrderDetailPage() {
           {/* Rating display */}
           {order.rating && (
             <div className="apple-card bg-warning/5 border-warning/30">
-              <h2 className="text-xl font-semibold mb-3">{o.yourReview}</h2>
+              <div className="flex items-start justify-between">
+                <h2 className="text-xl font-semibold mb-3">{o.yourReview}</h2>
+                {canEditReview && (
+                  <button
+                    onClick={() => router.push(`/customer/orders/${orderId}/review`)}
+                    className="text-sm text-primary hover:text-primary/80 font-medium transition-colors"
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
               <div className="flex items-center gap-1 mb-2">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star
@@ -520,7 +524,7 @@ export default function OrderDetailPage() {
           {/* Actions */}
           {order.status === 'completed' && !order.rating && (
             <button
-              onClick={() => setShowRatingModal(true)}
+              onClick={() => router.push(`/customer/orders/${orderId}/review`)}
               className="w-full px-8 py-4 bg-warning hover:bg-warning/90 text-black font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
             >
               <div className="flex items-center justify-center gap-2">
@@ -549,14 +553,6 @@ export default function OrderDetailPage() {
         />
       )}
 
-      {showRatingModal && (
-        <RatingModal
-          orderNumber={order.orderNumber}
-          technicianName={order.technicianInfo?.name || 'Technician'}
-          onSubmit={handleSubmitRating}
-          onClose={() => setShowRatingModal(false)}
-        />
-      )}
     </div>
   );
 }

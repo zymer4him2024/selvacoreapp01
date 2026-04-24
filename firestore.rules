@@ -169,10 +169,34 @@ service cloud.firestore {
 
     // Reviews collection — customer ratings for orders
     match /reviews/{reviewId} {
-      allow read: if isAuthenticated();
+      // Customers see non-hidden reviews; technicians see reviews about them; admins see all
+      allow read: if isAdmin() ||
+        (isTechnician() && resource.data.technicianId == request.auth.uid) ||
+        (isAuthenticated() && resource.data.hidden == false);
+
+      // Customer can create a review for their own completed order.
+      // Document ID must equal orderId — guarantees one review per order.
+      // Cross-document get() verifies order status server-side.
       allow create: if isAuthenticated() &&
-        request.resource.data.customerId == request.auth.uid;
-      allow update, delete: if isAdmin();
+        request.resource.data.customerId == request.auth.uid &&
+        request.resource.data.orderId == request.resource.id &&
+        request.resource.data.hidden == false &&
+        request.resource.data.flagged == false &&
+        get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.status == 'completed';
+
+      // Customer can edit own review within the server-set edit window.
+      // Ownership fields (customerId, orderId, technicianId) are immutable.
+      allow update: if isAuthenticated() &&
+        resource.data.customerId == request.auth.uid &&
+        request.resource.data.customerId == resource.data.customerId &&
+        request.resource.data.orderId == resource.data.orderId &&
+        request.resource.data.technicianId == resource.data.technicianId &&
+        request.time < resource.data.editableUntil;
+
+      // Admin can flag, hide, or modify any review
+      allow update: if isAdmin();
+
+      allow delete: if isAdmin();
     }
 
     // Maintenance Schedules collection

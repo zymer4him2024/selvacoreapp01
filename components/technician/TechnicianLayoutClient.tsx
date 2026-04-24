@@ -68,22 +68,22 @@ export default function TechnicianLayoutClient({
             </div>
           </nav>
 
-          <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface/80 backdrop-blur-xl border-t border-border">
-            <div className="grid grid-cols-4 gap-1 p-2">
+          <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface/80 backdrop-blur-xl border-t border-border" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+            <div className="grid grid-cols-4 gap-1 px-2 pt-1 pb-1">
               {navigation.map((item) => {
                 const Icon = item.icon;
                 return (
                   <button
                     key={item.name}
                     onClick={() => router.push(item.href)}
-                    className={`flex flex-col items-center gap-1 py-2 px-3 rounded-apple transition-all ${
+                    className={`flex flex-col items-center justify-center gap-0.5 min-h-[48px] rounded-apple transition-all duration-200 ease-out active:scale-95 ${
                       item.current
                         ? 'bg-primary text-white'
                         : 'text-text-secondary'
                     }`}
                   >
-                    <Icon className="w-5 h-5" />
-                    <span className="text-xs font-medium">{item.name}</span>
+                    <Icon className="w-6 h-6" />
+                    <span className="text-[10px] font-medium">{item.name}</span>
                   </button>
                 );
               })}

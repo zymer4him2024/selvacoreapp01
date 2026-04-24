@@ -29,7 +29,9 @@ export interface User {
   certifications?: string[]; // List of certifications
   bio?: string; // Professional bio
   adminNotes?: string; // Admin notes about this technician
-  
+  averageRating?: number; // Denormalized review average (updated by Cloud Function)
+  totalReviews?: number; // Defaults to 0
+
   createdAt: Timestamp;
   updatedAt: Timestamp;
   lastLoginAt?: Timestamp;

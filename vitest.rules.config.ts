@@ -4,7 +4,9 @@ import path from 'path';
 export default defineConfig({
   test: {
     environment: 'node',
-    exclude: ['**/node_modules/**', '**/dist/**', 'tests/rules/**'],
+    include: ['tests/rules/**/*.test.ts'],
+    testTimeout: 20000,
+    hookTimeout: 20000,
   },
   resolve: {
     alias: {
