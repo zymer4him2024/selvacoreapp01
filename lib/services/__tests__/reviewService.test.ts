@@ -59,6 +59,14 @@ describe('createReview', () => {
     mockGetDoc.mockResolvedValueOnce(
       createMockDocSnapshot('order-1', {}, false)
     );
+    // Customer user doc for denormalized customerName
+    mockGetDoc.mockResolvedValueOnce(
+      createMockDocSnapshot('cust-1', { displayName: 'Alice Customer' })
+    );
+    // Technician user doc for denormalized technicianName
+    mockGetDoc.mockResolvedValueOnce(
+      createMockDocSnapshot('tech-1', { displayName: 'Bob Technician' })
+    );
 
     const id = await createReview('order-1', 'cust-1', 5, 'Great service!');
 
@@ -71,6 +79,8 @@ describe('createReview', () => {
     expect(reviewData.flagged).toBe(false);
     expect(reviewData.hidden).toBe(false);
     expect(reviewData.technicianId).toBe('tech-1');
+    expect(reviewData.customerName).toBe('Alice Customer');
+    expect(reviewData.technicianName).toBe('Bob Technician');
     expect(reviewData.editableUntil).toBeDefined();
   });
 
@@ -124,6 +134,14 @@ describe('createReview', () => {
     // No existing review
     mockGetDoc.mockResolvedValueOnce(
       createMockDocSnapshot('order-1', {}, false)
+    );
+    // Customer user doc (denormalization)
+    mockGetDoc.mockResolvedValueOnce(
+      createMockDocSnapshot('cust-1', { displayName: 'Alice' })
+    );
+    // Technician user doc (denormalization)
+    mockGetDoc.mockResolvedValueOnce(
+      createMockDocSnapshot('tech-1', { displayName: 'Bob' })
     );
 
     await createReview('order-1', 'cust-1', 4);

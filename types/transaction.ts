@@ -29,7 +29,8 @@ export type TransactionType =
   | 'review_updated'
   | 'review_flagged'
   | 'review_hidden'
-  | 'review_unhidden';
+  | 'review_unhidden'
+  | 'review_restored';
 
 export interface Transaction {
   id: string;

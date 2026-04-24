@@ -48,6 +48,7 @@ SelvacoreApp is a **water filtration system installation management platform**. 
 | `stockAdjustments` | Audit trail of inventory stock changes    |
 | `notifications`   | In-app notifications per user             |
 | `mail`            | Email queue for Firebase Trigger Email extension |
+| `reviews`         | Customer reviews per order (`reviews/{orderId}` — one review per order, denormalized customerName / technicianName) |
 
 ### Key Services (`lib/services/`)
 
@@ -65,6 +66,8 @@ SelvacoreApp is a **water filtration system installation management platform**. 
 | `maintenanceService.ts`   | Maintenance schedules, completion tracking, maintenance visits, email on completion |
 | `inventoryService.ts`     | Inventory CRUD, stock adjustments with audit trail, stats |
 | `amazonPaymentService.ts` | Simulated Amazon Pay (sandbox mode)         |
+| `reviewService.ts`        | Customer review CRUD — `createReview` (denormalizes customerName / technicianName at write), `updateReview`, `flagReview`, `hideReview`, `restoreReview` |
+| `reviewAdminService.ts`   | Admin-only paginated queries for `/admin/reviews`: `getReviewsPaginated` (server-side filters), `getReviewStats` (calendar month), `getTechniciansBelowRating` |
 
 ### Cloud Functions (`functions/src/`)
 
@@ -76,6 +79,7 @@ SelvacoreApp is a **water filtration system installation management platform**. 
 | `maintenance/emailTemplates.ts`         | Email templates for reminder, overdue, critical, completion |
 | `maintenance/autoAssign.ts`             | Auto-assigns technician to 14+ day overdue maintenance     |
 | `notifications/createNotification.ts`   | Shared helper for in-app notification creation             |
+| `reviews/reviewTriggers.ts`             | `onReviewCreated` / `onReviewUpdated` — aggregates `averageRating` and `totalReviews` onto technician user doc via transaction |
 
 ### Multi-Language Support
 
@@ -92,7 +96,7 @@ Google Sign-In only (Firebase Auth). New users go through a role selection flow 
 ```
 ┌─────────────────────────────────────────────────┐
 │                   Frontend (Next.js)             │
-│   /app/admin        — Admin dashboard, inventory, schedule, settings │
+│   /app/admin        — Admin dashboard, inventory, schedule, reviews, settings │
 │   /app/customer     — Customer ordering + device portal│
 │   /app/technician   — Technician jobs, profile, QR scan │
 │   /app/sub-admin    — Sub-contractor dashboard + settings │
@@ -187,6 +191,8 @@ cd functions && npm run build        # Build Cloud Functions only
 - `withOfflineFallback()` wrapper tries online first, queues on network error only — non-network errors (permission, validation) are re-thrown. Device registration is online-only (requires Firestore reads)
 - IndexedDB stores (`lib/offline/deviceCache.ts`): `devices`, `visits`, `writeQueue`, `photoQueue` — DB_VERSION=2
 - `NetworkStatusBar` component shows offline banner in technician portal; `useNetworkStatus` hook tracks connectivity
+- **Backlog:** `docs_for_claude/backlog.md` lists small deferred items worth batching when there's spare time (currently: reviews backfill CF, hardcoded-English audit in customer/sub-admin pages, fixing the `tests/admin.test.ts` dev-server dependency). Glance at it when starting a new feature
+- Reviews live at `reviews/{orderId}` (doc ID equals order ID — structural uniqueness). `reviewService.createReview` denormalizes `customerName` and `technicianName` onto the review doc at write time. **Staleness caveat:** these names are a snapshot — if a user renames themselves later, the review will keep showing the old name (the admin table does NOT re-fetch when the field is present). The read-through fallback in `reviewAdminService` only fires when the denormalized field is **missing** (pre-Phase-4.5 reviews), in which case it batch-fetches live user docs per page. If current name matters, read `users/{uid}.displayName` directly — do not assume the review's name is live. Admin review oversight at `/admin/reviews` uses server-side-only filters (tab + optional technician/rating) backed by 5 composite indexes; see `docs_for_claude/reviews.md` for filter policy and deployment order (indexes before hosting)
 
 ### Offline / PWA Debugging Guide
 

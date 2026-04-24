@@ -139,6 +139,10 @@ export const onOrderUpdate = onDocumentUpdated('orders/{orderId}', async (event)
     return;
   }
 
+  // TODO(Feature 2): when sending the order_completed notification below, append
+  // a deep-link to the review form — /customer/orders/{id}/review?rating={preselected}
+  // so the customer lands on a pre-filled star-rating screen for this order.
+
   // Update customer order count on completion
   if (newStatus === 'completed' && after.customerId) {
     const customerRef = db.doc(`customers/${after.customerId}`);

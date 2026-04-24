@@ -99,12 +99,26 @@ export async function createReview(
   const now = Timestamp.now();
   const editableUntil = Timestamp.fromMillis(now.toMillis() + EDIT_WINDOW_MS);
 
+  const technicianId = orderData.technicianId || '';
+
+  // Denormalize names once at write time so admin views don't need a per-row user lookup.
+  // Missing user docs fall back to empty strings; the admin view has a fallback path.
+  const [customerSnap, technicianSnap] = await Promise.all([
+    getDoc(doc(db, 'users', customerId)),
+    technicianId ? getDoc(doc(db, 'users', technicianId)) : Promise.resolve(null),
+  ]);
+  const customerName = (customerSnap.exists() ? (customerSnap.data().displayName as string) : '') || '';
+  const technicianName =
+    (technicianSnap && technicianSnap.exists() ? (technicianSnap.data().displayName as string) : '') || '';
+
   // Document ID = orderId — guarantees one review per order at the Firestore level
   const reviewRef = doc(db, 'reviews', orderId);
   await setDoc(reviewRef, {
     orderId,
     customerId,
-    technicianId: orderData.technicianId || '',
+    customerName,
+    technicianId,
+    technicianName,
     rating,
     comment: comment || '',
     createdAt: now,
@@ -207,6 +221,22 @@ export async function hideReview(
 
   await logTransaction({
     type: hidden ? 'review_hidden' : 'review_unhidden',
+    metadata: { reviewId },
+    performedBy: adminId,
+    performedByRole: 'admin',
+  });
+}
+
+export async function restoreReview(reviewId: string, adminId: string): Promise<void> {
+  await updateDoc(doc(db, 'reviews', reviewId), {
+    flagged: false,
+    flaggedReason: '',
+    hidden: false,
+    updatedAt: Timestamp.now(),
+  });
+
+  await logTransaction({
+    type: 'review_restored',
     metadata: { reviewId },
     performedBy: adminId,
     performedByRole: 'admin',

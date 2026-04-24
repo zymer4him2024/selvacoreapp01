@@ -59,3 +59,50 @@ The default `npm test` suite excludes `tests/rules/**` (see `vitest.config.ts`).
 | `npm run test:rules` | `tests/rules/reviews.rules.test.ts` | The Firestore rules themselves deny hostile writes, even if the service layer is bypassed (e.g., a compromised client calling the Firebase SDK directly). Slower (~5-10s with emulator boot). |
 
 Rule tests are the safety net. A bug in the service layer is a client bug; a bug in the rules is a data integrity bug.
+
+## Denormalized names on review documents (Phase 4.5)
+
+As of Phase 4.5, `reviewService.createReview` writes `customerName` and `technicianName` onto each review document at creation time. The admin reviews page and the technician-detail Reviews tab render these fields directly — no per-row user lookup on the hot path.
+
+**Fields on the review document:**
+
+- `customerName?: string` — display name of the reviewing customer, captured at write.
+- `technicianName?: string` — display name of the assigned technician, captured at write.
+
+Both fields are optional and may be empty strings if the corresponding user doc was missing or had no `displayName` at write time.
+
+**Fallback for pre-existing reviews (graceful).** Reviews written before Phase 4.5 do not have these fields. The admin list service (`reviewAdminService.getReviewsPaginated`) detects rows with missing names per page and issues a single batched `getDoc` per unique missing user ID, hydrating the in-memory objects before returning. The UI therefore always sees populated names. The review documents themselves are **not** rewritten — this is a v1 read-through fallback, not a backfill. The collection will heal naturally as new reviews land; anything old that the admin never looks at stays as-is.
+
+**Follow-up (deferred):** a one-time backfill Cloud Function that populates `customerName` / `technicianName` on all pre-Phase-4.5 reviews. Deferred from Phase 4.5; to be scheduled separately.
+
+## Admin review oversight (Phase 4.5)
+
+The admin portal at `/admin/reviews` provides a paginated, filterable moderation surface.
+
+**Filter policy (server-side only — no client-side filtering):**
+
+- **Tab (mutually exclusive, always applied):** Active (`hidden == false`), Flagged (`flagged == true && hidden == false`), Hidden (`hidden == true`).
+- **Active tab only:** optional `technicianId` and/or `ratingBucket` filters combine with the tab.
+- **Flagged / Hidden tabs:** optional `technicianId` only. The rating chip is **hidden from the UI** on these tabs — the last selection is preserved and restored when the admin returns to Active.
+
+Stats tiles are calendar-month scoped (UTC boundaries) for `reviewsThisMonth` and `flaggedPercentThisMonth`. `platformAvgRating` is computed across all non-hidden reviews. `techniciansBelow3.5` reads the denormalized `averageRating` on the technician user doc (maintained by `reviewTriggers.onReviewCreated` / `onReviewUpdated`). Technicians with zero reviews are excluded — see the tooltip on the tile.
+
+## Deployment
+
+This phase adds 5 new composite indexes on the `reviews` collection. Deploy `firestore:indexes` first, wait for all indexes to show "Enabled" in the Firebase console, then deploy hosting. Otherwise admins will see `FAILED_PRECONDITION` errors until the indexes finish building.
+
+```bash
+firebase deploy --only firestore:indexes
+# wait for all indexes to report "Enabled" in the Firebase console
+firebase deploy --only hosting
+```
+
+Index set (names collapsed for brevity; see `firestore.indexes.json`):
+
+1. `(hidden ASC, createdAt DESC)` — Active/Hidden tab base
+2. `(flagged ASC, hidden ASC, createdAt DESC)` — Flagged tab base
+3. `(hidden ASC, rating ASC, createdAt DESC)` — Active + rating
+4. `(technicianId ASC, flagged ASC, hidden ASC, createdAt DESC)` — Flagged + technician
+5. `(technicianId ASC, hidden ASC, rating ASC, createdAt DESC)` — Active + technician + rating
+6. (existing) `(technicianId ASC, hidden ASC, createdAt DESC)` — Active/Hidden + technician
+
