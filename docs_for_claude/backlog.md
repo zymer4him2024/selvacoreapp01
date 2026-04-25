@@ -59,12 +59,12 @@ Format per item: **title** → context, why deferred, what "done" looks like.
 
 ---
 
-### 5. Tier C (admin) and Tier D (technician/sub-admin) i18n audits
+### 5. Tier D (technician/sub-admin) i18n audit
 
-**Context:** Tier A finished the customer pages — `app/customer/*` now consumes `useTranslation` + `useLocaleFormatters` everywhere, and the per-role status helper `getOrderStatusLabel(status, role, t)` is wired into admin/orders, admin/orders/[id], sub-admin/orders, and technician/jobs/[id]. But the admin, technician, and sub-admin pages still hold a large pool of hardcoded English strings (loading toasts, page titles, table headers, stat labels, button copy, tab names) and call the formatters with no locale arg, meaning numbers/dates/currency render English-style regardless of the selected language.
+**Context:** Tier A finished customer pages and Tier C finished admin pages — `app/customer/*` and `app/admin/*` now consume `useTranslation` + `useLocaleFormatters` everywhere, and the per-role status helper `getOrderStatusLabel(status, role, t)` is wired into admin/orders, admin/orders/[id], sub-admin/orders, and technician/jobs/[id]. But `app/technician/*` and `app/sub-admin/*` still hold hardcoded English strings (loading toasts, page titles, table headers, stat labels, button copy, tab names) and call the formatters with no locale arg, meaning numbers/dates/currency render English-style regardless of the selected language.
 
-**Why deferred:** Same pattern as Tier A — mechanical but high-volume. The `formatters.ts` LOCALE NOTE header explicitly flags this as intentional debt: "Admin/technician/sub-admin pages still pass no locale arg, meaning they render English regardless of user language. This is intentional debt — to be paid off in Tier C (admin) and Tier D (technician/sub-admin) i18n passes."
+**Why deferred:** Same pattern as Tiers A and C — mechanical but high-volume. The `formatters.ts` LOCALE NOTE header explicitly flags this as intentional debt: "Technician/sub-admin pages still pass no locale arg, meaning they render English regardless of user language. This is intentional debt — to be paid off in Tier D (technician/sub-admin) i18n pass."
 
-**Done when:** No hardcoded English in `app/admin/**`, `app/technician/**`, or `app/sub-admin/**` (audit via grep for capitalized string literals). All Date/currency/relative-time displays use `useLocaleFormatters()`. All four locales (`en`, `pt`, `es`, `ko`) symmetric on key shape — `npx tsc --noEmit` clean.
+**Done when:** No hardcoded English in `app/technician/**` or `app/sub-admin/**` (audit via grep for capitalized string literals). All date/currency/relative-time displays use `useLocaleFormatters()`. All four locales (`en`, `pt`, `es`, `ko`) symmetric on key shape — `npx tsc --noEmit` clean.
 
-**Trigger to revisit:** Any non-English user complaint about admin/technician copy, OR an explicit ask to ship Tier C/D.
+**Trigger to revisit:** Any non-English user complaint about technician/sub-admin copy, OR an explicit ask to ship Tier D.
