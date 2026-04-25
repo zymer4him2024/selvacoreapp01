@@ -760,6 +760,10 @@ export const en = {
       showing: 'Showing',
       of: 'of',
       services: 'services',
+      loadError: 'Failed to load services',
+      deletedSuccess: 'Service deleted successfully',
+      deleteError: 'Failed to delete service',
+      confirmDeleteFormat: 'Are you sure you want to delete "{name}"?',
     },
     // Service New
     serviceNew: {
@@ -1070,6 +1074,8 @@ export const en = {
       chartsComingSoon: 'Charts will be implemented soon',
       chartsDescription: 'Integration with Recharts for beautiful data visualization',
       sales: 'sales',
+      loadError: 'Failed to load analytics data',
+      naLabel: 'N/A',
     },
     // Settings
     settings: {
@@ -1095,6 +1101,13 @@ export const en = {
       french: 'Francais',
       portuguese: 'Portugues (Brasil)',
       arabic: 'Arabic',
+      saveSuccess: 'Settings saved successfully!',
+      saveError: 'Failed to save settings',
+      businessLogoHeading: 'Business Logo',
+      companyLogoLabel: 'Company Logo',
+      companyLogoHint: 'This logo will be displayed on the dashboard. Recommended size: 256x256px.',
+      qrManagementHeading: 'QR Code Management',
+      qrManagementSubtitle: 'Create QR codes for any purpose and share them via email, SMS, or WhatsApp.',
     },
     // Maintenance
     maintenance: {

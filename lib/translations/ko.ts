@@ -741,6 +741,10 @@ export const ko = {
       showing: '표시 중',
       of: '/',
       services: '서비스',
+      loadError: '서비스를 불러오지 못했습니다',
+      deletedSuccess: '서비스가 삭제되었습니다',
+      deleteError: '서비스 삭제에 실패했습니다',
+      confirmDeleteFormat: '"{name}"을(를) 삭제하시겠습니까?',
     },
     serviceNew: {
       title: '새 서비스 추가',
@@ -1043,6 +1047,8 @@ export const ko = {
       chartsComingSoon: '차트가 곧 구현됩니다',
       chartsDescription: 'Recharts를 활용한 데이터 시각화',
       sales: '판매',
+      loadError: '분석 데이터를 불러오지 못했습니다',
+      naLabel: '해당 없음',
     },
     settings: {
       title: '설정',
@@ -1067,6 +1073,13 @@ export const ko = {
       french: '프랑스어',
       portuguese: '브라질 포르투갈어',
       arabic: '아랍어',
+      saveSuccess: '설정이 저장되었습니다!',
+      saveError: '설정 저장에 실패했습니다',
+      businessLogoHeading: '회사 로고',
+      companyLogoLabel: '회사 로고',
+      companyLogoHint: '이 로고는 대시보드에 표시됩니다. 권장 크기: 256x256px.',
+      qrManagementHeading: 'QR 코드 관리',
+      qrManagementSubtitle: '어떤 용도로든 QR 코드를 생성하고 이메일, SMS, WhatsApp으로 공유하세요.',
     },
     maintenance: {
       title: '유지보수',

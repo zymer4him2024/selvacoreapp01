@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, TrendingDown, DollarSign, Package as PackageIcon, Users } from 'lucide-react';
 import { getAnalyticsMetrics, getTopProducts, AnalyticsMetrics, TopProduct } from '@/lib/services/adminStatsService';
-import { formatCurrency, formatOptionalNumber } from '@/lib/utils/formatters';
+import { formatOptionalNumber } from '@/lib/utils/formatters';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 
 export default function AnalyticsPage() {
   const { t } = useTranslation();
+  const { formatCurrency } = useLocaleFormatters();
   const an = t.admin.analytics;
   const [metrics, setMetrics] = useState<AnalyticsMetrics | null>(null);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
@@ -28,8 +30,8 @@ export default function AnalyticsPage() {
       
       setMetrics(analyticsData);
       setTopProducts(products);
-    } catch (error: unknown) {
-      toast.error('Failed to load analytics data');
+    } catch {
+      toast.error(an.loadError);
     } finally {
       setLoading(false);
     }
@@ -63,7 +65,7 @@ export default function AnalyticsPage() {
     {
       name: an.avgOrderValue,
       value: formatOptionalNumber(Math.round(metrics.avgOrderValue)) === 'N/A'
-        ? 'N/A'
+        ? an.naLabel
         : formatCurrency(metrics.avgOrderValue, 'BRL'),
       change: '+5.3%',
       trend: 'up' as const

@@ -34,9 +34,9 @@ export default function SettingsPage() {
     try {
       setSaving(true);
       await updateUserData({ logoURL: logoURL || undefined });
-      toast.success('Settings saved successfully!');
-    } catch (error: unknown) {
-      toast.error('Failed to save settings');
+      toast.success(st.saveSuccess);
+    } catch {
+      toast.error(st.saveError);
     } finally {
       setSaving(false);
     }
@@ -64,14 +64,14 @@ export default function SettingsPage() {
       <div className="apple-card">
         <div className="flex items-center gap-3 mb-6">
           <ImageIcon className="w-6 h-6 text-primary" />
-          <h2 className="text-2xl font-semibold">Business Logo</h2>
+          <h2 className="text-2xl font-semibold">{st.businessLogoHeading}</h2>
         </div>
         <LogoUpload
           currentLogoURL={logoURL}
           onLogoUploaded={(url) => setLogoURL(url)}
           onLogoRemoved={() => setLogoURL('')}
-          label="Company Logo"
-          hint="This logo will be displayed on the dashboard. Recommended size: 256x256px."
+          label={st.companyLogoLabel}
+          hint={st.companyLogoHint}
         />
       </div>
 
@@ -177,9 +177,9 @@ export default function SettingsPage() {
               <QrCode className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h2 className="text-2xl font-semibold">QR Code Management</h2>
+              <h2 className="text-2xl font-semibold">{st.qrManagementHeading}</h2>
               <p className="text-sm text-text-secondary mt-1">
-                Create QR codes for any purpose and share them via email, SMS, or WhatsApp.
+                {st.qrManagementSubtitle}
               </p>
             </div>
           </div>

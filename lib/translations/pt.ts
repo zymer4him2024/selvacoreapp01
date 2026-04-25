@@ -741,6 +741,10 @@ export const pt = {
       showing: 'Mostrando',
       of: 'de',
       services: 'servicos',
+      loadError: 'Falha ao carregar servicos',
+      deletedSuccess: 'Servico excluido com sucesso',
+      deleteError: 'Falha ao excluir servico',
+      confirmDeleteFormat: 'Tem certeza que deseja excluir "{name}"?',
     },
     serviceNew: {
       title: 'Adicionar Novo Servico',
@@ -1043,6 +1047,8 @@ export const pt = {
       chartsComingSoon: 'Graficos sereo implementados em breve',
       chartsDescription: 'Integracao com Recharts para visualizacao de dados',
       sales: 'vendas',
+      loadError: 'Falha ao carregar dados de analise',
+      naLabel: 'N/D',
     },
     settings: {
       title: 'Configuracoes',
@@ -1067,6 +1073,13 @@ export const pt = {
       french: 'Frances',
       portuguese: 'Portugues (Brasil)',
       arabic: 'Arabe',
+      saveSuccess: 'Configuracoes salvas com sucesso!',
+      saveError: 'Falha ao salvar configuracoes',
+      businessLogoHeading: 'Logotipo da Empresa',
+      companyLogoLabel: 'Logo da Empresa',
+      companyLogoHint: 'Este logotipo sera exibido no painel. Tamanho recomendado: 256x256px.',
+      qrManagementHeading: 'Gestao de QR Codes',
+      qrManagementSubtitle: 'Crie codigos QR para qualquer finalidade e compartilhe por e-mail, SMS ou WhatsApp.',
     },
     maintenance: {
       title: 'Manutencao',

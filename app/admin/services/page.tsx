@@ -5,12 +5,13 @@ import Link from 'next/link';
 import { Plus, Search, Edit, Trash2, Wrench, Clock } from 'lucide-react';
 import { Service } from '@/types';
 import { getAllServices, deleteService } from '@/lib/services/serviceService';
-import { formatCurrency } from '@/lib/utils/formatters';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
 export default function ServicesPage() {
   const { t } = useTranslation();
+  const { formatCurrency } = useLocaleFormatters();
   const sv = t.admin.services;
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +27,7 @@ export default function ServicesPage() {
       const data = await getAllServices();
       setServices(data);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load services';
+      const message = error instanceof Error ? error.message : sv.loadError;
       toast.error(message);
     } finally {
       setLoading(false);
@@ -34,14 +35,14 @@ export default function ServicesPage() {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
+    if (!confirm(sv.confirmDeleteFormat.replace('{name}', name))) return;
 
     try {
       await deleteService(id);
-      toast.success('Service deleted successfully');
+      toast.success(sv.deletedSuccess);
       loadServices();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to delete service';
+      const message = error instanceof Error ? error.message : sv.deleteError;
       toast.error(message);
     }
   };
