@@ -12,21 +12,19 @@ import {
   TechnicianWithStats
 } from '@/lib/services/technicianAdminService';
 import { TechnicianStatus } from '@/types/user';
-import { 
-  formatCurrency, 
-  formatDate,
-  formatOptionalCurrency,
-  formatOptionalDate,
+import {
   formatOptionalNumber,
   formatOptionalString
 } from '@/lib/utils/formatters';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import toast from 'react-hot-toast';
 
 type TabType = 'all' | 'pending' | 'approved' | 'declined' | 'suspended';
 
 export default function TechniciansManagementPage() {
   const { t } = useTranslation();
+  const { formatOptionalCurrency, formatOptionalDate } = useLocaleFormatters();
   const tc = t.admin.technicians;
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('all');
@@ -60,7 +58,7 @@ export default function TechniciansManagementPage() {
       setTechnicians(techList);
       setStats(statsSummary);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load technicians';
+      const message = error instanceof Error ? error.message : tc.loadTechniciansError;
       toast.error(message);
     } finally {
       setLoading(false);
@@ -104,7 +102,7 @@ export default function TechniciansManagementPage() {
       case 'pending': return tc.pending;
       case 'declined': return tc.declined;
       case 'suspended': return tc.suspended;
-      default: return 'Unknown';
+      default: return tc.unknown;
     }
   };
 
@@ -284,7 +282,7 @@ export default function TechniciansManagementPage() {
                     <div className="flex items-center gap-2 text-sm">
                       <Award className="w-4 h-4 text-warning" />
                       <span className="text-text-secondary">
-                        {formatOptionalNumber(technician.completedJobs)} {tc.jobs} • {technician.averageRating ? `${technician.averageRating.toFixed(1)}★` : 'N/A'}
+                        {formatOptionalNumber(technician.completedJobs)} {tc.jobs} • {technician.averageRating ? `${technician.averageRating.toFixed(1)}★` : tc.naLabel}
                       </span>
                     </div>
 
@@ -298,7 +296,7 @@ export default function TechniciansManagementPage() {
                     <div className="flex items-center gap-2 text-sm">
                       <TrendingUp className="w-4 h-4 text-primary" />
                       <span className="text-text-secondary">
-                        {technician.active ? 'Active' : 'Inactive'}
+                        {technician.active ? tc.activeLabel : tc.inactiveLabel}
                       </span>
                     </div>
                   </div>
@@ -315,7 +313,7 @@ export default function TechniciansManagementPage() {
                       ))}
                       {technician.serviceAreas.length > 3 && (
                         <span className="px-2 py-1 bg-surface-elevated text-xs rounded-apple">
-                          +{technician.serviceAreas.length - 3} more
+                          +{technician.serviceAreas.length - 3} {tc.moreSuffix}
                         </span>
                       )}
                     </div>

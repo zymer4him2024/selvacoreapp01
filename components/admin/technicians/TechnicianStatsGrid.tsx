@@ -2,14 +2,13 @@
 
 import { TrendingUp, CheckCircle, Award, DollarSign } from 'lucide-react';
 import type { TechnicianWithStats } from '@/lib/services/technicianAdminService';
-import {
-  formatOptionalCurrency,
-  formatOptionalNumber,
-} from '@/lib/utils/formatters';
+import { formatOptionalNumber } from '@/lib/utils/formatters';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 
 export function TechnicianStatsGrid({ technician }: { technician: TechnicianWithStats }) {
   const { t } = useTranslation();
+  const { formatOptionalCurrency } = useLocaleFormatters();
   const td = t.admin.technicianDetail;
 
   const tile = (icon: React.ReactNode, bg: string, value: string, label: string) => (
@@ -43,7 +42,7 @@ export function TechnicianStatsGrid({ technician }: { technician: TechnicianWith
       {tile(
         <Award className="w-6 h-6 text-warning" />,
         'bg-warning/10',
-        technician.averageRating ? `${technician.averageRating.toFixed(1)}★` : 'N/A',
+        technician.averageRating ? `${technician.averageRating.toFixed(1)}★` : t.admin.technicians.naLabel,
         td.avgRating
       )}
       {tile(

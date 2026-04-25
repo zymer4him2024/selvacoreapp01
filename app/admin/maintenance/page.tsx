@@ -6,9 +6,9 @@ import { Cpu, AlertTriangle, CalendarClock, Search, ChevronRight } from 'lucide-
 import { getAllDevices } from '@/lib/services/deviceService';
 import { getMaintenanceSummaryStats, MaintenanceSummaryStats } from '@/lib/services/maintenanceService';
 import { Device } from '@/types/device';
-import { formatDate } from '@/lib/utils/formatters';
 import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 
 function getDueStatus(dueDate: FirebaseTimestamp): 'overdue' | 'soon' | 'ok' {
   const now = Date.now();
@@ -30,6 +30,7 @@ type FirebaseTimestamp = { toDate: () => Date };
 export default function MaintenanceDashboardPage() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { formatDate } = useLocaleFormatters();
   const mt = t.admin.maintenance;
   const [devices, setDevices] = useState<Device[]>([]);
   const [stats, setStats] = useState<MaintenanceSummaryStats | null>(null);
@@ -49,7 +50,7 @@ export default function MaintenanceDashboardPage() {
       setDevices(devicesData);
       setStats(statsData);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load maintenance data';
+      const message = error instanceof Error ? error.message : mt.loadError;
       toast.error(message);
     } finally {
       setLoading(false);

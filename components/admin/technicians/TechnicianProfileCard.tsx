@@ -2,11 +2,9 @@
 
 import { Mail, Phone, MessageCircle, Calendar, CheckCircle } from 'lucide-react';
 import type { TechnicianWithStats } from '@/lib/services/technicianAdminService';
-import {
-  formatOptionalString,
-  formatOptionalDate,
-} from '@/lib/utils/formatters';
+import { formatOptionalString } from '@/lib/utils/formatters';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 
 interface Props {
   technician: TechnicianWithStats;
@@ -15,6 +13,7 @@ interface Props {
 
 export function TechnicianProfileCard({ technician, statusClassName }: Props) {
   const { t } = useTranslation();
+  const { formatOptionalDate } = useLocaleFormatters();
   const td = t.admin.technicianDetail;
 
   return (
@@ -37,7 +36,7 @@ export function TechnicianProfileCard({ technician, statusClassName }: Props) {
               <p className="text-text-secondary">{formatOptionalString(technician.email)}</p>
             </div>
             <div className={`px-4 py-2 rounded-apple text-sm font-semibold ${statusClassName}`}>
-              {technician.technicianStatus?.toUpperCase() || 'N/A'}
+              {technician.technicianStatus?.toUpperCase() || t.admin.technicians.naLabel}
             </div>
           </div>
 

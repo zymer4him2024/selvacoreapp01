@@ -60,7 +60,7 @@ export default function TechnicianDetailPage() {
         });
       }
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load technician');
+      toast.error(err instanceof Error ? err.message : td.loadError);
       router.push('/admin/technicians');
     } finally {
       setLoading(false);
@@ -80,7 +80,7 @@ export default function TechnicianDetailPage() {
       toast.success(okMsg);
       loadTechnician();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Action failed');
+      toast.error(err instanceof Error ? err.message : td.actionFailed);
     } finally {
       setActionLoading(false);
     }
@@ -109,7 +109,7 @@ export default function TechnicianDetailPage() {
       setIsEditing(false);
       loadTechnician();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to update profile');
+      toast.error(err instanceof Error ? err.message : td.updateFailed);
     } finally {
       setActionLoading(false);
     }

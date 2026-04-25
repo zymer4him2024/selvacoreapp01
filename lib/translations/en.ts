@@ -802,6 +802,12 @@ export const en = {
       noMatch: 'No technicians match the selected filter',
       applied: 'Applied:',
       jobs: 'jobs',
+      loadTechniciansError: 'Failed to load technicians',
+      naLabel: 'N/A',
+      activeLabel: 'Active',
+      inactiveLabel: 'Inactive',
+      moreSuffix: 'more',
+      unknown: 'Unknown',
     },
     // Technician Detail
     technicianDetail: {
@@ -849,6 +855,9 @@ export const en = {
       suspendedSuccess: 'Technician suspended',
       reactivatedSuccess: 'Technician reactivated',
       profileUpdated: 'Technician profile updated',
+      loadError: 'Failed to load technician',
+      actionFailed: 'Action failed',
+      updateFailed: 'Failed to update profile',
     },
     // Reviews (admin oversight — Phase 4.5)
     reviews: {
@@ -909,6 +918,9 @@ export const en = {
       revenue: 'Revenue',
       commission: 'Commission',
       confirmDelete: 'Are you sure you want to delete "{name}"? This will affect all associated installers.',
+      loadError: 'Failed to load sub-contractors',
+      deletedSuccess: 'Sub-contractor deleted successfully',
+      deleteError: 'Failed to delete sub-contractor',
     },
     // Sub-Contractor New
     subContractorNew: {
@@ -1100,6 +1112,7 @@ export const en = {
       ezerMaintenance: 'Ezer Maintenance',
       filterReplacement: 'Filter Replacement',
       overdueLabel: '(Overdue)',
+      loadError: 'Failed to load maintenance data',
     },
     // Maintenance Detail
     maintenanceDetail: {
@@ -1125,6 +1138,22 @@ export const en = {
       viewOriginalOrder: 'View Original Order',
       markComplete: 'Mark Complete',
       ezerMaintenance: 'Ezer Maintenance',
+      filterReplacement: 'Filter Replacement',
+      ezerDevice: 'Ezer Device',
+      productNa: 'N/A',
+      deviceNotFound: 'Device not found',
+      loadDeviceError: 'Failed to load device',
+      completedToast: 'Maintenance marked as completed',
+      completeError: 'Failed to complete maintenance',
+      visitsHeading: 'Maintenance Visits',
+      noVisits: 'No maintenance visits recorded for this device.',
+      checkInstallationOk: 'Installation OK',
+      checkOperationOk: 'Operation OK',
+      checkWaterPressureOk: 'Water Pressure OK',
+      checkSedimentFilterReplaced: 'Sediment Filter Replaced',
+      checkCarbonFilterReplaced: 'Carbon Filter Replaced',
+      photoBefore: 'Before',
+      photoAfter: 'After',
     },
     // Schedule (dispatcher calendar)
     schedule: {

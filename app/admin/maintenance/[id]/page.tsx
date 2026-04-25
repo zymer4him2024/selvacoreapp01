@@ -10,9 +10,9 @@ import { getDeviceById } from '@/lib/services/deviceService';
 import { getSchedulesByDeviceId, completeMaintenance, getVisitsByDeviceId } from '@/lib/services/maintenanceService';
 import { Device, MaintenanceSchedule, MaintenanceVisit } from '@/types/device';
 import { useAuth } from '@/contexts/AuthContext';
-import { formatDate } from '@/lib/utils/formatters';
 import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 
 export default function DeviceDetailPage() {
   const router = useRouter();
@@ -20,6 +20,7 @@ export default function DeviceDetailPage() {
   const deviceId = params.id as string;
   const { user } = useAuth();
   const { t } = useTranslation();
+  const { formatDate } = useLocaleFormatters();
   const md = t.admin.maintenanceDetail;
   const [device, setDevice] = useState<Device | null>(null);
   const [schedules, setSchedules] = useState<MaintenanceSchedule[]>([]);
@@ -41,7 +42,7 @@ export default function DeviceDetailPage() {
       ]);
 
       if (!deviceData) {
-        toast.error('Device not found');
+        toast.error(md.deviceNotFound);
         router.push('/admin/maintenance');
         return;
       }
@@ -50,7 +51,7 @@ export default function DeviceDetailPage() {
       setSchedules(schedulesData);
       setVisits(visitsData);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load device';
+      const message = error instanceof Error ? error.message : md.loadDeviceError;
       toast.error(message);
       router.push('/admin/maintenance');
     } finally {
@@ -64,11 +65,11 @@ export default function DeviceDetailPage() {
     try {
       setCompleting(scheduleId);
       await completeMaintenance(scheduleId, user.uid, completionNotes[scheduleId] || '');
-      toast.success('Maintenance marked as completed');
+      toast.success(md.completedToast);
       setCompletionNotes((prev) => ({ ...prev, [scheduleId]: '' }));
       loadData();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to complete maintenance';
+      const message = error instanceof Error ? error.message : md.completeError;
       toast.error(message);
     } finally {
       setCompleting(null);
@@ -110,7 +111,7 @@ export default function DeviceDetailPage() {
         <div>
           <h1 className="text-4xl font-bold tracking-tight">{md.title}</h1>
           <p className="text-text-secondary mt-1">
-            {device.productSnapshot.name?.en || 'Ezer Device'}
+            {device.productSnapshot.name?.en || md.ezerDevice}
           </p>
         </div>
       </div>
@@ -132,7 +133,7 @@ export default function DeviceDetailPage() {
               <div>
                 <p className="text-sm text-text-secondary">{md.product}</p>
                 <p className="font-medium">
-                  {device.productSnapshot.name?.en || 'N/A'}
+                  {device.productSnapshot.name?.en || md.productNa}
                   {device.productSnapshot.variation && ` — ${device.productSnapshot.variation}`}
                 </p>
               </div>
@@ -202,7 +203,7 @@ export default function DeviceDetailPage() {
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h3 className="font-semibold text-lg">
-                    {schedule.type === 'ezer_maintenance' ? md.ezerMaintenance : schedule.filterName || 'Filter Replacement'}
+                    {schedule.type === 'ezer_maintenance' ? md.ezerMaintenance : schedule.filterName || md.filterReplacement}
                   </h3>
                   <p className="text-sm text-text-secondary">
                     {md.everyDays.replace('{count}', String(schedule.intervalDays))}
@@ -283,12 +284,12 @@ export default function DeviceDetailPage() {
       <div className="space-y-4">
         <h2 className="text-2xl font-bold flex items-center gap-2">
           <ClipboardCheck className="w-6 h-6" />
-          Maintenance Visits
+          {md.visitsHeading}
         </h2>
 
         {visits.length === 0 ? (
           <div className="apple-card text-center py-8">
-            <p className="text-text-secondary">No maintenance visits recorded for this device.</p>
+            <p className="text-text-secondary">{md.noVisits}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -303,27 +304,27 @@ export default function DeviceDetailPage() {
                 <div className="flex flex-wrap gap-2 mb-3">
                   {visit.checks.installationOk && (
                     <span className="flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
-                      <Wrench className="w-3 h-3" /> Installation OK
+                      <Wrench className="w-3 h-3" /> {md.checkInstallationOk}
                     </span>
                   )}
                   {visit.checks.operationOk && (
                     <span className="flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
-                      <CheckCircle className="w-3 h-3" /> Operation OK
+                      <CheckCircle className="w-3 h-3" /> {md.checkOperationOk}
                     </span>
                   )}
                   {visit.checks.waterPressureOk && (
                     <span className="flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
-                      <Gauge className="w-3 h-3" /> Water Pressure OK
+                      <Gauge className="w-3 h-3" /> {md.checkWaterPressureOk}
                     </span>
                   )}
                   {visit.checks.sedimentFilterReplaced && (
                     <span className="flex items-center gap-1 px-2.5 py-1 bg-warning/10 text-warning rounded-full text-xs font-medium">
-                      <Droplets className="w-3 h-3" /> Sediment Filter Replaced
+                      <Droplets className="w-3 h-3" /> {md.checkSedimentFilterReplaced}
                     </span>
                   )}
                   {visit.checks.carbonFilterReplaced && (
                     <span className="flex items-center gap-1 px-2.5 py-1 bg-warning/10 text-warning rounded-full text-xs font-medium">
-                      <FilterIcon className="w-3 h-3" /> Carbon Filter Replaced
+                      <FilterIcon className="w-3 h-3" /> {md.checkCarbonFilterReplaced}
                     </span>
                   )}
                 </div>
@@ -331,17 +332,17 @@ export default function DeviceDetailPage() {
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     {visit.beforePhotoUrl && (
                       <div>
-                        <p className="text-xs text-text-tertiary mb-1">Before</p>
+                        <p className="text-xs text-text-tertiary mb-1">{md.photoBefore}</p>
                         <a href={visit.beforePhotoUrl} target="_blank" rel="noopener noreferrer">
-                          <img src={visit.beforePhotoUrl} alt="Before" className="w-full h-32 object-cover rounded-apple border border-border" />
+                          <img src={visit.beforePhotoUrl} alt={md.photoBefore} className="w-full h-32 object-cover rounded-apple border border-border" />
                         </a>
                       </div>
                     )}
                     {visit.afterPhotoUrl && (
                       <div>
-                        <p className="text-xs text-text-tertiary mb-1">After</p>
+                        <p className="text-xs text-text-tertiary mb-1">{md.photoAfter}</p>
                         <a href={visit.afterPhotoUrl} target="_blank" rel="noopener noreferrer">
-                          <img src={visit.afterPhotoUrl} alt="After" className="w-full h-32 object-cover rounded-apple border border-border" />
+                          <img src={visit.afterPhotoUrl} alt={md.photoAfter} className="w-full h-32 object-cover rounded-apple border border-border" />
                         </a>
                       </div>
                     )}

@@ -5,12 +5,14 @@ import Link from 'next/link';
 import { Plus, Search, Edit, Trash2, Building2, Users, Package as PackageIcon } from 'lucide-react';
 import { SubContractor } from '@/types';
 import { getAllSubContractors, deleteSubContractor } from '@/lib/services/subContractorService';
-import { formatCurrency, formatPhone } from '@/lib/utils/formatters';
+import { formatPhone } from '@/lib/utils/formatters';
 import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 
 export default function SubContractorsPage() {
   const { t } = useTranslation();
+  const { formatCurrency } = useLocaleFormatters();
   const sc = t.admin.subContractors;
   const [subContractors, setSubContractors] = useState<SubContractor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +28,7 @@ export default function SubContractorsPage() {
       const data = await getAllSubContractors();
       setSubContractors(data);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load sub-contractors';
+      const message = error instanceof Error ? error.message : sc.loadError;
       toast.error(message);
     } finally {
       setLoading(false);
@@ -38,10 +40,10 @@ export default function SubContractorsPage() {
 
     try {
       await deleteSubContractor(id);
-      toast.success('Sub-contractor deleted successfully');
+      toast.success(sc.deletedSuccess);
       loadSubContractors();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to delete sub-contractor';
+      const message = error instanceof Error ? error.message : sc.deleteError;
       toast.error(message);
     }
   };
