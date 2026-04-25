@@ -30,15 +30,11 @@ import {
   MaintenanceSummaryStats,
 } from '@/lib/services/maintenanceService';
 import { MaintenanceSchedule } from '@/types/device';
-import {
-  formatDateTime,
-  formatDate,
-  formatCurrency,
-  formatOptionalString,
-} from '@/lib/utils/formatters';
+import { formatOptionalString, getOrderStatusLabel } from '@/lib/utils/formatters';
 import { QueryDocumentSnapshot, DocumentData, Timestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 
 type MainTab = 'orders' | 'installation' | 'maintenance' | 'activity';
 type InstallationSubTab = 'all' | 'accepted' | 'in_progress' | 'completed';
@@ -93,14 +89,14 @@ function getOrderStatusColor(status: string): string {
   }
 }
 
-function getInstallationStatusLabel(status: string): string {
+function getInstallationStatusLabel(status: string, tr: { subtabScheduled: string; subtabInProgress: string; subtabInstalled: string }): string {
   switch (status) {
     case 'accepted':
-      return 'Scheduled';
+      return tr.subtabScheduled;
     case 'in_progress':
-      return 'In Progress';
+      return tr.subtabInProgress;
     case 'completed':
-      return 'Installed';
+      return tr.subtabInstalled;
     default:
       return status;
   }
@@ -172,12 +168,12 @@ export default function TransactionsPage() {
       });
     } catch (error: unknown) {
       const message =
-        error instanceof Error ? error.message : 'Failed to load summary';
+        error instanceof Error ? error.message : tr.loadSummaryError;
       toast.error(message);
     } finally {
       setSummaryLoading(false);
     }
-  }, []);
+  }, [tr.loadSummaryError]);
 
   useEffect(() => {
     loadSummary();
@@ -189,7 +185,7 @@ export default function TransactionsPage() {
       <div>
         <h1 className="text-4xl font-bold tracking-tight mb-2">{tr.title}</h1>
         <p className="text-text-secondary">
-          Complete oversight of every transaction — orders, installations, maintenance, and audit trail.
+          {tr.pageSubtitle}
         </p>
       </div>
 
@@ -202,26 +198,26 @@ export default function TransactionsPage() {
           active={activeTab === 'orders'}
           onClick={() => setActiveTab('orders')}
           icon={<ShoppingCart className="w-4 h-4" />}
-          label="Orders"
+          label={tr.tabOrders}
         />
         <TabButton
           active={activeTab === 'installation'}
           onClick={() => setActiveTab('installation')}
           icon={<Wrench className="w-4 h-4" />}
-          label="Installation"
+          label={tr.tabInstallation}
         />
         <TabButton
           active={activeTab === 'maintenance'}
           onClick={() => setActiveTab('maintenance')}
           icon={<CalendarClock className="w-4 h-4" />}
-          label="Maintenance"
+          label={tr.tabMaintenance}
           badge={summary.overdueMaintenance > 0 ? summary.overdueMaintenance : undefined}
         />
         <TabButton
           active={activeTab === 'activity'}
           onClick={() => setActiveTab('activity')}
           icon={<Activity className="w-4 h-4" />}
-          label="Activity Log"
+          label={tr.tabActivityLog}
         />
       </div>
 
@@ -253,46 +249,49 @@ function SummaryHeader({
   };
   loading: boolean;
 }) {
+  const { t } = useTranslation();
+  const tr = t.admin.transactions;
+  const { formatCurrency } = useLocaleFormatters();
   const cards = [
     {
-      label: 'Total Orders',
+      label: tr.summaryTotalOrders,
       value: loading ? '—' : summary.totalOrders.toString(),
       subtitle: loading ? '' : formatCurrency(summary.revenue, 'USD'),
       icon: <ShoppingCart className="w-5 h-5 text-primary" />,
       tone: 'primary',
     },
     {
-      label: 'Active Installations',
+      label: tr.summaryActiveInstallations,
       value: loading ? '—' : summary.activeInstallations.toString(),
-      subtitle: 'Accepted + In Progress',
+      subtitle: tr.summaryAcceptedInProgress,
       icon: <Wrench className="w-5 h-5 text-secondary" />,
       tone: 'secondary',
     },
     {
-      label: 'Completed',
+      label: tr.summaryCompleted,
       value: loading ? '—' : summary.completedInstallations.toString(),
-      subtitle: 'All-time installs',
+      subtitle: tr.summaryAllTime,
       icon: <CheckCircle2 className="w-5 h-5 text-success" />,
       tone: 'success',
     },
     {
-      label: 'Devices',
+      label: tr.summaryDevices,
       value: loading ? '—' : summary.devicesUnderMaintenance.toString(),
-      subtitle: 'Under maintenance',
+      subtitle: tr.summaryUnderMaintenance,
       icon: <TrendingUp className="w-5 h-5 text-primary" />,
       tone: 'primary',
     },
     {
-      label: 'Overdue',
+      label: tr.summaryOverdue,
       value: loading ? '—' : summary.overdueMaintenance.toString(),
-      subtitle: summary.overdueMaintenance > 0 ? 'Needs attention' : 'All caught up',
+      subtitle: summary.overdueMaintenance > 0 ? tr.summaryNeedsAttention : tr.summaryAllCaughtUp,
       icon: <AlertTriangle className="w-5 h-5 text-error" />,
       tone: summary.overdueMaintenance > 0 ? 'error' : 'muted',
     },
     {
-      label: 'Due This Week',
+      label: tr.summaryDueThisWeek,
       value: loading ? '—' : summary.upcomingWeek.toString(),
-      subtitle: 'Upcoming maintenance',
+      subtitle: tr.summaryUpcoming,
       icon: <Clock className="w-5 h-5 text-warning" />,
       tone: 'warning',
     },
@@ -363,6 +362,8 @@ function TabButton({
 // ─────────────────────────────────────────────────────────────
 
 function OrdersTab() {
+  const { t } = useTranslation();
+  const tr = t.admin.transactions;
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -390,13 +391,13 @@ function OrdersTab() {
       setOrders((prev) => (reset ? result.items : [...prev, ...result.items]));
     } catch (error: unknown) {
       const message =
-        error instanceof Error ? error.message : 'Failed to load orders';
+        error instanceof Error ? error.message : tr.loadOrdersError;
       toast.error(message);
     } finally {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, tr.loadOrdersError]);
 
   useEffect(() => {
     load(true);
@@ -413,14 +414,14 @@ function OrdersTab() {
   });
 
   const handleDelete = async (orderId: string) => {
-    if (!confirm('Are you sure you want to delete this order? This action cannot be undone.')) return;
+    if (!confirm(tr.confirmDeleteOrder)) return;
     try {
       setDeletingId(orderId);
       await deleteOrder(orderId);
       setOrders(prev => prev.filter(o => o.id !== orderId));
-      toast.success('Order deleted');
+      toast.success(tr.orderDeleted);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to delete order';
+      const message = error instanceof Error ? error.message : tr.deleteOrderError;
       toast.error(message);
     } finally {
       setDeletingId(null);
@@ -435,7 +436,7 @@ function OrdersTab() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
           <input
             type="text"
-            placeholder="Search by order number, customer name, or email"
+            placeholder={tr.searchOrdersPlaceholder}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-11 pr-4 py-2.5 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
@@ -448,13 +449,13 @@ function OrdersTab() {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="bg-transparent border-none focus:outline-none text-sm"
           >
-            <option value="all">All statuses</option>
-            <option value="pending">Pending</option>
-            <option value="accepted">Accepted</option>
-            <option value="in_progress">In Progress</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-            <option value="refunded">Refunded</option>
+            <option value="all">{tr.statusFilterAll}</option>
+            <option value="pending">{tr.statusPending}</option>
+            <option value="accepted">{tr.statusAccepted}</option>
+            <option value="in_progress">{tr.statusInProgress}</option>
+            <option value="completed">{tr.statusCompleted}</option>
+            <option value="cancelled">{tr.statusCancelled}</option>
+            <option value="refunded">{tr.statusRefunded}</option>
           </select>
         </div>
       </div>
@@ -463,7 +464,7 @@ function OrdersTab() {
       {loading ? (
         <LoadingSpinner />
       ) : filtered.length === 0 ? (
-        <EmptyState icon={<ShoppingCart className="w-12 h-12" />} title="No orders found" />
+        <EmptyState icon={<ShoppingCart className="w-12 h-12" />} title={tr.noOrdersFound} />
       ) : (
         <div className="space-y-3">
           {filtered.map((order) => (
@@ -476,12 +477,12 @@ function OrdersTab() {
                 disabled={loadingMore}
                 className="px-8 py-3 bg-surface-elevated hover:bg-surface-secondary font-medium rounded-apple transition-all disabled:opacity-50"
               >
-                {loadingMore ? 'Loading...' : 'Load More'}
+                {loadingMore ? tr.loadingMore : tr.loadMore}
               </button>
             </div>
           )}
           <p className="text-center text-xs text-text-tertiary">
-            Showing {filtered.length} of {orders.length} loaded{hasMore ? ' (more available)' : ''}
+            {tr.showingFormat.replace('{shown}', String(filtered.length)).replace('{total}', String(orders.length))}{hasMore ? tr.moreAvailableSuffix : ''}
           </p>
         </div>
       )}
@@ -490,6 +491,9 @@ function OrdersTab() {
 }
 
 function OrderCard({ order, onDelete, deleting }: { order: Order; onDelete?: (id: string) => void; deleting?: boolean }) {
+  const { t } = useTranslation();
+  const tr = t.admin.transactions;
+  const { formatCurrency, formatDate } = useLocaleFormatters();
   const isCancelledOrRefunded = order.status === 'cancelled' || order.status === 'refunded';
   return (
     <Link
@@ -507,18 +511,18 @@ function OrderCard({ order, onDelete, deleting }: { order: Order; onDelete?: (id
                 order.status
               )}`}
             >
-              {order.status.replace('_', ' ').toUpperCase()}
+              {getOrderStatusLabel(order.status, 'admin', t).toUpperCase()}
             </span>
             {order.payment?.status && (
               <span className="px-2 py-0.5 text-xs rounded bg-surface-elevated text-text-secondary">
-                Payment: {order.payment.status}
+                {tr.paymentLabel} {order.payment.status}
               </span>
             )}
           </div>
 
           <p className="text-sm text-text-secondary">
-            {order.productSnapshot?.name?.en || 'N/A'} —{' '}
-            {order.serviceSnapshot?.name?.en || 'N/A'}
+            {order.productSnapshot?.name?.en || tr.naLabel} —{' '}
+            {order.serviceSnapshot?.name?.en || tr.naLabel}
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
@@ -538,7 +542,7 @@ function OrderCard({ order, onDelete, deleting }: { order: Order; onDelete?: (id
                   ? `${formatDate(order.installationDate, 'short')}${
                       order.timeSlot ? ' · ' + order.timeSlot : ''
                     }`
-                  : 'Not scheduled'}
+                  : tr.notScheduled}
               </span>
             </div>
             <div className="flex items-center gap-2 text-text-secondary">
@@ -549,7 +553,7 @@ function OrderCard({ order, onDelete, deleting }: { order: Order; onDelete?: (id
 
           {order.cancellation?.reason && (
             <p className="text-xs text-error mt-1">
-              Cancelled: {order.cancellation.reason}
+              {tr.cancelledPrefix} {order.cancellation.reason}
             </p>
           )}
         </div>
@@ -559,10 +563,10 @@ function OrderCard({ order, onDelete, deleting }: { order: Order; onDelete?: (id
             <p className="text-xl font-bold text-primary">
               {order.payment?.amount
                 ? formatCurrency(order.payment.amount, order.payment.currency)
-                : 'N/A'}
+                : tr.naLabel}
             </p>
             <p className="text-xs text-text-tertiary mt-1">
-              Created {order.createdAt ? formatDate(order.createdAt, 'short') : 'N/A'}
+              {tr.createdPrefix} {order.createdAt ? formatDate(order.createdAt, 'short') : tr.naLabel}
             </p>
           </div>
           {onDelete && (
@@ -570,7 +574,7 @@ function OrderCard({ order, onDelete, deleting }: { order: Order; onDelete?: (id
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(order.id); }}
               disabled={deleting}
               className="p-2 bg-surface-elevated hover:bg-error/20 text-text-secondary hover:text-error rounded-apple transition-all disabled:opacity-50"
-              aria-label="Delete order"
+              aria-label={tr.deleteOrderAria}
             >
               <Trash2 className="w-5 h-5" />
             </button>
@@ -586,6 +590,8 @@ function OrderCard({ order, onDelete, deleting }: { order: Order; onDelete?: (id
 // ─────────────────────────────────────────────────────────────
 
 function InstallationTab() {
+  const { t } = useTranslation();
+  const tr = t.admin.transactions;
   const [subTab, setSubTab] = useState<InstallationSubTab>('all');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -624,13 +630,13 @@ function InstallationTab() {
       setOrders((prev) => (reset ? relevant : [...prev, ...relevant]));
     } catch (error: unknown) {
       const message =
-        error instanceof Error ? error.message : 'Failed to load installations';
+        error instanceof Error ? error.message : tr.loadInstallationsError;
       toast.error(message);
     } finally {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [subTab]);
+  }, [subTab, tr.loadInstallationsError]);
 
   useEffect(() => {
     load(true);
@@ -663,12 +669,12 @@ function InstallationTab() {
               }`}
             >
               {tab === 'all'
-                ? 'All'
+                ? tr.subtabAll
                 : tab === 'accepted'
-                ? 'Scheduled'
+                ? tr.subtabScheduled
                 : tab === 'in_progress'
-                ? 'In Progress'
-                : 'Installed'}
+                ? tr.subtabInProgress
+                : tr.subtabInstalled}
             </button>
           )
         )}
@@ -676,7 +682,7 @@ function InstallationTab() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
           <input
             type="text"
-            placeholder="Search technician, order, customer, or city"
+            placeholder={tr.searchInstallationPlaceholder}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-11 pr-4 py-2 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all text-sm"
@@ -687,7 +693,7 @@ function InstallationTab() {
       {loading ? (
         <LoadingSpinner />
       ) : filtered.length === 0 ? (
-        <EmptyState icon={<Wrench className="w-12 h-12" />} title="No installations to show" />
+        <EmptyState icon={<Wrench className="w-12 h-12" />} title={tr.noInstallations} />
       ) : (
         <div className="space-y-3">
           {filtered.map((order) => (
@@ -700,12 +706,14 @@ function InstallationTab() {
                 disabled={loadingMore}
                 className="px-8 py-3 bg-surface-elevated hover:bg-surface-secondary font-medium rounded-apple transition-all disabled:opacity-50"
               >
-                {loadingMore ? 'Loading...' : 'Load More'}
+                {loadingMore ? tr.loadingMore : tr.loadMore}
               </button>
             </div>
           )}
           <p className="text-center text-xs text-text-tertiary">
-            {filtered.length} installation{filtered.length === 1 ? '' : 's'} shown
+            {filtered.length === 1
+              ? tr.installationShownOne
+              : tr.installationsShownFormat.replace('{count}', String(filtered.length))}
           </p>
         </div>
       )}
@@ -714,20 +722,21 @@ function InstallationTab() {
 }
 
 function InstallationCard({ order }: { order: Order }) {
+  const { t } = useTranslation();
+  const tr = t.admin.transactions;
+  const { formatDate, formatDateTime } = useLocaleFormatters();
   const photoCount = order.installationPhotos?.length || 0;
-  const statusLabel = getInstallationStatusLabel(order.status);
+  const statusLabel = getInstallationStatusLabel(order.status, tr);
 
   const timestampForStatus = () => {
     if (order.status === 'in_progress' && order.startedAt) {
-      return `Started ${formatDateTime(order.startedAt)}`;
+      return tr.startedFormat.replace('{time}', formatDateTime(order.startedAt));
     }
     if (order.status === 'completed' && order.completedAt) {
-      return `Finished ${formatDateTime(order.completedAt)}`;
+      return tr.finishedFormat.replace('{time}', formatDateTime(order.completedAt));
     }
     return order.installationDate
-      ? `Scheduled ${formatDate(order.installationDate, 'short')}${
-          order.timeSlot ? ' · ' + order.timeSlot : ''
-        }`
+      ? tr.scheduledFormat.replace('{date}', `${formatDate(order.installationDate, 'short')}${order.timeSlot ? ' · ' + order.timeSlot : ''}`)
       : '';
   };
 
@@ -785,7 +794,7 @@ function InstallationCard({ order }: { order: Order }) {
           </div>
           <p className="text-sm text-text-secondary">
             {formatOptionalString(order.customerInfo?.name)} —{' '}
-            {order.productSnapshot?.name?.en || 'N/A'}
+            {order.productSnapshot?.name?.en || tr.naLabel}
           </p>
           <div className="flex items-center gap-2 text-xs text-text-tertiary">
             <MapPin className="w-3 h-3" />
@@ -816,6 +825,8 @@ interface DeviceWithMaintenance {
 }
 
 function MaintenanceTab() {
+  const { t } = useTranslation();
+  const tr = t.admin.transactions;
   const [items, setItems] = useState<DeviceWithMaintenance[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<MaintenanceFilter>('all');
@@ -857,12 +868,12 @@ function MaintenanceTab() {
       setItems(enriched);
     } catch (error: unknown) {
       const message =
-        error instanceof Error ? error.message : 'Failed to load maintenance data';
+        error instanceof Error ? error.message : tr.loadMaintenanceError;
       toast.error(message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tr.loadMaintenanceError]);
 
   useEffect(() => {
     load();
@@ -901,19 +912,19 @@ function MaintenanceTab() {
             }`}
           >
             {f === 'all'
-              ? 'All'
+              ? tr.maintFilterAll
               : f === 'overdue'
-              ? 'Overdue'
+              ? tr.maintFilterOverdue
               : f === 'due_week'
-              ? 'Due this week'
-              : 'OK'}
+              ? tr.maintFilterDueWeek
+              : tr.maintFilterOk}
           </button>
         ))}
         <div className="flex-1 relative min-w-[200px]">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
           <input
             type="text"
-            placeholder="Search customer, city, or device"
+            placeholder={tr.searchMaintenancePlaceholder}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-11 pr-4 py-2 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all text-sm"
@@ -926,7 +937,7 @@ function MaintenanceTab() {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={<CalendarClock className="w-12 h-12" />}
-          title={filter === 'overdue' ? 'All caught up — no overdue maintenance' : 'No devices to show'}
+          title={filter === 'overdue' ? tr.emptyAllCaughtUp : tr.emptyNoDevices}
         />
       ) : (
         <div className="space-y-3">
@@ -934,7 +945,9 @@ function MaintenanceTab() {
             <MaintenanceCard key={item.device.id} item={item} />
           ))}
           <p className="text-center text-xs text-text-tertiary">
-            {filtered.length} device{filtered.length === 1 ? '' : 's'} shown
+            {filtered.length === 1
+              ? tr.deviceShownOne
+              : tr.devicesShownFormat.replace('{count}', String(filtered.length))}
           </p>
         </div>
       )}
@@ -943,23 +956,26 @@ function MaintenanceTab() {
 }
 
 function MaintenanceCard({ item }: { item: DeviceWithMaintenance }) {
+  const { t } = useTranslation();
+  const tr = t.admin.transactions;
+  const { formatDate } = useLocaleFormatters();
   const days = daysUntil(item.nextMaintenance);
   const isOverdue = days !== null && days < 0;
   const isDueSoon = days !== null && days >= 0 && days <= 7;
 
   let statusBadge = (
-    <span className="px-2 py-0.5 text-xs rounded bg-success/10 text-success">OK</span>
+    <span className="px-2 py-0.5 text-xs rounded bg-success/10 text-success">{tr.maintStatusOk}</span>
   );
   if (isOverdue) {
     statusBadge = (
       <span className="px-2 py-0.5 text-xs rounded bg-error/10 text-error font-semibold">
-        Overdue {Math.abs(days!)}d
+        {tr.maintStatusOverdueFormat.replace('{days}', String(Math.abs(days!)))}
       </span>
     );
   } else if (isDueSoon) {
     statusBadge = (
       <span className="px-2 py-0.5 text-xs rounded bg-warning/10 text-warning">
-        Due in {days}d
+        {tr.maintStatusDueInFormat.replace('{days}', String(days))}
       </span>
     );
   }
@@ -977,7 +993,7 @@ function MaintenanceCard({ item }: { item: DeviceWithMaintenance }) {
             {item.escalationLevel > 0 && (
               <span className="flex items-center gap-1 px-2 py-0.5 text-xs rounded bg-warning/10 text-warning">
                 <AlertTriangle className="w-3 h-3" />
-                Level {item.escalationLevel}
+                {tr.escalationLevelFormat.replace('{level}', String(item.escalationLevel))}
               </span>
             )}
           </div>
@@ -991,21 +1007,20 @@ function MaintenanceCard({ item }: { item: DeviceWithMaintenance }) {
             </span>
           </div>
           <p className="text-xs text-text-tertiary">
-            {item.device.productSnapshot?.name?.en || 'Device'} ·{' '}
+            {item.device.productSnapshot?.name?.en || tr.summaryDevices} ·{' '}
             {item.device.qrCodeData}
           </p>
         </div>
 
         {/* Technician */}
         <div className="md:min-w-[180px] space-y-1">
-          <p className="text-xs text-text-tertiary">Technician</p>
+          <p className="text-xs text-text-tertiary">{tr.technicianLabel}</p>
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
               <User className="w-3.5 h-3.5 text-primary" />
             </div>
             <p className="text-sm truncate">
-              {/* Technician on the original install — deviceService stores technicianId */}
-              {item.device.technicianId ? item.device.technicianId.slice(0, 8) + '...' : 'N/A'}
+              {item.device.technicianId ? item.device.technicianId.slice(0, 8) + '...' : tr.naLabel}
             </p>
           </div>
         </div>
@@ -1013,15 +1028,15 @@ function MaintenanceCard({ item }: { item: DeviceWithMaintenance }) {
         {/* Last / next */}
         <div className="md:min-w-[200px] grid grid-cols-2 gap-2 text-xs">
           <div>
-            <p className="text-text-tertiary">Last</p>
+            <p className="text-text-tertiary">{tr.lastLabel}</p>
             <p className="font-medium">
-              {item.lastMaintenance ? formatDate(item.lastMaintenance, 'short') : 'Never'}
+              {item.lastMaintenance ? formatDate(item.lastMaintenance, 'short') : tr.neverLabel}
             </p>
           </div>
           <div>
-            <p className="text-text-tertiary">Next</p>
+            <p className="text-text-tertiary">{tr.nextLabel}</p>
             <p className={`font-medium ${isOverdue ? 'text-error' : ''}`}>
-              {item.nextMaintenance ? formatDate(item.nextMaintenance, 'short') : 'N/A'}
+              {item.nextMaintenance ? formatDate(item.nextMaintenance, 'short') : tr.naLabel}
             </p>
           </div>
         </div>
@@ -1037,6 +1052,7 @@ function MaintenanceCard({ item }: { item: DeviceWithMaintenance }) {
 function ActivityTab() {
   const { t } = useTranslation();
   const tr = t.admin.transactions;
+  const { formatCurrency, formatDateTime } = useLocaleFormatters();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -1063,23 +1079,23 @@ function ActivityTab() {
       setTransactions((prev) => (reset ? result.items : [...prev, ...result.items]));
     } catch (error: unknown) {
       const message =
-        error instanceof Error ? error.message : 'Failed to load transactions';
+        error instanceof Error ? error.message : tr.loadTransactionsError;
       toast.error(message);
     } finally {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [typeFilter]);
+  }, [typeFilter, tr.loadTransactionsError]);
 
   const handleDeleteTransaction = async (txId: string) => {
-    if (!confirm('Are you sure you want to delete this transaction? This action cannot be undone.')) return;
+    if (!confirm(tr.confirmDeleteTransaction)) return;
     try {
       setDeletingId(txId);
       await deleteTransaction(txId);
       setTransactions(prev => prev.filter(tx => tx.id !== txId));
-      toast.success('Transaction deleted');
+      toast.success(tr.transactionDeleted);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to delete transaction';
+      const message = error instanceof Error ? error.message : tr.deleteTransactionError;
       toast.error(message);
     } finally {
       setDeletingId(null);
@@ -1190,7 +1206,7 @@ function ActivityTab() {
                         onClick={() => handleDeleteTransaction(tx.id)}
                         disabled={deletingId === tx.id}
                         className="p-1.5 hover:bg-error/20 text-text-tertiary hover:text-error rounded-apple transition-all disabled:opacity-50"
-                        aria-label="Delete transaction"
+                        aria-label={tr.deleteTransactionAria}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -1208,7 +1224,7 @@ function ActivityTab() {
                 disabled={loadingMore}
                 className="px-8 py-3 bg-surface-elevated hover:bg-surface-secondary font-medium rounded-apple transition-all disabled:opacity-50"
               >
-                {loadingMore ? 'Loading...' : 'Load More'}
+                {loadingMore ? tr.loadingMore : tr.loadMore}
               </button>
             </div>
           )}
