@@ -17,6 +17,7 @@ import { Order } from '@/types/order';
 import { useAuth } from '@/contexts/AuthContext';
 import { compressImage } from '@/lib/utils/imageCompression';
 import { cacheDevice, cacheDevices, getCachedDevice } from '@/lib/offline/deviceCache';
+import { useTranslation } from '@/hooks/useTranslation';
 import {
   enqueueVisit,
   pendingCount as getPendingCount,
@@ -69,6 +70,8 @@ async function submitVisitOnline(visit: QueuedVisit): Promise<void> {
 export default function TechnicianScanPage() {
   const router = useRouter();
   const { user, userData } = useAuth();
+  const { t } = useTranslation();
+  const ts = t.technician.scan;
   const [step, setStep] = useState<ScanStep>('idle');
   const [device, setDevice] = useState<Device | null>(null);
   const [checks, setChecks] = useState<MaintenanceVisitChecks>(EMPTY_CHECKS);
@@ -101,11 +104,14 @@ export default function TechnicianScanPage() {
   const handleManualSync = async () => {
     try {
       const { synced, remaining } = await syncAll(submitVisitOnline);
-      if (synced > 0) toast.success(`Synced ${synced} pending visit${synced > 1 ? 's' : ''}`);
-      else if (remaining > 0) toast.error('Still offline or sync failed — will retry automatically');
+      if (synced > 0) {
+        toast.success(synced === 1 ? ts.syncedOne : ts.syncedMany.replace('{n}', String(synced)));
+      } else if (remaining > 0) {
+        toast.error(ts.stillOfflineRetryAuto);
+      }
       refreshPending();
     } catch {
-      toast.error('Sync failed');
+      toast.error(ts.syncFailed);
     }
   };
 
@@ -121,7 +127,7 @@ export default function TechnicianScanPage() {
       if (typeof navigator !== 'undefined' && navigator.onLine === false) {
         foundDevice = await getCachedDevice(qrData);
         if (!foundDevice) {
-          toast.error("You're offline and this device isn't cached. Connect to internet and rescan.");
+          toast.error(ts.offlineAndNotCached);
           setStep('idle');
           return;
         }
@@ -139,7 +145,7 @@ export default function TechnicianScanPage() {
           if (cached) {
             foundDevice = cached;
           } else {
-            toast.error('Device not registered. This QR code is not linked to any device.');
+            toast.error(ts.qrNotLinked);
             setStep('idle');
             return;
           }
@@ -148,7 +154,7 @@ export default function TechnicianScanPage() {
 
       openForm(foundDevice);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to look up device';
+      const message = error instanceof Error ? error.message : ts.lookupError;
       toast.error(message);
       setStep('idle');
     }
@@ -160,7 +166,7 @@ export default function TechnicianScanPage() {
       setLoadingDevices(true);
       setStep('device-picker');
       if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-        toast.error("You're offline — device list requires internet for initial load");
+        toast.error(ts.offlineDeviceListError);
         setStep('idle');
         return;
       }
@@ -190,7 +196,7 @@ export default function TechnicianScanPage() {
       setTechOrders(enrichedOrders);
       cacheDevices(enrichedDevices).catch(() => {});
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load devices';
+      const message = error instanceof Error ? error.message : ts.loadDevicesError;
       toast.error(message);
       setStep('idle');
     } finally {
@@ -213,13 +219,13 @@ export default function TechnicianScanPage() {
 
     const anyCheck = Object.values(checks).some(Boolean);
     if (!anyCheck) {
-      toast.error('Please check at least one maintenance item.');
+      toast.error(ts.checkAtLeastOne);
       return;
     }
 
     setSubmitting(true);
     try {
-      const technicianName = userData?.displayName || 'Technician';
+      const technicianName = userData?.displayName || t.technician.profile.defaultTechName;
       const beforeBlob = beforeFile ? await compressImage(beforeFile) : null;
       const afterBlob = afterFile ? await compressImage(afterFile) : null;
 
@@ -237,7 +243,7 @@ export default function TechnicianScanPage() {
         setSavedOffline(true);
         setStep('done');
         refreshPending();
-        toast.success('Saved offline — will sync when online');
+        toast.success(ts.savedOfflineToast);
         return;
       }
 
@@ -256,7 +262,7 @@ export default function TechnicianScanPage() {
         });
         setSavedOffline(false);
         setStep('done');
-        toast.success('Maintenance visit recorded');
+        toast.success(ts.visitRecordedToast);
       } catch (error) {
         // Only fall back to the offline queue for actual connectivity errors.
         // Permission-denied, quota, validation, etc. must surface to the user
@@ -286,15 +292,15 @@ export default function TechnicianScanPage() {
           setSavedOffline(true);
           setStep('done');
           refreshPending();
-          toast.error('Network error — saved offline, will retry automatically');
+          toast.error(ts.networkErrorSavedOffline);
         } else {
-          const message = error instanceof Error ? error.message : 'Submission failed';
-          toast.error(`Submit failed: ${message}`);
+          const message = error instanceof Error ? error.message : ts.submitFailed;
+          toast.error(`${ts.submitFailed}: ${message}`);
           // Stay on the form so the technician can retry or adjust.
         }
       }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Submission failed';
+      const message = error instanceof Error ? error.message : ts.submitFailed;
       toast.error(message);
     } finally {
       setSubmitting(false);
@@ -339,14 +345,14 @@ export default function TechnicianScanPage() {
           <div className="flex items-center gap-2 text-warning">
             <CloudOff className="w-5 h-5" />
             <span className="text-sm font-medium">
-              {pendingCount} visit{pendingCount > 1 ? 's' : ''} pending sync
+              {pendingCount} {pendingCount > 1 ? ts.visitsPendingSync : ts.visitPendingSync}
             </span>
           </div>
           <button
             onClick={handleManualSync}
             className="flex items-center gap-1.5 text-sm font-semibold text-warning hover:text-warning/80"
           >
-            <RefreshCw className="w-4 h-4" /> Retry now
+            <RefreshCw className="w-4 h-4" /> {ts.retryNow}
           </button>
         </div>
       )}
@@ -358,16 +364,16 @@ export default function TechnicianScanPage() {
             <QrCode className="w-12 h-12 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold mb-2">Scan QR Code</h1>
+            <h1 className="text-2xl font-bold mb-2">{ts.title}</h1>
             <p className="text-text-secondary max-w-sm mx-auto">
-              Scan a device QR code or your maintenance card to record a visit.
+              {ts.subtitle}
             </p>
           </div>
           <button
             onClick={() => setStep('scanning')}
             className="px-8 py-4 bg-primary hover:bg-primary/90 text-white font-semibold rounded-apple transition-all text-lg"
           >
-            Start Scanning
+            {ts.startScan}
           </button>
         </div>
       )}
@@ -376,14 +382,14 @@ export default function TechnicianScanPage() {
       {step === 'device-picker' && (
         <>
           <button onClick={handleReset} className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-all">
-            <ArrowLeft className="w-4 h-4" /> Back
+            <ArrowLeft className="w-4 h-4" /> {ts.back}
           </button>
           <div className="apple-card">
-            <h2 className="text-xl font-bold mb-4">Choose a site</h2>
+            <h2 className="text-xl font-bold mb-4">{ts.chooseSite}</h2>
             {loadingDevices ? (
-              <p className="text-text-secondary py-4">Loading sites...</p>
+              <p className="text-text-secondary py-4">{ts.loadingSites}</p>
             ) : techOrders.length === 0 && techDevices.length === 0 ? (
-              <p className="text-text-secondary py-4">No jobs found for your account.</p>
+              <p className="text-text-secondary py-4">{ts.noJobsFound}</p>
             ) : (
               <div className="space-y-2">
                 {(() => {
@@ -434,7 +440,7 @@ export default function TechnicianScanPage() {
                           if (hasDevice) {
                             openForm(item.device!);
                           } else {
-                            toast.error('Device not registered yet. Complete the job and register the device first.');
+                            toast.error(ts.deviceNotRegisteredYet);
                           }
                         }}
                         className={`w-full text-left p-4 rounded-apple border transition-all ${
@@ -458,7 +464,7 @@ export default function TechnicianScanPage() {
                             )}
                             {item.order && (
                               <p className="text-xs text-text-tertiary">
-                                Order #{item.order.orderNumber}
+                                {ts.orderNumber} #{item.order.orderNumber}
                               </p>
                             )}
                           </div>
@@ -466,12 +472,12 @@ export default function TechnicianScanPage() {
                             {hasDevice ? (
                               <span className="inline-flex items-center gap-1 px-2 py-1 bg-success/10 text-success text-xs font-medium rounded-full">
                                 <CheckCircle className="w-3 h-3" />
-                                Registered
+                                {ts.registered}
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 px-2 py-1 bg-warning/10 text-warning text-xs font-medium rounded-full">
                                 <QrCode className="w-3 h-3" />
-                                No Device
+                                {ts.noDevice}
                               </span>
                             )}
                           </div>
@@ -490,7 +496,7 @@ export default function TechnicianScanPage() {
       {step === 'form' && device && (
         <>
           <button onClick={handleReset} className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-all">
-            <ArrowLeft className="w-4 h-4" /> Back
+            <ArrowLeft className="w-4 h-4" /> {ts.back}
           </button>
 
           <div className="apple-card">
@@ -499,7 +505,7 @@ export default function TechnicianScanPage() {
                 <ClipboardCheck className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">Maintenance Update</h2>
+                <h2 className="text-xl font-bold">{ts.maintenanceUpdate}</h2>
                 <p className="text-sm text-text-secondary">
                   {device.customerInfo.name} — {device.installationAddress.city}
                 </p>
@@ -508,14 +514,14 @@ export default function TechnicianScanPage() {
 
             {/* Checklist */}
             <div className="mb-6">
-              <label className="block text-sm font-medium mb-3">Checklist</label>
+              <label className="block text-sm font-medium mb-3">{ts.checklist}</label>
               <div className="space-y-2">
                 {[
-                  { key: 'installationOk', label: 'Installation OK' },
-                  { key: 'operationOk', label: 'Operation OK' },
-                  { key: 'waterPressureOk', label: 'Water Pressure OK' },
-                  { key: 'sedimentFilterReplaced', label: 'Sediment Filter replaced' },
-                  { key: 'carbonFilterReplaced', label: 'Carbon Filter replaced' },
+                  { key: 'installationOk', label: ts.installationOk },
+                  { key: 'operationOk', label: ts.operationOk },
+                  { key: 'waterPressureOk', label: ts.waterPressureOk },
+                  { key: 'sedimentFilterReplaced', label: ts.sedimentFilterReplaced },
+                  { key: 'carbonFilterReplaced', label: ts.carbonFilterReplaced },
                 ].map((item) => (
                   <label
                     key={item.key}
@@ -538,24 +544,32 @@ export default function TechnicianScanPage() {
             {/* Photos */}
             <div className="mb-6 grid grid-cols-2 gap-4">
               <PhotoSlot
-                label="Before"
+                label={ts.before}
+                slotKey="before"
                 file={beforeFile}
                 onChange={setBeforeFile}
+                removeAriaLabel={ts.removePhoto.replace('{label}', ts.before)}
+                photoAltLabel={ts.photoAlt.replace('{label}', ts.before)}
+                tapToCapture={ts.tapToCapture}
               />
               <PhotoSlot
-                label="After"
+                label={ts.after}
+                slotKey="after"
                 file={afterFile}
                 onChange={setAfterFile}
+                removeAriaLabel={ts.removePhoto.replace('{label}', ts.after)}
+                photoAltLabel={ts.photoAlt.replace('{label}', ts.after)}
+                tapToCapture={ts.tapToCapture}
               />
             </div>
 
             {/* Remark */}
             <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Remark</label>
+              <label className="block text-sm font-medium mb-2">{ts.remark}</label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Observations, parts used, follow-up actions..."
+                placeholder={ts.remarkPlaceholder}
                 rows={4}
                 className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all resize-none"
               />
@@ -566,14 +580,14 @@ export default function TechnicianScanPage() {
                 onClick={handleReset}
                 className="flex-1 px-6 py-3 text-text-secondary hover:text-text-primary font-medium rounded-apple transition-all border border-border"
               >
-                Cancel
+                {ts.cancel}
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
                 className="flex-1 px-6 py-3 bg-success hover:bg-success/90 disabled:opacity-50 text-white font-semibold rounded-apple transition-all"
               >
-                {submitting ? 'Submitting...' : 'Submit'}
+                {submitting ? ts.submitting : ts.submit}
               </button>
             </div>
           </div>
@@ -594,12 +608,10 @@ export default function TechnicianScanPage() {
           </div>
           <div>
             <h2 className="text-2xl font-bold mb-2">
-              {savedOffline ? 'Saved offline' : 'Visit recorded'}
+              {savedOffline ? ts.savedOffline : ts.visitRecorded}
             </h2>
             <p className="text-text-secondary">
-              {savedOffline
-                ? 'Will sync automatically when you are back online.'
-                : 'Maintenance timers have been updated where applicable.'}
+              {savedOffline ? ts.savedOfflineDesc : ts.visitRecordedDesc}
             </p>
           </div>
           <div className="flex flex-col gap-3 max-w-xs mx-auto">
@@ -608,20 +620,20 @@ export default function TechnicianScanPage() {
                 onClick={() => router.push(`/technician/jobs/${device.orderId}`)}
                 className="px-8 py-3 bg-success hover:bg-success/90 text-white font-semibold rounded-apple transition-all"
               >
-                View Job Details
+                {ts.viewJobDetails}
               </button>
             )}
             <button
               onClick={handleScanAnother}
               className="px-8 py-3 bg-primary hover:bg-primary/90 text-white font-semibold rounded-apple transition-all"
             >
-              Scan Another
+              {ts.scanAnother}
             </button>
             <button
               onClick={handleReset}
               className="px-8 py-3 text-text-secondary hover:text-text-primary font-medium rounded-apple transition-all"
             >
-              Done
+              {ts.done}
             </button>
           </div>
         </div>
@@ -632,11 +644,15 @@ export default function TechnicianScanPage() {
 
 interface PhotoSlotProps {
   label: string;
+  slotKey: string;
   file: File | null;
   onChange: (file: File | null) => void;
+  removeAriaLabel: string;
+  photoAltLabel: string;
+  tapToCapture: string;
 }
 
-function PhotoSlot({ label, file, onChange }: PhotoSlotProps) {
+function PhotoSlot({ label, slotKey, file, onChange, removeAriaLabel, photoAltLabel, tapToCapture }: PhotoSlotProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -649,7 +665,7 @@ function PhotoSlot({ label, file, onChange }: PhotoSlotProps) {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  const inputId = `photo-${label.toLowerCase()}`;
+  const inputId = `photo-${slotKey}`;
   return (
     <div>
       <label className="block text-sm font-medium mb-2">{label}</label>
@@ -658,14 +674,14 @@ function PhotoSlot({ label, file, onChange }: PhotoSlotProps) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={previewUrl}
-            alt={`${label} photo`}
+            alt={photoAltLabel}
             className="w-full h-40 object-cover rounded-apple border border-border"
           />
           <button
             type="button"
             onClick={() => onChange(null)}
             className="absolute top-1 right-1 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80"
-            aria-label={`Remove ${label} photo`}
+            aria-label={removeAriaLabel}
           >
             <X className="w-4 h-4" />
           </button>
@@ -676,7 +692,7 @@ function PhotoSlot({ label, file, onChange }: PhotoSlotProps) {
           className="flex flex-col items-center justify-center gap-2 h-40 bg-surface-elevated border border-dashed border-border rounded-apple cursor-pointer hover:border-primary/50 transition-all"
         >
           <Camera className="w-6 h-6 text-text-tertiary" />
-          <span className="text-sm text-text-secondary">Tap to capture</span>
+          <span className="text-sm text-text-secondary">{tapToCapture}</span>
         </label>
       )}
       <input

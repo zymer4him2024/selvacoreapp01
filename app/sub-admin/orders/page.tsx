@@ -5,11 +5,13 @@ import { Package, Calendar, User, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSubAdminOrders } from '@/lib/services/subAdminService';
 import { Order } from '@/types';
-import { formatCurrency, formatDate, formatOptionalString } from '@/lib/utils/formatters';
+import { formatCurrency, formatDate, formatOptionalString, getOrderStatusLabel } from '@/lib/utils/formatters';
+import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
 export default function SubAdminOrdersPage() {
   const { userData } = useAuth();
+  const { t } = useTranslation();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -119,7 +121,7 @@ export default function SubAdminOrdersPage() {
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="text-lg font-semibold">{order.orderNumber}</h3>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                      {order.status.replace('_', ' ').toUpperCase()}
+                      {getOrderStatusLabel(order.status, 'admin', t)}
                     </span>
                   </div>
                   <p className="text-sm text-text-secondary">

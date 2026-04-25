@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Search, Eye, Trash2, Package as PackageIcon, Calendar, User } from 'lucide-react';
 import { Order } from '@/types';
 import { getOrdersPaginated, deleteOrder } from '@/lib/services/orderService';
-import { formatCurrency, formatDate, formatOptionalString } from '@/lib/utils/formatters';
+import { formatCurrency, formatDate, formatOptionalString, getOrderStatusLabel } from '@/lib/utils/formatters';
 import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -164,7 +164,7 @@ export default function OrdersPage() {
                             order.status
                           )}`}
                         >
-                          {order.status.replace('_', ' ').toUpperCase()}
+                          {getOrderStatusLabel(order.status, 'admin', t)}
                         </span>
                       </div>
                       <p className="text-sm text-text-secondary">

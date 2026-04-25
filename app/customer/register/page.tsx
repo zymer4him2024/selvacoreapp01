@@ -7,12 +7,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { Address } from '@/types';
+import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function CustomerRegistrationPage() {
   const router = useRouter();
   const { user, userData } = useAuth();
+  const { t } = useTranslation();
+  const rs = t.customer.registerScreen;
   const [loading, setLoading] = useState(false);
 
   // Customer info
@@ -32,14 +35,14 @@ export default function CustomerRegistrationPage() {
     e.preventDefault();
 
     if (!user) {
-      toast.error('Please sign in first');
+      toast.error(rs.signInFirst);
       router.push('/login');
       return;
     }
 
     // Validation
     if (!phone.trim() || !street.trim() || !city.trim()) {
-      toast.error('Please fill in all required fields');
+      toast.error(rs.fillRequiredFields);
       return;
     }
 
@@ -77,10 +80,10 @@ export default function CustomerRegistrationPage() {
         { merge: true }
       );
 
-      toast.success('Profile created successfully!');
+      toast.success(rs.profileCreated);
       router.push('/customer');
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to create profile';
+      const message = error instanceof Error ? error.message : rs.createProfileError;
       toast.error(message);
     } finally {
       setLoading(false);
@@ -99,9 +102,9 @@ export default function CustomerRegistrationPage() {
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div>
-            <h1 className="text-4xl font-bold tracking-tight">Welcome!</h1>
+            <h1 className="text-4xl font-bold tracking-tight">{rs.welcome}</h1>
             <p className="text-text-secondary mt-1">
-              Complete your profile to start ordering installation services
+              {rs.subtitle}
             </p>
           </div>
         </div>
@@ -109,12 +112,12 @@ export default function CustomerRegistrationPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Contact Information */}
           <div className="apple-card">
-            <h2 className="text-2xl font-semibold mb-6">Contact Information</h2>
+            <h2 className="text-2xl font-semibold mb-6">{rs.contactInformation}</h2>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Name
+                  {t.common.name}
                 </label>
                 <input
                   type="text"
@@ -122,12 +125,12 @@ export default function CustomerRegistrationPage() {
                   disabled
                   className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple opacity-50"
                 />
-                <p className="text-xs text-text-tertiary mt-1">From Google account</p>
+                <p className="text-xs text-text-tertiary mt-1">{rs.fromGoogleAccount}</p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Email
+                  {t.common.email}
                 </label>
                 <input
                   type="email"
@@ -135,18 +138,18 @@ export default function CustomerRegistrationPage() {
                   disabled
                   className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple opacity-50"
                 />
-                <p className="text-xs text-text-tertiary mt-1">From Google account</p>
+                <p className="text-xs text-text-tertiary mt-1">{rs.fromGoogleAccount}</p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Phone Number <span className="text-error">*</span>
+                  {t.customer.profileScreen.phoneNumber} <span className="text-error">*</span>
                 </label>
                 <input
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+1 (555) 123-4567"
+                  placeholder={t.customer.profileScreen.phoneNumberPlaceholder}
                   className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
                   required
                 />
@@ -154,17 +157,17 @@ export default function CustomerRegistrationPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  WhatsApp Number (optional)
+                  {rs.whatsappOptional}
                 </label>
                 <input
                   type="tel"
                   value={whatsapp}
                   onChange={(e) => setWhatsapp(e.target.value)}
-                  placeholder="+1 (555) 123-4567"
+                  placeholder={t.customer.profileScreen.phoneNumberPlaceholder}
                   className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
                 />
                 <p className="text-xs text-text-tertiary mt-1">
-                  For technician to contact you directly
+                  {rs.whatsappHint}
                 </p>
               </div>
             </div>
@@ -172,11 +175,11 @@ export default function CustomerRegistrationPage() {
 
           {/* Address Information */}
           <div className="apple-card">
-            <h2 className="text-2xl font-semibold mb-6">Installation Address</h2>
+            <h2 className="text-2xl font-semibold mb-6">{rs.installationAddress}</h2>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Address Type</label>
+                <label className="block text-sm font-medium mb-2">{rs.addressType}</label>
                 <div className="flex gap-3">
                   {(['home', 'office', 'other'] as const).map((type) => (
                     <button
@@ -189,7 +192,7 @@ export default function CustomerRegistrationPage() {
                           : 'bg-surface-elevated hover:bg-surface-secondary'
                       }`}
                     >
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                      {t.orders[type]}
                     </button>
                   ))}
                 </div>
@@ -197,13 +200,13 @@ export default function CustomerRegistrationPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Street Address <span className="text-error">*</span>
+                  {rs.streetAddress} <span className="text-error">*</span>
                 </label>
                 <input
                   type="text"
                   value={street}
                   onChange={(e) => setStreet(e.target.value)}
-                  placeholder="123 Main Street, Apt 4B"
+                  placeholder={rs.streetAddressPlaceholder}
                   className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
                   required
                 />
@@ -212,13 +215,13 @@ export default function CustomerRegistrationPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    City <span className="text-error">*</span>
+                    {t.orders.city} <span className="text-error">*</span>
                   </label>
                   <input
                     type="text"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                    placeholder="City"
+                    placeholder={rs.cityPlaceholder}
                     className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
                     required
                   />
@@ -226,39 +229,39 @@ export default function CustomerRegistrationPage() {
 
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    State/Province
+                    {rs.stateProvince}
                   </label>
                   <input
                     type="text"
                     value={state}
                     onChange={(e) => setState(e.target.value)}
-                    placeholder="State"
+                    placeholder={rs.statePlaceholder}
                     className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Postal Code
+                    {rs.postalCode}
                   </label>
                   <input
                     type="text"
                     value={postalCode}
                     onChange={(e) => setPostalCode(e.target.value)}
-                    placeholder="12345"
+                    placeholder={rs.postalCodePlaceholder}
                     className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Country
+                    {t.orders.country}
                   </label>
                   <input
                     type="text"
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
-                    placeholder="Country"
+                    placeholder={rs.countryPlaceholder}
                     className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
                   />
                 </div>
@@ -266,17 +269,17 @@ export default function CustomerRegistrationPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Landmark (optional)
+                  {rs.landmarkOptional}
                 </label>
                 <input
                   type="text"
                   value={landmark}
                   onChange={(e) => setLandmark(e.target.value)}
-                  placeholder="Near Central Park, Next to Starbucks"
+                  placeholder={rs.landmarkPlaceholder}
                   className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
                 />
                 <p className="text-xs text-text-tertiary mt-1">
-                  Help technicians find your location easily
+                  {rs.landmarkHint}
                 </p>
               </div>
             </div>
@@ -288,7 +291,7 @@ export default function CustomerRegistrationPage() {
             disabled={loading}
             className="w-full px-8 py-4 bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
           >
-            {loading ? 'Creating Profile...' : 'Continue to Products'}
+            {loading ? rs.creatingProfile : rs.continueToProducts}
           </button>
         </form>
       </div>

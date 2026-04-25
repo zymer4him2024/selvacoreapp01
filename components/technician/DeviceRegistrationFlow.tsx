@@ -7,6 +7,7 @@ import MaintenanceScheduleForm from './MaintenanceScheduleForm';
 import { getDeviceByQrCode } from '@/lib/services/deviceService';
 import { useOfflineQueue } from '@/contexts/OfflineQueueContext';
 import { DeviceRegistrationInput } from '@/types/device';
+import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
 interface DeviceRegistrationFlowProps {
@@ -28,23 +29,25 @@ export default function DeviceRegistrationFlow({
   const [scannedQrCode, setScannedQrCode] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const { enqueue } = useOfflineQueue();
+  const { t } = useTranslation();
+  const td = t.technician.deviceRegistration;
 
   const handleScan = async (data: string) => {
     try {
       // Duplicate check requires online — if offline, warn and bail
       if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-        toast.error('Device registration requires internet for QR verification');
+        toast.error(td.onlineRequired);
         return;
       }
       const existing = await getDeviceByQrCode(data);
       if (existing) {
-        toast.error('This QR code is already registered to another device');
+        toast.error(td.alreadyRegistered);
         return;
       }
       setScannedQrCode(data);
       setStep('schedule');
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to verify QR code';
+      const message = error instanceof Error ? error.message : td.verifyError;
       toast.error(message);
     }
   };
@@ -58,10 +61,10 @@ export default function DeviceRegistrationFlow({
         input,
       });
       // Optimistic — show success immediately
-      toast.success('Device registered!');
+      toast.success(td.registered);
       setStep('done');
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to register device';
+      const message = error instanceof Error ? error.message : td.registerError;
       toast.error(message);
     } finally {
       setSubmitting(false);
@@ -99,16 +102,16 @@ export default function DeviceRegistrationFlow({
           <CheckCircle className="w-10 h-10 text-success" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold mb-2">Device Registered</h2>
+          <h2 className="text-2xl font-bold mb-2">{td.successTitle}</h2>
           <p className="text-text-secondary">
-            The Ezer device has been registered and maintenance schedule is set.
+            {td.successMessage}
           </p>
         </div>
         <button
           onClick={onComplete}
           className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white font-semibold rounded-apple hover:bg-primary/90 transition-all"
         >
-          Back to Jobs
+          {td.backToJobs}
           <ArrowRight className="w-5 h-5" />
         </button>
       </div>

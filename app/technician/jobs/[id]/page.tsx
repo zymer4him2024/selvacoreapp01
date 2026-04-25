@@ -21,7 +21,7 @@ import {
   Loader2, Play, CheckCircle, ExternalLink, QrCode, Pencil,
   CheckCircle2, XCircle
 } from 'lucide-react';
-import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils/formatters';
+import { formatCurrency, formatDate, formatDateTime, getOrderStatusLabel } from '@/lib/utils/formatters';
 import { useTranslation } from '@/hooks/useTranslation';
 import { generateWhatsAppLink, openWhatsApp } from '@/lib/utils/whatsappHelper';
 import toast from 'react-hot-toast';
@@ -32,6 +32,7 @@ export default function JobDetailPage() {
   const jobId = params.id as string;
   const { user, userData } = useAuth();
   const { t } = useTranslation();
+  const tj = t.technician.jobDetail;
   const { enqueue } = useOfflineQueue();
   const [job, setJob] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -70,7 +71,7 @@ export default function JobDetailPage() {
       const jobData = await getTechnicianJobById(jobId, user.uid);
 
       if (!jobData) {
-        toast.error('Job not found or access denied');
+        toast.error(tj.notFound);
         router.push('/technician/jobs');
         return;
       }
@@ -88,7 +89,7 @@ export default function JobDetailPage() {
         setLatestVisit(null);
       }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load job';
+      const message = error instanceof Error ? error.message : tj.loadError;
       toast.error(message);
       router.push('/technician/jobs');
     } finally {
@@ -104,9 +105,9 @@ export default function JobDetailPage() {
       await enqueue('start_job', { orderId: job.id, technicianId: user.uid });
       // Optimistic: update local state immediately
       setJob(prev => prev ? { ...prev, status: 'in_progress' as const } : prev);
-      toast.success('Job started!');
+      toast.success(tj.jobStarted);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to start job';
+      const message = error instanceof Error ? error.message : tj.startJobError;
       toast.error(message);
     } finally {
       setStarting(false);
@@ -139,7 +140,7 @@ export default function JobDetailPage() {
     if (!user || !job) return;
 
     if (installationPhotos.length === 0) {
-      toast.error('Please upload at least one installation photo');
+      toast.error(tj.atLeastOnePhoto);
       return;
     }
 
@@ -181,10 +182,10 @@ export default function JobDetailPage() {
 
       // Optimistic: show completed UI
       setJob(prev => prev ? { ...prev, status: 'completed' as const } : prev);
-      toast.success('Job completed!');
+      toast.success(tj.jobCompleted);
       setShowRegistration(true);
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Failed to complete job';
+      const msg = error instanceof Error ? error.message : tj.completeJobError;
       toast.error(msg);
     } finally {
       setCompleting(false);
@@ -224,7 +225,7 @@ export default function JobDetailPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading job details...</p>
+          <p className="text-text-secondary">{tj.loading}</p>
         </div>
       </div>
     );
@@ -244,8 +245,8 @@ export default function JobDetailPage() {
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div>
-            <h1 className="text-4xl font-bold tracking-tight">Job Details</h1>
-            <p className="text-text-secondary mt-1">Order #{job.orderNumber}</p>
+            <h1 className="text-4xl font-bold tracking-tight">{tj.title}</h1>
+            <p className="text-text-secondary mt-1">{tj.orderNumber} #{job.orderNumber}</p>
           </div>
         </div>
 
@@ -255,9 +256,7 @@ export default function JobDetailPage() {
           job.status === 'in_progress' ? 'bg-warning/10 text-warning' :
           'bg-success/10 text-success'
         }`}>
-          {job.status === 'accepted' && 'Upcoming'}
-          {job.status === 'in_progress' && 'In Progress'}
-          {job.status === 'completed' && 'Completed'}
+          {getOrderStatusLabel(job.status, 'technician', t)}
         </div>
       </div>
 
@@ -268,7 +267,7 @@ export default function JobDetailPage() {
           className="flex items-center gap-2 px-6 py-3 bg-success hover:bg-success/80 text-white font-semibold rounded-apple transition-all hover:scale-[1.02]"
         >
           <MessageCircle className="w-5 h-5" />
-          Contact Customer
+          {tj.contactCustomer}
         </button>
 
         {job.status === 'accepted' && (
@@ -280,12 +279,12 @@ export default function JobDetailPage() {
             {starting ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                Starting...
+                {tj.starting}
               </>
             ) : (
               <>
                 <Play className="w-5 h-5" />
-                Start Job
+                {tj.startJob}
               </>
             )}
           </button>
@@ -296,7 +295,7 @@ export default function JobDetailPage() {
       <div className="apple-card">
         <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
           <ImageIcon className="w-6 h-6" />
-          Customer Site Photos
+          {tj.customerSitePhotos}
         </h2>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -305,12 +304,12 @@ export default function JobDetailPage() {
               <div className="aspect-square bg-surface-elevated rounded-apple overflow-hidden cursor-pointer">
                 <img
                   src={job.sitePhotos.waterSource.url}
-                  alt="Water Source"
+                  alt={tj.waterSource}
                   className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300"
                   onClick={() => setPreviewImage(job.sitePhotos.waterSource!.url)}
                 />
               </div>
-              <p className="text-xs text-text-secondary mt-2 text-center">Water Source</p>
+              <p className="text-xs text-text-secondary mt-2 text-center">{tj.waterSource}</p>
             </div>
           )}
 
@@ -319,12 +318,12 @@ export default function JobDetailPage() {
               <div className="aspect-square bg-surface-elevated rounded-apple overflow-hidden cursor-pointer">
                 <img
                   src={job.sitePhotos.productLocation.url}
-                  alt="Equipment Location"
+                  alt={tj.equipmentLocation}
                   className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300"
                   onClick={() => setPreviewImage(job.sitePhotos.productLocation!.url)}
                 />
               </div>
-              <p className="text-xs text-text-secondary mt-2 text-center">Equipment Location</p>
+              <p className="text-xs text-text-secondary mt-2 text-center">{tj.equipmentLocation}</p>
             </div>
           )}
 
@@ -333,12 +332,12 @@ export default function JobDetailPage() {
               <div className="aspect-square bg-surface-elevated rounded-apple overflow-hidden cursor-pointer">
                 <img
                   src={job.sitePhotos.fullShot.url}
-                  alt="Full Shot"
+                  alt={tj.fullShot}
                   className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300"
                   onClick={() => setPreviewImage(job.sitePhotos.fullShot!.url)}
                 />
               </div>
-              <p className="text-xs text-text-secondary mt-2 text-center">Full Shot</p>
+              <p className="text-xs text-text-secondary mt-2 text-center">{tj.fullShot}</p>
             </div>
           )}
 
@@ -353,7 +352,7 @@ export default function JobDetailPage() {
               </div>
               <p className="text-xs text-text-secondary mt-2 text-center flex items-center justify-center gap-1">
                 <Video className="w-3 h-3" />
-                Water Running
+                {tj.waterRunning}
               </p>
             </div>
           )}
@@ -364,30 +363,30 @@ export default function JobDetailPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Product Info */}
         <div className="apple-card">
-          <h3 className="text-lg font-semibold mb-4">Product Information</h3>
+          <h3 className="text-lg font-semibold mb-4">{tj.productInformation}</h3>
           <div className="space-y-3">
             <div>
-              <p className="text-sm text-text-secondary">Product</p>
+              <p className="text-sm text-text-secondary">{tj.product}</p>
               <p className="font-semibold">{job.productSnapshot.name[lang] || job.productSnapshot.name.en}</p>
             </div>
             <div>
-              <p className="text-sm text-text-secondary">Variation</p>
+              <p className="text-sm text-text-secondary">{tj.variation}</p>
               <p className="font-semibold">{job.productSnapshot.variation}</p>
             </div>
             {job.serviceSnapshot && (
               <>
                 <div>
-                  <p className="text-sm text-text-secondary">Service</p>
+                  <p className="text-sm text-text-secondary">{tj.service}</p>
                   <p className="font-semibold">{job.serviceSnapshot.name[lang] || job.serviceSnapshot.name.en}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-text-secondary">Duration</p>
-                  <p className="font-semibold">{job.serviceSnapshot.duration} hours</p>
+                  <p className="text-sm text-text-secondary">{tj.duration}</p>
+                  <p className="font-semibold">{job.serviceSnapshot.duration} {tj.hours}</p>
                 </div>
               </>
             )}
             <div className="pt-3 border-t border-border">
-              <p className="text-sm text-text-secondary">Your Earnings</p>
+              <p className="text-sm text-text-secondary">{tj.yourEarnings}</p>
               <p className="text-2xl font-bold text-success">
                 {formatCurrency(job.serviceSnapshot?.price || 0, job.payment.currency)}
               </p>
@@ -397,19 +396,19 @@ export default function JobDetailPage() {
 
         {/* Installation Details */}
         <div className="apple-card">
-          <h3 className="text-lg font-semibold mb-4">Installation Details</h3>
+          <h3 className="text-lg font-semibold mb-4">{tj.installationDetails}</h3>
           <div className="space-y-3">
             <div className="flex items-start gap-3">
               <MapPin className="w-5 h-5 text-primary mt-0.5" />
               <div className="flex-1">
-                <p className="text-sm text-text-secondary">Address</p>
+                <p className="text-sm text-text-secondary">{tj.address}</p>
                 <p className="font-medium">
                   {job.installationAddress.street}<br />
                   {job.installationAddress.city}, {job.installationAddress.state} {job.installationAddress.postalCode}
                 </p>
                 {job.installationAddress.landmark && (
                   <p className="text-sm text-text-secondary mt-1">
-                    Landmark: {job.installationAddress.landmark}
+                    {tj.landmark}: {job.installationAddress.landmark}
                   </p>
                 )}
                 <button
@@ -417,7 +416,7 @@ export default function JobDetailPage() {
                   className="mt-2 text-sm text-primary hover:underline flex items-center gap-1"
                 >
                   <ExternalLink className="w-3 h-3" />
-                  Open in Maps
+                  {tj.openInMaps}
                 </button>
               </div>
             </div>
@@ -425,7 +424,7 @@ export default function JobDetailPage() {
             <div className="flex items-center gap-3">
               <Calendar className="w-5 h-5 text-primary" />
               <div>
-                <p className="text-sm text-text-secondary">Date</p>
+                <p className="text-sm text-text-secondary">{tj.date}</p>
                 <p className="font-medium">{formatDate(job.installationDate, 'long')}</p>
               </div>
             </div>
@@ -433,7 +432,7 @@ export default function JobDetailPage() {
             <div className="flex items-center gap-3">
               <Clock className="w-5 h-5 text-primary" />
               <div>
-                <p className="text-sm text-text-secondary">Time Slot</p>
+                <p className="text-sm text-text-secondary">{tj.timeSlot}</p>
                 <p className="font-medium">{job.timeSlot}</p>
               </div>
             </div>
@@ -442,12 +441,12 @@ export default function JobDetailPage() {
 
         {/* Customer Info */}
         <div className="apple-card">
-          <h3 className="text-lg font-semibold mb-4">Customer Information</h3>
+          <h3 className="text-lg font-semibold mb-4">{tj.customerInformation}</h3>
           <div className="space-y-3">
             <div className="flex items-center gap-3">
               <User className="w-5 h-5 text-primary" />
               <div>
-                <p className="text-sm text-text-secondary">Name</p>
+                <p className="text-sm text-text-secondary">{tj.name}</p>
                 <p className="font-medium">{job.customerInfo.name}</p>
               </div>
             </div>
@@ -455,14 +454,14 @@ export default function JobDetailPage() {
             <div className="flex items-center gap-3">
               <Phone className="w-5 h-5 text-primary" />
               <div>
-                <p className="text-sm text-text-secondary">Phone</p>
+                <p className="text-sm text-text-secondary">{t.common.phone}</p>
                 <p className="font-medium">{job.customerInfo.phone}</p>
               </div>
             </div>
 
             {job.customerNotes && (
               <div>
-                <p className="text-sm text-text-secondary mb-1">Customer Notes</p>
+                <p className="text-sm text-text-secondary mb-1">{tj.customerNotes}</p>
                 <p className="text-sm bg-surface-elevated p-3 rounded-apple">{job.customerNotes}</p>
               </div>
             )}
@@ -473,13 +472,13 @@ export default function JobDetailPage() {
       {/* Job Completion Section */}
       {job.status === 'in_progress' && (
         <div className="apple-card">
-          <h2 className="text-2xl font-bold mb-6">Complete Installation</h2>
+          <h2 className="text-2xl font-bold mb-6">{tj.completeInstallation}</h2>
 
           {/* Upload Installation Photos */}
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2">
-                Installation Photos *
+                {tj.installationPhotosRequired}
               </label>
               <input
                 ref={fileInputRef}
@@ -495,7 +494,7 @@ export default function JobDetailPage() {
                 className="flex items-center gap-2 px-4 py-3 bg-surface-elevated hover:bg-surface-secondary border-2 border-dashed border-border rounded-apple transition-all"
               >
                 <Upload className="w-5 h-5" />
-                Upload Photos
+                {tj.uploadPhotos}
               </button>
             </div>
 
@@ -507,7 +506,7 @@ export default function JobDetailPage() {
                     <div className="aspect-square bg-surface-elevated rounded-apple overflow-hidden">
                       <img
                         src={preview}
-                        alt={`Installation ${index + 1}`}
+                        alt={tj.installationAlt.replace('{n}', String(index + 1))}
                         className="w-full h-full object-cover"
                       />
                     </div>
@@ -525,12 +524,12 @@ export default function JobDetailPage() {
             {/* Completion Notes */}
             <div>
               <label className="block text-sm font-medium mb-2">
-                Completion Notes (Optional)
+                {tj.completionNotesOptional}
               </label>
               <textarea
                 value={completionNotes}
                 onChange={(e) => setCompletionNotes(e.target.value)}
-                placeholder="Add any notes about the installation..."
+                placeholder={tj.completionNotesPlaceholder}
                 className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all resize-none"
                 rows={4}
               />
@@ -545,12 +544,12 @@ export default function JobDetailPage() {
               {completing ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  {uploadingPhotos ? 'Uploading photos...' : 'Completing job...'}
+                  {uploadingPhotos ? tj.uploading : tj.completing}
                 </>
               ) : (
                 <>
                   <CheckCircle className="w-5 h-5" />
-                  Complete Job
+                  {tj.completeJob}
                 </>
               )}
             </button>
@@ -564,7 +563,7 @@ export default function JobDetailPage() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold flex items-center gap-2">
               <CheckCircle className="w-6 h-6 text-success" />
-              Installation Complete
+              {tj.installationComplete}
             </h2>
             {!isEditing && (
               <button
@@ -578,7 +577,7 @@ export default function JobDetailPage() {
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-primary hover:bg-primary/10 rounded-apple transition-all"
               >
                 <Pencil className="w-4 h-4" />
-                Edit
+                {tj.edit}
               </button>
             )}
           </div>
@@ -586,14 +585,14 @@ export default function JobDetailPage() {
           {/* Installation Photos */}
           {job.installationPhotos && job.installationPhotos.length > 0 && (
             <div className="mb-6">
-              <p className="text-sm font-medium text-text-secondary mb-3">Installation Photos</p>
+              <p className="text-sm font-medium text-text-secondary mb-3">{tj.installationPhotos}</p>
               <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
                 {job.installationPhotos.map((photo, index) => (
                   <div key={index} className="group relative">
                     <div className="aspect-square bg-surface-elevated rounded-apple overflow-hidden cursor-pointer">
                       <img
                         src={photo.url}
-                        alt={`Installation ${index + 1}`}
+                        alt={tj.installationAlt.replace('{n}', String(index + 1))}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         onClick={() => setPreviewImage(photo.url)}
                       />
@@ -604,7 +603,7 @@ export default function JobDetailPage() {
                 {isEditing && newPhotoPreview.map((preview, index) => (
                   <div key={`new-${index}`} className="relative group">
                     <div className="aspect-square bg-surface-elevated rounded-apple overflow-hidden border-2 border-primary/30">
-                      <img src={preview} alt={`New ${index + 1}`} className="w-full h-full object-cover" />
+                      <img src={preview} alt={tj.newAlt.replace('{n}', String(index + 1))} className="w-full h-full object-cover" />
                     </div>
                     <button
                       onClick={() => {
@@ -642,7 +641,7 @@ export default function JobDetailPage() {
                     className="flex items-center gap-2 px-3 py-2 text-sm bg-surface-elevated hover:bg-surface-secondary border border-dashed border-border rounded-apple transition-all"
                   >
                     <Upload className="w-4 h-4" />
-                    Add Photos
+                    {tj.addPhotos}
                   </button>
                 </div>
               )}
@@ -652,14 +651,14 @@ export default function JobDetailPage() {
           {/* Technician Notes */}
           {(job.technicianNotes || isEditing) && (
             <div className="mb-6">
-              <p className="text-sm font-medium text-text-secondary mb-2">Completion Notes</p>
+              <p className="text-sm font-medium text-text-secondary mb-2">{tj.completionNotes}</p>
               {isEditing ? (
                 <textarea
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
                   className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all resize-none"
                   rows={3}
-                  placeholder="Add completion notes..."
+                  placeholder={tj.addCompletionNotes}
                 />
               ) : (
                 <div className="p-4 bg-surface-elevated rounded-apple">
@@ -672,22 +671,22 @@ export default function JobDetailPage() {
           {/* Maintenance Visit Summary */}
           {latestVisit && (
             <div className="border-t border-border pt-6">
-              <p className="text-sm font-medium text-text-secondary mb-4">Maintenance Visit</p>
+              <p className="text-sm font-medium text-text-secondary mb-4">{tj.maintenanceVisit}</p>
 
               <div className="flex items-center gap-2 text-sm text-text-secondary mb-4">
                 <Calendar className="w-4 h-4" />
                 <span>{formatDateTime(latestVisit.createdAt)}</span>
-                <span className="text-text-tertiary">by {latestVisit.technicianName}</span>
+                <span className="text-text-tertiary">{tj.by} {latestVisit.technicianName}</span>
               </div>
 
               {/* Checklist */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
                 {[
-                  { key: 'installationOk' as const, label: 'Installation OK' },
-                  { key: 'operationOk' as const, label: 'Operation OK' },
-                  { key: 'waterPressureOk' as const, label: 'Water Pressure OK' },
-                  { key: 'sedimentFilterReplaced' as const, label: 'Sediment Filter Replaced' },
-                  { key: 'carbonFilterReplaced' as const, label: 'Carbon Filter Replaced' },
+                  { key: 'installationOk' as const, label: tj.installationOk },
+                  { key: 'operationOk' as const, label: tj.operationOk },
+                  { key: 'waterPressureOk' as const, label: tj.waterPressureOk },
+                  { key: 'sedimentFilterReplaced' as const, label: tj.sedimentFilterReplaced },
+                  { key: 'carbonFilterReplaced' as const, label: tj.carbonFilterReplaced },
                 ].map(({ key, label }) => (
                   <div key={key} className="flex items-center gap-2 text-sm">
                     {latestVisit.checks[key] ? (
@@ -705,11 +704,11 @@ export default function JobDetailPage() {
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   {latestVisit.beforePhotoUrl && (
                     <div>
-                      <p className="text-xs text-text-secondary mb-2 text-center">Before</p>
+                      <p className="text-xs text-text-secondary mb-2 text-center">{tj.before}</p>
                       <div className="aspect-video bg-surface-elevated rounded-apple overflow-hidden cursor-pointer">
                         <img
                           src={latestVisit.beforePhotoUrl}
-                          alt="Before"
+                          alt={tj.before}
                           className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                           onClick={() => setPreviewImage(latestVisit.beforePhotoUrl!)}
                         />
@@ -718,11 +717,11 @@ export default function JobDetailPage() {
                   )}
                   {latestVisit.afterPhotoUrl && (
                     <div>
-                      <p className="text-xs text-text-secondary mb-2 text-center">After</p>
+                      <p className="text-xs text-text-secondary mb-2 text-center">{tj.after}</p>
                       <div className="aspect-video bg-surface-elevated rounded-apple overflow-hidden cursor-pointer">
                         <img
                           src={latestVisit.afterPhotoUrl}
-                          alt="After"
+                          alt={tj.after}
                           className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                           onClick={() => setPreviewImage(latestVisit.afterPhotoUrl!)}
                         />
@@ -735,14 +734,14 @@ export default function JobDetailPage() {
               {/* Visit Notes */}
               {(latestVisit.notes || isEditing) && (
                 <div>
-                  <p className="text-sm font-medium text-text-secondary mb-2">Visit Notes</p>
+                  <p className="text-sm font-medium text-text-secondary mb-2">{tj.visitNotes}</p>
                   {isEditing ? (
                     <textarea
                       value={editVisitNotes}
                       onChange={(e) => setEditVisitNotes(e.target.value)}
                       className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all resize-none"
                       rows={3}
-                      placeholder="Add visit notes..."
+                      placeholder={tj.addVisitNotes}
                     />
                   ) : (
                     <div className="p-4 bg-surface-elevated rounded-apple">
@@ -766,7 +765,7 @@ export default function JobDetailPage() {
                 disabled={saving}
                 className="flex-1 px-4 py-3 bg-surface-elevated hover:bg-surface-secondary text-text-primary font-medium rounded-apple transition-all"
               >
-                Cancel
+                {tj.cancel}
               </button>
               <button
                 onClick={async () => {
@@ -790,13 +789,13 @@ export default function JobDetailPage() {
                       await updateVisitNotes(latestVisit.id, editVisitNotes);
                     }
 
-                    toast.success('Changes saved');
+                    toast.success(tj.changesSaved);
                     setIsEditing(false);
                     setNewPhotos([]);
                     setNewPhotoPreview([]);
                     await loadJob();
                   } catch (error: unknown) {
-                    const message = error instanceof Error ? error.message : 'Failed to save changes';
+                    const message = error instanceof Error ? error.message : tj.changesSaveError;
                     toast.error(message);
                   } finally {
                     setSaving(false);
@@ -808,10 +807,10 @@ export default function JobDetailPage() {
                 {saving ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Saving...
+                    {tj.saving}
                   </>
                 ) : (
-                  'Save Changes'
+                  tj.saveChanges
                 )}
               </button>
             </div>
@@ -839,9 +838,9 @@ export default function JobDetailPage() {
         <div className="apple-card border-l-4 border-warning">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold">Device Not Registered</h3>
+              <h3 className="font-semibold">{tj.deviceNotRegistered}</h3>
               <p className="text-sm text-text-secondary">
-                Scan the QR code on the Ezer to register the device and set up maintenance.
+                {tj.deviceNotRegisteredDesc}
               </p>
             </div>
             <button
@@ -849,7 +848,7 @@ export default function JobDetailPage() {
               className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-medium rounded-apple hover:bg-primary/90 transition-all"
             >
               <QrCode className="w-5 h-5" />
-              Register Device
+              {tj.registerDevice}
             </button>
           </div>
         </div>
@@ -870,7 +869,7 @@ export default function JobDetailPage() {
 
           <img
             src={previewImage}
-            alt="Preview"
+            alt={tj.previewAlt}
             className="max-w-full max-h-full object-contain rounded-apple"
             onClick={(e) => e.stopPropagation()}
           />

@@ -44,3 +44,27 @@ Format per item: **title** → context, why deferred, what "done" looks like.
 - The file is deleted and its coverage is replaced by Playwright (if/when we add Playwright).
 
 **Trigger to revisit:** When e2e testing becomes a real priority, OR next time anyone has 20 minutes and is in the mood for a tidy-up.
+
+---
+
+### 4. Email templates render in English regardless of user language
+
+**Context:** `functions/src/maintenance/emailTemplates.ts` (and any future server-side email template) emits English subject + body strings only. Recipients who selected pt/es/ko in the UI still receive English emails.
+
+**Why deferred:** Tier A (customer pages) i18n pass focused on UI strings only. Server-side rendering is a separate workstream — it requires looking up the recipient's `users/{uid}.preferredLanguage` at send time and either branching template rendering or running translations through a server-friendly i18n util (the client `useTranslation` hook is not usable here).
+
+**Done when:** The four reminder/overdue/critical/completion templates each render in the recipient's `preferredLanguage`, falling back to English if missing. Translations live alongside the existing locale files (or a slim server-only mirror), and CF unit tests cover the language-pick path.
+
+**Trigger to revisit:** First non-English user complaint about email content, OR Tier C/D i18n work expands scope to server-rendered output.
+
+---
+
+### 5. Tier C (admin) and Tier D (technician/sub-admin) i18n audits
+
+**Context:** Tier A finished the customer pages — `app/customer/*` now consumes `useTranslation` + `useLocaleFormatters` everywhere, and the per-role status helper `getOrderStatusLabel(status, role, t)` is wired into admin/orders, admin/orders/[id], sub-admin/orders, and technician/jobs/[id]. But the admin, technician, and sub-admin pages still hold a large pool of hardcoded English strings (loading toasts, page titles, table headers, stat labels, button copy, tab names) and call the formatters with no locale arg, meaning numbers/dates/currency render English-style regardless of the selected language.
+
+**Why deferred:** Same pattern as Tier A — mechanical but high-volume. The `formatters.ts` LOCALE NOTE header explicitly flags this as intentional debt: "Admin/technician/sub-admin pages still pass no locale arg, meaning they render English regardless of user language. This is intentional debt — to be paid off in Tier C (admin) and Tier D (technician/sub-admin) i18n passes."
+
+**Done when:** No hardcoded English in `app/admin/**`, `app/technician/**`, or `app/sub-admin/**` (audit via grep for capitalized string literals). All Date/currency/relative-time displays use `useLocaleFormatters()`. All four locales (`en`, `pt`, `es`, `ko`) symmetric on key shape — `npx tsc --noEmit` clean.
+
+**Trigger to revisit:** Any non-English user complaint about admin/technician copy, OR an explicit ask to ship Tier C/D.

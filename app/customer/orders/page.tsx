@@ -30,7 +30,8 @@ interface FallbackOrderDisplay {
 }
 import { collection, query, where, orderBy as firestoreOrderBy, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { formatCurrency, formatDate } from '@/lib/utils/formatters';
+import { getOrderStatusLabel } from '@/lib/utils/formatters';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import { getFallbackOrders } from '@/lib/services/fallbackOrderService';
 import toast from 'react-hot-toast';
 
@@ -38,6 +39,7 @@ export default function CustomerOrdersPage() {
   const router = useRouter();
   const { user, userData } = useAuth();
   const { t } = useTranslation();
+  const { formatCurrency, formatDate } = useLocaleFormatters();
   const [orders, setOrders] = useState<(Order | FallbackOrderDisplay)[]>([]);
   const [loading, setLoading] = useState(true);
   const [reviews, setReviews] = useState<Record<string, Review>>({});
@@ -134,7 +136,7 @@ export default function CustomerOrdersPage() {
       setOrders(allOrders);
 
       if (fallbackOrders.length > 0) {
-        toast.success(`${fallbackOrders.length} orders saved locally. Will sync when possible.`);
+        toast.success(`${fallbackOrders.length} ${t.customer.ordersListScreen.savedLocally}`);
       }
 
       // Load reviews for completed Firestore orders (O(1) doc read each — review ID = order ID)
@@ -152,7 +154,7 @@ export default function CustomerOrdersPage() {
         setReviews(map);
       }
     } catch (error: unknown) {
-      toast.error('Failed to load orders');
+      toast.error(t.customer.ordersListScreen.loadError);
     } finally {
       setLoading(false);
     }
@@ -174,23 +176,14 @@ export default function CustomerOrdersPage() {
     return colors[status] || colors.pending;
   };
 
-  const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      pending: '⏳ Waiting for Installer',
-      accepted: '✅ Accepted',
-      in_progress: '🔧 In Progress',
-      completed: '🎉 Completed',
-      cancelled: '❌ Cancelled',
-    };
-    return labels[status] || status;
-  };
+  const getStatusLabel = (status: string) => getOrderStatusLabel(status, 'customer', t);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading your orders...</p>
+          <p className="text-text-secondary">{t.customer.ordersListScreen.loading}</p>
         </div>
       </div>
     );
@@ -209,9 +202,9 @@ export default function CustomerOrdersPage() {
               className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
-              <span className="hidden sm:inline">Back to Products</span>
+              <span className="hidden sm:inline">{t.orders.backToProducts}</span>
             </button>
-            <h1 className="text-2xl font-bold">My Orders</h1>
+            <h1 className="text-2xl font-bold">{t.orders.title}</h1>
             <div className="w-20"></div> {/* Spacer for centering */}
           </div>
         </div>
@@ -222,15 +215,15 @@ export default function CustomerOrdersPage() {
           {orders.length === 0 ? (
             <div className="apple-card text-center py-16">
               <PackageIcon className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
-              <h3 className="text-xl font-semibold mb-2">No orders yet</h3>
+              <h3 className="text-xl font-semibold mb-2">{t.orders.noOrders}</h3>
               <p className="text-text-secondary mb-6">
-                Start by browsing our products
+                {t.customer.ordersListScreen.startBrowsing}
               </p>
               <button
                 onClick={() => router.push('/customer')}
                 className="px-6 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all"
               >
-                Browse Products
+                {t.orders.browseProducts}
               </button>
             </div>
           ) : (
@@ -238,23 +231,23 @@ export default function CustomerOrdersPage() {
               {/* Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="apple-card text-center">
-                  <p className="text-text-tertiary text-sm">Total Orders</p>
+                  <p className="text-text-tertiary text-sm">{t.customer.ordersListScreen.totalOrders}</p>
                   <p className="text-2xl font-bold mt-1">{orders.length}</p>
                 </div>
                 <div className="apple-card text-center">
-                  <p className="text-text-tertiary text-sm">Pending</p>
+                  <p className="text-text-tertiary text-sm">{t.customer.ordersListScreen.pending}</p>
                   <p className="text-2xl font-bold mt-1 text-warning">
                     {orders.filter((o) => o.status === 'pending').length}
                   </p>
                 </div>
                 <div className="apple-card text-center">
-                  <p className="text-text-tertiary text-sm">Active</p>
+                  <p className="text-text-tertiary text-sm">{t.customer.ordersListScreen.active}</p>
                   <p className="text-2xl font-bold mt-1 text-primary">
                     {orders.filter((o) => ['accepted', 'in_progress'].includes(o.status)).length}
                   </p>
                 </div>
                 <div className="apple-card text-center">
-                  <p className="text-text-tertiary text-sm">Completed</p>
+                  <p className="text-text-tertiary text-sm">{t.customer.ordersListScreen.completed}</p>
                   <p className="text-2xl font-bold mt-1 text-success">
                     {orders.filter((o) => o.status === 'completed').length}
                   </p>
@@ -273,7 +266,7 @@ export default function CustomerOrdersPage() {
                       {/* Fallback Indicator */}
                       {'isFallback' in order && order.isFallback && (
                         <div className="absolute top-3 right-3 bg-warning/20 text-warning px-2 py-1 rounded-full text-xs font-medium">
-                          Local
+                          {t.customer.ordersListScreen.local}
                         </div>
                       )}
                       
@@ -300,7 +293,7 @@ export default function CustomerOrdersPage() {
                               {order.productSnapshot?.name?.en || 'Product'}
                             </h3>
                             <p className="text-sm text-text-secondary">
-                              Order {order.orderNumber}
+                              {t.orders.orderNumber} {order.orderNumber}
                             </p>
                           </div>
                           <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(order.status)}`}>
@@ -311,7 +304,7 @@ export default function CustomerOrdersPage() {
                         <div className="flex flex-wrap items-center gap-4 text-sm text-text-secondary mt-3">
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4" />
-                            <span>{order.installationDate ? formatDate(order.installationDate, 'short') : 'TBD'}</span>
+                            <span>{order.installationDate ? formatDate(order.installationDate, 'short') : t.customer.ordersListScreen.tbd}</span>
                             <span className="px-2 py-0.5 bg-surface-elevated rounded text-xs">
                               {order.timeSlot}
                             </span>
@@ -320,7 +313,7 @@ export default function CustomerOrdersPage() {
 
                         {'technicianInfo' in order && order.technicianInfo && (
                           <div className="mt-3 pt-3 border-t border-border">
-                            <p className="text-xs text-text-tertiary mb-1">Technician</p>
+                            <p className="text-xs text-text-tertiary mb-1">{t.customer.ordersListScreen.technician}</p>
                             <div className="flex items-center gap-2">
                               <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
                                 <span className="text-xs font-semibold text-primary">
@@ -342,7 +335,7 @@ export default function CustomerOrdersPage() {
                             }
                           </p>
                           <span className="text-sm text-text-secondary">
-                            View Details →
+                            {t.customer.viewDetails} →
                           </span>
                         </div>
                       </div>

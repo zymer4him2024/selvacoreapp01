@@ -7,7 +7,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Order } from '@/types';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils/formatters';
+import { getOrderStatusLabel } from '@/lib/utils/formatters';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import { generateWhatsAppLink, openWhatsApp } from '@/lib/utils/whatsappHelper';
 import { cancelOrder } from '@/lib/services/orderService';
 import { refundAmazonPayment } from '@/lib/services/amazonPaymentService';
@@ -24,6 +25,7 @@ export default function OrderDetailPage() {
   const searchParams = useSearchParams();
   const { userData } = useAuth();
   const { t } = useTranslation();
+  const { formatCurrency, formatDate, formatDateTime } = useLocaleFormatters();
   const o = t.orders;
   const orderId = params.id as string;
   const isNewOrder = searchParams.get('success') === 'true';
@@ -38,7 +40,7 @@ export default function OrderDetailPage() {
     loadOrder();
     
     if (isNewOrder) {
-      toast.success('🎉 Order placed successfully!', { duration: 5000 });
+      toast.success(o.orderPlacedToast, { duration: 5000 });
     }
   }, [orderId]);
 
@@ -48,7 +50,7 @@ export default function OrderDetailPage() {
       const orderDoc = await getDoc(doc(db, 'orders', orderId));
 
       if (!orderDoc.exists()) {
-        toast.error('Order not found');
+        toast.error(o.orderNotFound);
         router.push('/customer/orders');
         return;
       }
@@ -71,7 +73,7 @@ export default function OrderDetailPage() {
         }
       }
     } catch (error: unknown) {
-      toast.error('Failed to load order');
+      toast.error(o.loadOrderError);
     } finally {
       setLoading(false);
     }
@@ -84,7 +86,7 @@ export default function OrderDetailPage() {
     try {
       await cancelOrder(orderId, reason, 'customer', userData.id);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to cancel order';
+      const message = error instanceof Error ? error.message : o.cancelOrderError;
       toast.error(message);
       return;
     }
@@ -122,7 +124,7 @@ export default function OrderDetailPage() {
 
   const handleWhatsAppContact = () => {
     if (!order?.technicianInfo) {
-      toast.error('Technician information not available yet');
+      toast.error(o.technicianNotAvailable);
       return;
     }
 
@@ -211,7 +213,7 @@ export default function OrderDetailPage() {
                 </p>
               </div>
               <span className={`px-4 py-2 rounded-apple text-sm font-medium border-2 ${getStatusColor(order.status)}`}>
-                {order.status.replace('_', ' ').toUpperCase()}
+                {getOrderStatusLabel(order.status, 'customer', t)}
               </span>
             </div>
           </div>
@@ -414,6 +416,18 @@ export default function OrderDetailPage() {
                     </div>
                   </div>
                 )}
+                {order.sitePhotos.fullShot && (
+                  <div>
+                    <p className="text-sm text-text-secondary mb-2">{o.fullShot}</p>
+                    <div className="w-full h-40 bg-surface-elevated rounded-apple overflow-hidden">
+                      <img
+                        src={order.sitePhotos.fullShot.url}
+                        alt="Full shot"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  </div>
+                )}
                 {order.sitePhotos.waterRunningVideo && (
                   <div>
                     <p className="text-sm text-text-secondary mb-2">{o.waterRunning}</p>
@@ -439,7 +453,7 @@ export default function OrderDetailPage() {
                     <div className="w-full h-40 bg-surface-elevated rounded-apple overflow-hidden">
                       <img
                         src={photo.url}
-                        alt={photo.description || `Installation photo ${index + 1}`}
+                        alt={photo.description || `${o.installationPhotoAlt} ${index + 1}`}
                         className="w-full h-full object-contain"
                       />
                     </div>
@@ -468,7 +482,7 @@ export default function OrderDetailPage() {
                     )}
                   </div>
                   <div className="flex-1 pb-6">
-                    <p className="font-medium">{history.status.replace('_', ' ').toUpperCase()}</p>
+                    <p className="font-medium">{getOrderStatusLabel(history.status, 'customer', t)}</p>
                     {history.note && (
                       <p className="text-sm text-text-secondary mt-1">{history.note}</p>
                     )}

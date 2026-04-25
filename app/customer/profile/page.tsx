@@ -7,6 +7,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { ArrowLeft, Save, User as UserIcon, Mail, Phone, Globe } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import { SUPPORTED_LANGUAGES } from '@/lib/utils/constants';
 import type { Language } from '@/types';
 import toast from 'react-hot-toast';
@@ -15,6 +16,8 @@ export default function CustomerProfilePage() {
   const router = useRouter();
   const { user, userData, updateUserData } = useAuth();
   const { t, changeLanguage } = useTranslation();
+  const { formatDate } = useLocaleFormatters();
+  const ps = t.customer.profileScreen;
   const [loading, setLoading] = useState(false);
   const [customerData, setCustomerData] = useState<any>(null);
   
@@ -87,7 +90,7 @@ export default function CustomerProfilePage() {
       toast.success(t.messages?.saved || 'Profile updated successfully');
       router.back();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to update profile';
+      const message = error instanceof Error ? error.message : ps.updateError;
       toast.error(message);
     } finally {
       setLoading(false);
@@ -109,7 +112,7 @@ export default function CustomerProfilePage() {
             <div>
               <h1 className="text-3xl font-bold">{t.customer.profile}</h1>
               <p className="text-sm text-text-secondary mt-1">
-                Manage your account information
+                {ps.manage}
               </p>
             </div>
           </div>
@@ -125,12 +128,12 @@ export default function CustomerProfilePage() {
               {userData?.photoURL ? (
                 <img
                   src={userData.photoURL}
-                  alt={userData.displayName || 'User'}
+                  alt={userData.displayName || ps.defaultUser}
                   className="w-24 h-24 rounded-full object-cover object-center border-4 border-border"
                 />
               ) : (
                 <div className="w-24 h-24 rounded-full bg-primary text-white flex items-center justify-center text-3xl font-bold">
-                  {userData?.displayName?.[0] || 'U'}
+                  {userData?.displayName?.[0] || ps.defaultUser.charAt(0)}
                 </div>
               )}
               <div>
@@ -138,7 +141,7 @@ export default function CustomerProfilePage() {
                 <p className="text-text-secondary">{userData?.email}</p>
                 <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-success/10 text-success rounded-full text-xs font-medium">
                   <div className="w-2 h-2 bg-success rounded-full"></div>
-                  Account Active
+                  {ps.accountActive}
                 </div>
               </div>
             </div>
@@ -146,20 +149,20 @@ export default function CustomerProfilePage() {
 
           {/* Profile Form */}
           <div className="apple-card space-y-6">
-            <h3 className="text-xl font-semibold mb-4">Personal Information</h3>
+            <h3 className="text-xl font-semibold mb-4">{ps.personalInformation}</h3>
 
             {/* Display Name */}
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-2">
                 <UserIcon className="w-4 h-4 inline mr-2" />
-                Full Name
+                {ps.fullName}
               </label>
               <input
                 type="text"
                 value={formData.displayName}
                 onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
                 className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
-                placeholder="Enter your full name"
+                placeholder={ps.fullNamePlaceholder}
               />
             </div>
 
@@ -167,7 +170,7 @@ export default function CustomerProfilePage() {
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-2">
                 <Mail className="w-4 h-4 inline mr-2" />
-                Email Address
+                {ps.emailAddress}
               </label>
               <input
                 type="email"
@@ -176,7 +179,7 @@ export default function CustomerProfilePage() {
                 className="w-full px-4 py-3 bg-surface border border-border rounded-apple text-text-tertiary cursor-not-allowed"
               />
               <p className="text-xs text-text-tertiary mt-1">
-                Email cannot be changed (linked to Google account)
+                {ps.emailLockedHint}
               </p>
             </div>
 
@@ -184,14 +187,14 @@ export default function CustomerProfilePage() {
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-2">
                 <Phone className="w-4 h-4 inline mr-2" />
-                Phone Number
+                {ps.phoneNumber}
               </label>
               <input
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
-                placeholder="+1 (555) 123-4567"
+                placeholder={ps.phoneNumberPlaceholder}
               />
             </div>
 
@@ -199,7 +202,7 @@ export default function CustomerProfilePage() {
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-2">
                 <Globe className="w-4 h-4 inline mr-2" />
-                Preferred Language
+                {ps.preferredLanguage}
               </label>
               <select
                 value={formData.preferredLanguage}
@@ -213,43 +216,43 @@ export default function CustomerProfilePage() {
                 ))}
               </select>
               <p className="text-xs text-text-tertiary mt-1">
-                All content will be displayed in this language
+                {ps.preferredLanguageHint}
               </p>
             </div>
           </div>
 
           {/* Account Info */}
           <div className="apple-card space-y-4">
-            <h3 className="text-xl font-semibold mb-4">Account Information</h3>
-            
+            <h3 className="text-xl font-semibold mb-4">{ps.accountInformation}</h3>
+
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-text-tertiary">Account Type</p>
-                <p className="font-medium capitalize">{userData?.role || 'Customer'}</p>
+                <p className="text-text-tertiary">{ps.accountType}</p>
+                <p className="font-medium capitalize">{userData?.role || ps.accountTypeCustomer}</p>
               </div>
               <div>
-                <p className="text-text-tertiary">Member Since</p>
+                <p className="text-text-tertiary">{ps.memberSince}</p>
                 <p className="font-medium">
-                  {userData?.createdAt?.toDate ? 
-                    userData.createdAt.toDate().toLocaleDateString() : 
-                    'N/A'}
+                  {userData?.createdAt?.toDate ?
+                    formatDate(userData.createdAt.toDate(), 'short') :
+                    ps.notAvailable}
                 </p>
               </div>
               <div>
-                <p className="text-text-tertiary">Last Login</p>
+                <p className="text-text-tertiary">{ps.lastLogin}</p>
                 <p className="font-medium">
-                  {userData?.lastLoginAt?.toDate ? 
-                    userData.lastLoginAt.toDate().toLocaleDateString() : 
-                    'N/A'}
+                  {userData?.lastLoginAt?.toDate ?
+                    formatDate(userData.lastLoginAt.toDate(), 'short') :
+                    ps.notAvailable}
                 </p>
               </div>
               <div>
-                <p className="text-text-tertiary">Email Verified</p>
+                <p className="text-text-tertiary">{ps.emailVerified}</p>
                 <p className="font-medium">
                   {userData?.emailVerified ? (
-                    <span className="text-success">✓ Verified</span>
+                    <span className="text-success">✓ {ps.verified}</span>
                   ) : (
-                    <span className="text-warning">Pending</span>
+                    <span className="text-warning">{ps.verificationPending}</span>
                   )}
                 </p>
               </div>
@@ -262,7 +265,7 @@ export default function CustomerProfilePage() {
               onClick={() => router.back()}
               className="flex-1 px-6 py-3 bg-surface-elevated hover:bg-surface-secondary text-text-primary font-semibold rounded-apple transition-all"
             >
-              Cancel
+              {t.common.cancel}
             </button>
             <button
               onClick={handleSave}

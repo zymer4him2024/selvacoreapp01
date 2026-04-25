@@ -9,7 +9,7 @@ import { Package, Search, ShoppingCart, Filter, Cpu } from 'lucide-react';
 import { Product } from '@/types';
 import { MultiLanguageText } from '@/types/product';
 import { getActiveProducts, getAllProducts } from '@/lib/services/productService';
-import { formatCurrency } from '@/lib/utils/formatters';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import { useTranslation } from '@/hooks/useTranslation';
 import UserProfileDropdown from '@/components/customer/UserProfileDropdown';
 import NotificationBell from '@/components/common/NotificationBell';
@@ -21,6 +21,7 @@ export default function CustomerHomePage() {
   const router = useRouter();
   const { user, userData } = useAuth();
   const { t } = useTranslation();
+  const { formatCurrency } = useLocaleFormatters();
   const [hasProfile, setHasProfile] = useState<boolean | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,7 +65,7 @@ export default function CustomerHomePage() {
         setProducts(activeData);
       }
     } catch (error: unknown) {
-      toast.error('Failed to load products');
+      toast.error(t.customer.homeScreen.loadProductsError);
     } finally {
       setLoading(false);
     }

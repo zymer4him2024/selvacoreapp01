@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { LanguageProvider } from '@/contexts/LanguageContext'
 import { Toaster } from 'react-hot-toast'
 
 export const viewport: Viewport = {
@@ -35,8 +36,9 @@ export default function RootLayout({
       </head>
       <body className="bg-background text-text-primary antialiased">
         <AuthProvider>
-          {children}
-          <Toaster
+          <LanguageProvider>
+            {children}
+            <Toaster
             position="top-right"
             toastOptions={{
               duration: 4000,
@@ -59,6 +61,7 @@ export default function RootLayout({
               },
             }}
           />
+          </LanguageProvider>
         </AuthProvider>
       </body>
     </html>

@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { Order } from '@/types/order';
 import { getOrderById } from '@/lib/services/orderService';
-import { formatCurrency, formatDate, formatOptionalString } from '@/lib/utils/formatters';
+import { formatCurrency, formatDate, formatOptionalString, getOrderStatusLabel } from '@/lib/utils/formatters';
 import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -104,7 +104,7 @@ export default function AdminOrderDetailPage() {
         </div>
         <div className={`px-4 py-2 rounded-apple text-sm font-semibold flex items-center gap-2 ${getStatusColor(order.status)}`}>
           {getStatusIcon(order.status)}
-          {order.status.replace('_', ' ').toUpperCase()}
+          {getOrderStatusLabel(order.status, 'admin', t)}
         </div>
       </div>
 
@@ -271,7 +271,7 @@ export default function AdminOrderDetailPage() {
       {order.sitePhotos && (
         <div className="apple-card">
           <h2 className="text-xl font-semibold mb-4">{od.sitePhotos}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {order.sitePhotos.waterSource && (
               <div>
                 <p className="text-sm text-text-secondary mb-2">{od.waterSource}</p>
@@ -306,6 +306,16 @@ export default function AdminOrderDetailPage() {
                     className="w-full h-full object-contain"
                   />
                 </div>
+              </div>
+            )}
+            {order.sitePhotos.waterRunningVideo && (
+              <div>
+                <p className="text-sm text-text-secondary mb-2">{od.waterRunning}</p>
+                <video
+                  src={order.sitePhotos.waterRunningVideo.url}
+                  controls
+                  className="w-full h-40 rounded-apple bg-black"
+                />
               </div>
             )}
           </div>

@@ -15,6 +15,7 @@ export default function CustomerSettingsPage() {
   const router = useRouter();
   const { user, userData, updateUserData } = useAuth();
   const { t, changeLanguage } = useTranslation();
+  const ss = t.customer.settingsScreen;
   const [loading, setLoading] = useState(false);
   
   const [settings, setSettings] = useState({
@@ -61,7 +62,7 @@ export default function CustomerSettingsPage() {
 
       toast.success(t.messages?.saved || 'Settings updated successfully');
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to update settings';
+      const message = error instanceof Error ? error.message : ss.updateError;
       toast.error(message);
     } finally {
       setLoading(false);
@@ -83,7 +84,7 @@ export default function CustomerSettingsPage() {
             <div>
               <h1 className="text-3xl font-bold">{t.customer.settings}</h1>
               <p className="text-sm text-text-secondary mt-1">
-                Customize your experience
+                {ss.customize}
               </p>
             </div>
           </div>
@@ -102,7 +103,7 @@ export default function CustomerSettingsPage() {
               <div>
                 <h3 className="text-xl font-semibold">{t.customer.language}</h3>
                 <p className="text-sm text-text-secondary">
-                  Choose your preferred language
+                  {ss.chooseLanguage}
                 </p>
               </div>
             </div>
@@ -125,7 +126,7 @@ export default function CustomerSettingsPage() {
                     <div>
                       <p className="font-semibold">{lang.name}</p>
                       {settings.preferredLanguage === lang.code && (
-                        <p className="text-xs text-primary">Current</p>
+                        <p className="text-xs text-primary">{ss.current}</p>
                       )}
                     </div>
                   </div>
@@ -143,7 +144,7 @@ export default function CustomerSettingsPage() {
               <div>
                 <h3 className="text-xl font-semibold">{t.customer.notifications}</h3>
                 <p className="text-sm text-text-secondary">
-                  Manage how you receive updates
+                  {ss.manageUpdates}
                 </p>
               </div>
             </div>
@@ -151,9 +152,9 @@ export default function CustomerSettingsPage() {
             {/* Email Notifications */}
             <div className="flex items-center justify-between p-4 bg-surface-elevated rounded-apple">
               <div>
-                <p className="font-medium">Email Notifications</p>
+                <p className="font-medium">{ss.emailNotifications}</p>
                 <p className="text-sm text-text-secondary">
-                  Receive order updates via email
+                  {ss.emailNotificationsDesc}
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -170,9 +171,9 @@ export default function CustomerSettingsPage() {
             {/* SMS Notifications */}
             <div className="flex items-center justify-between p-4 bg-surface-elevated rounded-apple">
               <div>
-                <p className="font-medium">SMS Notifications</p>
+                <p className="font-medium">{ss.smsNotifications}</p>
                 <p className="text-sm text-text-secondary">
-                  Receive text messages for urgent updates
+                  {ss.smsNotificationsDesc}
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -189,9 +190,9 @@ export default function CustomerSettingsPage() {
             {/* Promotional Emails */}
             <div className="flex items-center justify-between p-4 bg-surface-elevated rounded-apple">
               <div>
-                <p className="font-medium">Promotional Emails</p>
+                <p className="font-medium">{ss.promotionalEmails}</p>
                 <p className="text-sm text-text-secondary">
-                  Receive special offers and updates
+                  {ss.promotionalEmailsDesc}
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -213,23 +214,23 @@ export default function CustomerSettingsPage() {
                 <Shield className="w-6 h-6 text-warning" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold">Privacy & Security</h3>
+                <h3 className="text-xl font-semibold">{ss.privacySecurity}</h3>
                 <p className="text-sm text-text-secondary">
-                  Your account security information
+                  {ss.privacySecurityDesc}
                 </p>
               </div>
             </div>
 
             <div className="space-y-3">
               <div className="p-4 bg-surface-elevated rounded-apple">
-                <p className="font-medium mb-1">Authentication Method</p>
-                <p className="text-sm text-text-secondary">Google Sign-In</p>
+                <p className="font-medium mb-1">{ss.authenticationMethod}</p>
+                <p className="text-sm text-text-secondary">{ss.googleSignIn}</p>
               </div>
 
               <div className="p-4 bg-surface-elevated rounded-apple">
-                <p className="font-medium mb-1">Data Storage</p>
+                <p className="font-medium mb-1">{ss.dataStorage}</p>
                 <p className="text-sm text-text-secondary">
-                  Your data is securely stored in Firebase Cloud
+                  {ss.dataStorageDesc}
                 </p>
               </div>
             </div>
