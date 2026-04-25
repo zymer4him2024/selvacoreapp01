@@ -22,7 +22,7 @@ import { getServiceById } from '@/lib/services/serviceService';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { TIME_SLOTS } from '@/lib/utils/constants';
-import { formatCurrency } from '@/lib/utils/formatters';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getFallbackAddresses, saveFallbackAddress } from '@/lib/services/fallbackAddressService';
 import AddressAutocompleteField from '@/components/common/AddressAutocompleteField';
@@ -45,6 +45,8 @@ export default function OrderDetailsPage() {
   const router = useRouter();
   const { user, userData } = useAuth();
   const { t } = useTranslation();
+  const { formatCurrency } = useLocaleFormatters();
+  const o = t.orders;
 
   const [product, setProduct] = useState<Product | null>(null);
   const [service, setService] = useState<Service | null>(null);
@@ -75,7 +77,7 @@ export default function OrderDetailsPage() {
 
       const orderDataStr = sessionStorage.getItem('orderData');
       if (!orderDataStr) {
-        toast.error('No order data found');
+        toast.error(o.noOrderData);
         router.push('/customer');
         return;
       }
@@ -84,7 +86,7 @@ export default function OrderDetailsPage() {
 
       const productData = await getProductById(orderData.productId);
       if (!productData) {
-        toast.error('Product not found');
+        toast.error(o.productNotFound);
         router.push('/customer');
         return;
       }
@@ -117,12 +119,12 @@ export default function OrderDetailsPage() {
           const defaultAddress = fallbackAddresses.find((a) => a.isDefault);
           if (defaultAddress) setSelectedAddressId(defaultAddress.id);
           if (fallbackAddresses.length === 0) {
-            toast('No addresses found. Please add an address below.');
+            toast(o.noAddressesPrompt);
           }
         }
       }
     } catch {
-      toast.error('Failed to load order details');
+      toast.error(o.loadOrderDetailsError);
     } finally {
       setLoading(false);
     }
@@ -130,7 +132,7 @@ export default function OrderDetailsPage() {
 
   const handleAddAddress = () => {
     if (!newAddress.street.trim() || !newAddress.city.trim()) {
-      toast.error('Please fill in street and city');
+      toast.error(o.streetCityRequired);
       return;
     }
     const address: Address = {
@@ -142,7 +144,7 @@ export default function OrderDetailsPage() {
     setSelectedAddressId(address.id);
     setShowAddAddress(false);
     setNewAddress(EMPTY_ADDRESS_FORM);
-    toast.success('Address added');
+    toast.success(o.addressAdded);
   };
 
   const startOverride = (address: Address) => {
@@ -170,7 +172,7 @@ export default function OrderDetailsPage() {
   const saveOverride = () => {
     if (!overrideForAddressId) return;
     if (!overrideDraft.street.trim() || !overrideDraft.city.trim()) {
-      toast.error('Please fill in street and city');
+      toast.error(o.streetCityRequired);
       return;
     }
     const overrideAddress: Address = {
@@ -179,12 +181,12 @@ export default function OrderDetailsPage() {
     };
     setOverrideSaved(overrideAddress);
     setOverrideForAddressId(null);
-    toast.success('One-off address applied for this installation');
+    toast.success(o.oneOffApplied);
   };
 
   const clearSavedOverride = () => {
     setOverrideSaved(null);
-    toast('Reverted to saved address');
+    toast(o.revertedToSaved);
   };
 
   const handleContinue = () => {
@@ -457,12 +459,12 @@ export default function OrderDetailsPage() {
                               </span>
                               {address.isDefault && (
                                 <span className="text-xs px-2 py-0.5 rounded bg-success/20 text-success">
-                                  Default
+                                  {o.defaultAddress}
                                 </span>
                               )}
                               {hasOverride && (
                                 <span className="text-xs px-2 py-0.5 rounded bg-warning/20 text-warning">
-                                  One-off override
+                                  {o.oneOffAddress}
                                 </span>
                               )}
                             </div>
@@ -511,7 +513,7 @@ export default function OrderDetailsPage() {
                               type="button"
                               onClick={cancelOverride}
                               className="text-text-tertiary hover:text-text-primary"
-                              aria-label="Close"
+                              aria-label={o.closeAria}
                             >
                               <X className="w-4 h-4" />
                             </button>

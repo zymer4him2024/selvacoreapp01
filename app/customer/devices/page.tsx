@@ -8,7 +8,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { getDevicesByCustomerId } from '@/lib/services/deviceService';
 import { getSchedulesByDeviceId, getVisitsByDeviceId } from '@/lib/services/maintenanceService';
 import { Device, MaintenanceSchedule, MaintenanceVisit } from '@/types/device';
-import { formatDate } from '@/lib/utils/formatters';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import toast from 'react-hot-toast';
 
 interface DeviceWithSchedules extends Device {
@@ -35,6 +35,7 @@ export default function CustomerDevicesPage() {
   const router = useRouter();
   const { user } = useAuth();
   const { t } = useTranslation();
+  const { formatDate } = useLocaleFormatters();
   const d = t.customer.devices;
   const [devices, setDevices] = useState<DeviceWithSchedules[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +61,7 @@ export default function CustomerDevicesPage() {
       );
       setDevices(devicesWithSchedules);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load devices';
+      const message = error instanceof Error ? error.message : d.loadDevicesError;
       toast.error(message);
     } finally {
       setLoading(false);
@@ -115,7 +116,7 @@ export default function CustomerDevicesPage() {
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <h3 className="text-lg font-bold">
-                          {device.productSnapshot.name?.en || 'Ezer Device'}
+                          {device.productSnapshot.name?.en || d.defaultDeviceName}
                         </h3>
                         {device.productSnapshot.variation && (
                           <p className="text-sm text-text-secondary">{device.productSnapshot.variation}</p>
@@ -204,7 +205,7 @@ export default function CustomerDevicesPage() {
                           className="flex items-center gap-2 text-sm font-semibold mb-3 hover:text-primary transition-colors"
                         >
                           {expandedVisits[device.id] ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                          Recent Visits ({device.visits.length})
+                          {d.recentVisits} ({device.visits.length})
                         </button>
                         {expandedVisits[device.id] && (
                           <div className="space-y-2">
@@ -217,27 +218,27 @@ export default function CustomerDevicesPage() {
                                 <div className="flex flex-wrap gap-1.5">
                                   {visit.checks.installationOk && (
                                     <span className="flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs">
-                                      <Wrench className="w-3 h-3" /> Install OK
+                                      <Wrench className="w-3 h-3" /> {d.checkInstallOk}
                                     </span>
                                   )}
                                   {visit.checks.operationOk && (
                                     <span className="flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs">
-                                      <CheckCircle className="w-3 h-3" /> Operation OK
+                                      <CheckCircle className="w-3 h-3" /> {d.checkOperationOk}
                                     </span>
                                   )}
                                   {visit.checks.waterPressureOk && (
                                     <span className="flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs">
-                                      <Gauge className="w-3 h-3" /> Pressure OK
+                                      <Gauge className="w-3 h-3" /> {d.checkPressureOk}
                                     </span>
                                   )}
                                   {visit.checks.sedimentFilterReplaced && (
                                     <span className="flex items-center gap-1 px-2 py-0.5 bg-warning/10 text-warning rounded-full text-xs">
-                                      <Droplets className="w-3 h-3" /> Sediment
+                                      <Droplets className="w-3 h-3" /> {d.checkSediment}
                                     </span>
                                   )}
                                   {visit.checks.carbonFilterReplaced && (
                                     <span className="flex items-center gap-1 px-2 py-0.5 bg-warning/10 text-warning rounded-full text-xs">
-                                      <FilterIcon className="w-3 h-3" /> Carbon
+                                      <FilterIcon className="w-3 h-3" /> {d.checkCarbon}
                                     </span>
                                   )}
                                 </div>
@@ -245,12 +246,12 @@ export default function CustomerDevicesPage() {
                                   <div className="grid grid-cols-2 gap-1.5 mt-2">
                                     {visit.beforePhotoUrl && (
                                       <a href={visit.beforePhotoUrl} target="_blank" rel="noopener noreferrer">
-                                        <img src={visit.beforePhotoUrl} alt="Before" className="w-full h-20 object-cover rounded-apple border border-border" />
+                                        <img src={visit.beforePhotoUrl} alt={d.beforePhotoAlt} className="w-full h-20 object-cover rounded-apple border border-border" />
                                       </a>
                                     )}
                                     {visit.afterPhotoUrl && (
                                       <a href={visit.afterPhotoUrl} target="_blank" rel="noopener noreferrer">
-                                        <img src={visit.afterPhotoUrl} alt="After" className="w-full h-20 object-cover rounded-apple border border-border" />
+                                        <img src={visit.afterPhotoUrl} alt={d.afterPhotoAlt} className="w-full h-20 object-cover rounded-apple border border-border" />
                                       </a>
                                     )}
                                   </div>

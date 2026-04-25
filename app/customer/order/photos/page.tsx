@@ -53,14 +53,14 @@ export default function SitePhotosPage() {
       : ['image/jpeg', 'image/png', 'image/webp'];
 
     if (!allowedTypes.includes(file.type)) {
-      toast.error(`Please upload a valid ${isVideo ? 'video' : 'image'} file`);
+      toast.error(isVideo ? t.orders.validVideoFile : t.orders.validImageFile);
       return;
     }
 
     // Validate file size (max 50MB for videos, 10MB for images)
     const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
     if (file.size > maxSize) {
-      toast.error(`File size must be less than ${isVideo ? '50MB' : '10MB'}`);
+      toast.error(isVideo ? t.orders.videoMaxSize : t.orders.imageMaxSize);
       return;
     }
 
@@ -88,9 +88,9 @@ export default function SitePhotosPage() {
         }
         
         if (quality.score === 'poor') {
-          toast.error(quality.suggestions[0] || 'Photo quality is poor. Please retake.');
+          toast.error(quality.suggestions[0] || t.orders.photoQualityPoor);
         } else if (quality.score === 'fair') {
-          toast(quality.suggestions[0] || 'Photo quality is acceptable', { icon: '⚠️' });
+          toast(quality.suggestions[0] || t.orders.photoQualityAcceptable, { icon: '⚠️' });
         }
       }
 
@@ -114,7 +114,7 @@ export default function SitePhotosPage() {
       };
       reader.readAsDataURL(processedFile);
     } catch (error: unknown) {
-      toast.error('Failed to process file');
+      toast.error(t.orders.processFileError);
     }
   };
 
@@ -173,7 +173,7 @@ export default function SitePhotosPage() {
     const uploadedFiles = [waterSourceFile, productLocationFile, fullShotFile, waterRunningFile].filter(Boolean);
 
     if (uploadedFiles.length === 0) {
-      toast.error('Please upload at least one photo or video');
+      toast.error(t.orders.uploadAtLeastOne);
       return;
     }
 
@@ -210,10 +210,10 @@ export default function SitePhotosPage() {
         },
       }));
 
-      toast.success('Photos uploaded successfully!');
+      toast.success(t.orders.photosUploaded);
       router.push('/customer/order/payment');
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to upload photos';
+      const message = error instanceof Error ? error.message : t.orders.uploadPhotosError;
       toast.error(message);
     } finally {
       setUploading(false);
@@ -230,7 +230,7 @@ export default function SitePhotosPage() {
             className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
-            Back
+            {t.common.back}
           </button>
         </div>
       </div>
@@ -283,7 +283,7 @@ export default function SitePhotosPage() {
                     <div className="w-full h-80 bg-surface-elevated rounded-apple overflow-hidden">
                       <img
                         src={waterSourcePreview}
-                        alt="Water source"
+                        alt={t.orders.waterSourceAlt}
                         className="w-full h-full object-contain"
                       />
                     </div>
@@ -374,7 +374,7 @@ export default function SitePhotosPage() {
                     <div className="w-full h-80 bg-surface-elevated rounded-apple overflow-hidden">
                       <img
                         src={productLocationPreview}
-                        alt="Product location"
+                        alt={t.orders.productLocationAlt}
                         className="w-full h-full object-contain"
                       />
                     </div>
@@ -465,7 +465,7 @@ export default function SitePhotosPage() {
                     <div className="w-full h-80 bg-surface-elevated rounded-apple overflow-hidden">
                       <img
                         src={fullShotPreview}
-                        alt="Full shot"
+                        alt={t.orders.fullShotAlt}
                         className="w-full h-full object-contain"
                       />
                     </div>
@@ -602,7 +602,7 @@ export default function SitePhotosPage() {
                     <div className="text-center">
                       <Upload className="w-8 h-8 text-text-tertiary mx-auto mb-2" />
                       <span className="text-sm text-text-secondary">{t.orders.dragDropVideo}</span>
-                      <span className="text-xs text-text-tertiary block mt-1">MP4, WebM (max 50MB)</span>
+                      <span className="text-xs text-text-tertiary block mt-1">{t.orders.videoFormatHint}</span>
                     </div>
                   </div>
                 </div>
@@ -624,8 +624,8 @@ export default function SitePhotosPage() {
       {/* Photo/Video Capture Modal */}
       {showPhotoCapture && showPhotoCapture === 'waterRunning' ? (
         <VideoCapture
-          title="4. Water Running"
-          description="Video showing water flow from your tap"
+          title={t.orders.waterRunningVideo}
+          description={t.orders.waterRunningDesc}
           onCapture={(file) => {
             handleFileChange(file, 'waterRunning');
             setShowPhotoCapture(null);
@@ -636,17 +636,17 @@ export default function SitePhotosPage() {
         <PhotoCapture
           title={
             showPhotoCapture === 'waterSource'
-              ? '1. Water Source'
+              ? t.orders.waterSource
               : showPhotoCapture === 'productLocation'
-              ? '2. Place for equipment'
-              : '3. Full Shot Photo'
+              ? t.orders.placeForEquipment
+              : t.orders.fullShotPhoto
           }
           description={
             showPhotoCapture === 'waterSource'
-              ? 'Photo of your main water supply connection'
+              ? t.orders.waterSourceDesc
               : showPhotoCapture === 'productLocation'
-              ? 'Photo of where the product will be installed'
-              : 'Wide photo showing both water source and installation area'
+              ? t.orders.placeForEquipmentDesc
+              : t.orders.fullShotDesc
           }
           onCapture={(file) => {
             handleFileChange(file, showPhotoCapture as 'waterSource' | 'productLocation' | 'fullShot' | 'waterRunning');

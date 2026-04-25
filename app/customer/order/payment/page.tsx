@@ -9,7 +9,8 @@ import { getProductById } from '@/lib/services/productService';
 import { getServiceById } from '@/lib/services/serviceService';
 import { collection, doc, addDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { formatCurrency, generateOrderNumber } from '@/lib/utils/formatters';
+import { generateOrderNumber } from '@/lib/utils/formatters';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import { processAmazonPayment } from '@/lib/services/amazonPaymentService';
 import { logTransaction } from '@/lib/services/transactionService';
 import { addCustomerHistoryRecord } from '@/lib/services/customerHistoryService';
@@ -22,6 +23,7 @@ export default function PaymentPage() {
   const router = useRouter();
   const { user, userData } = useAuth();
   const { t } = useTranslation();
+  const { formatCurrency } = useLocaleFormatters();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [service, setService] = useState<Service | null>(null);
@@ -38,7 +40,7 @@ export default function PaymentPage() {
 
       const orderDataStr = sessionStorage.getItem('orderData');
       if (!orderDataStr) {
-        toast.error('No order data found');
+        toast.error(t.orders.noOrderData);
         router.push('/customer');
         return;
       }
@@ -47,7 +49,7 @@ export default function PaymentPage() {
       const productData = await getProductById(orderData.productId);
 
       if (!productData) {
-        toast.error('Product not found');
+        toast.error(t.orders.productNotFound);
         router.push('/customer');
         return;
       }
@@ -65,7 +67,7 @@ export default function PaymentPage() {
         setService(null);
       }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load order summary';
+      const message = error instanceof Error ? error.message : t.orders.loadOrderSummaryError;
       toast.error(message);
     } finally {
       setLoading(false);
@@ -74,7 +76,7 @@ export default function PaymentPage() {
 
   const handlePayment = async () => {
     if (!user || !product) {
-      toast.error('Missing required data');
+      toast.error(t.orders.missingRequiredData);
       return;
     }
 
@@ -149,18 +151,30 @@ export default function PaymentPage() {
         timeSlot: orderData.timeSlot,
 
         sitePhotos: {
-          waterSource: {
-            url: orderData.sitePhotos.waterSource,
-            uploadedAt: Timestamp.now(),
-          },
-          productLocation: {
-            url: orderData.sitePhotos.productLocation,
-            uploadedAt: Timestamp.now(),
-          },
-          waterRunningVideo: {
-            url: orderData.sitePhotos.waterRunning,
-            uploadedAt: Timestamp.now(),
-          },
+          ...(orderData.sitePhotos?.waterSource && {
+            waterSource: {
+              url: orderData.sitePhotos.waterSource,
+              uploadedAt: Timestamp.now(),
+            },
+          }),
+          ...(orderData.sitePhotos?.productLocation && {
+            productLocation: {
+              url: orderData.sitePhotos.productLocation,
+              uploadedAt: Timestamp.now(),
+            },
+          }),
+          ...(orderData.sitePhotos?.fullShot && {
+            fullShot: {
+              url: orderData.sitePhotos.fullShot,
+              uploadedAt: Timestamp.now(),
+            },
+          }),
+          ...(orderData.sitePhotos?.waterRunning && {
+            waterRunningVideo: {
+              url: orderData.sitePhotos.waterRunning,
+              uploadedAt: Timestamp.now(),
+            },
+          }),
         },
 
         installationPhotos: [],
@@ -280,7 +294,7 @@ export default function PaymentPage() {
         });
 
         orderRefId = fallbackOrderId;
-        toast.success('Order saved locally! Will sync to server when possible.');
+        toast.success(t.orders.orderSavedLocally);
       }
 
       sessionStorage.removeItem('orderData');

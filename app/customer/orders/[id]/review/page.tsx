@@ -9,7 +9,7 @@ import { Order, Review } from '@/types';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { createReview, getReviewForOrder, updateReview } from '@/lib/services/reviewService';
-import { formatDate } from '@/lib/utils/formatters';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import toast from 'react-hot-toast';
 
 const MAX_COMMENT = 500;
@@ -20,6 +20,7 @@ export default function ReviewPage() {
   const searchParams = useSearchParams();
   const { userData } = useAuth();
   const { t, language } = useTranslation();
+  const { formatDate } = useLocaleFormatters();
   const orderId = params.id as string;
 
   const deepLinkRating = useMemo(() => {
@@ -59,7 +60,7 @@ export default function ReviewPage() {
       setLoading(true);
       const orderDoc = await getDoc(doc(db, 'orders', orderId));
       if (!orderDoc.exists()) {
-        toast.error('Order not found');
+        toast.error(t.orders.orderNotFound);
         router.push('/customer/orders');
         return;
       }
@@ -82,12 +83,12 @@ export default function ReviewPage() {
         setScore(deepLinkRating);
       }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load order';
+      const message = error instanceof Error ? error.message : t.orders.loadOrderError;
       toast.error(message);
     } finally {
       setLoading(false);
     }
-  }, [orderId, router, deepLinkRating, t.orders.reviewFlow.pendingOrderToast]);
+  }, [orderId, router, deepLinkRating, t.orders.reviewFlow.pendingOrderToast, t.orders.orderNotFound, t.orders.loadOrderError]);
 
   useEffect(() => {
     loadData();
@@ -115,7 +116,7 @@ export default function ReviewPage() {
       if (fresh) setExistingReview(fresh);
       setThankYou(true);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to submit review';
+      const message = error instanceof Error ? error.message : t.orders.submitReviewError;
       toast.error(message);
     } finally {
       setSubmitting(false);
