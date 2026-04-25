@@ -42,6 +42,7 @@ import {
   getReviewsForTechnician,
   flagReview,
   hideReview,
+  restoreReview,
 } from '../reviewService';
 import { logTransaction } from '../transactionService';
 
@@ -317,6 +318,32 @@ describe('hideReview', () => {
     expect(logTransaction).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'review_unhidden',
+      })
+    );
+  });
+});
+
+describe('restoreReview', () => {
+  it('clears flagged, flaggedReason, and hidden in a single update', async () => {
+    await restoreReview('review-1', 'admin-1');
+
+    expect(mockUpdateDoc).toHaveBeenCalledTimes(1);
+    const updateData = mockUpdateDoc.mock.calls[0][1];
+    expect(updateData.flagged).toBe(false);
+    expect(updateData.flaggedReason).toBe('');
+    expect(updateData.hidden).toBe(false);
+    expect(updateData.updatedAt).toBeDefined();
+  });
+
+  it('logs review_restored transaction attributed to admin', async () => {
+    await restoreReview('review-1', 'admin-1');
+
+    expect(logTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'review_restored',
+        performedBy: 'admin-1',
+        performedByRole: 'admin',
+        metadata: { reviewId: 'review-1' },
       })
     );
   });
