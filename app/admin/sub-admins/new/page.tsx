@@ -14,9 +14,12 @@ import { getSecondaryAuth, disposeSecondaryApp } from '@/lib/firebase/secondary'
 import { getActiveSubContractors } from '@/lib/services/subContractorService';
 import { SubContractor, User } from '@/types';
 import toast from 'react-hot-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function NewSubAdminPage() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const sn = t.admin.subAdminNew;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -33,24 +36,25 @@ export default function NewSubAdminPage() {
         setSubContractors(data);
       } catch (error: unknown) {
         const message =
-          error instanceof Error ? error.message : 'Failed to load sub-contractors';
+          error instanceof Error ? error.message : sn.loadContractorsError;
         toast.error(message);
       } finally {
         setLoadingContractors(false);
       }
     };
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!email.trim() || !password || !displayName.trim()) {
-      toast.error('Email, password, and display name are required');
+      toast.error(sn.requiredFieldsToast);
       return;
     }
     if (password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+      toast.error(sn.passwordTooShortToast);
       return;
     }
 
@@ -86,20 +90,20 @@ export default function NewSubAdminPage() {
       };
       await setDoc(doc(db, 'users', newUid), newUser);
 
-      toast.success('Sub-admin created');
+      toast.success(sn.createdToast);
       router.push('/admin/sub-admins');
     } catch (error: unknown) {
       const code =
         error && typeof error === 'object' && 'code' in error
           ? String((error as { code?: unknown }).code ?? '')
           : '';
-      let message = error instanceof Error ? error.message : 'Failed to create sub-admin';
+      let message = error instanceof Error ? error.message : sn.createError;
       if (code === 'auth/email-already-in-use') {
-        message = 'An account with this email already exists';
+        message = sn.emailInUseToast;
       } else if (code === 'auth/invalid-email') {
-        message = 'Invalid email address';
+        message = sn.invalidEmailToast;
       } else if (code === 'auth/weak-password') {
-        message = 'Password must be at least 6 characters';
+        message = sn.passwordTooShortToast;
       }
       toast.error(message);
     } finally {
@@ -115,87 +119,81 @@ export default function NewSubAdminPage() {
         className="inline-flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to Sub-Admins
+        {sn.backToSubAdmins}
       </Link>
 
       <div>
-        <h1 className="text-4xl font-bold tracking-tight mb-2">New Sub-Admin</h1>
-        <p className="text-text-secondary">
-          Creates a scoped admin account tied to a sub-contractor.
-        </p>
+        <h1 className="text-4xl font-bold tracking-tight mb-2">{sn.pageTitle}</h1>
+        <p className="text-text-secondary">{sn.pageSubtitle}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="apple-card space-y-6">
         <div>
-          <label className="block text-sm font-medium mb-2">Display name *</label>
+          <label className="block text-sm font-medium mb-2">{sn.displayNameLabel}</label>
           <input
             type="text"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
-            placeholder="Jane Doe"
+            placeholder={sn.displayNamePlaceholder}
             required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">Email *</label>
+          <label className="block text-sm font-medium mb-2">{sn.emailLabel}</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
-            placeholder="jane@contractor.com"
+            placeholder={sn.emailPlaceholder}
             autoComplete="off"
             required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">Temporary password *</label>
+          <label className="block text-sm font-medium mb-2">{sn.passwordLabel}</label>
           <input
             type="text"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all font-mono"
-            placeholder="At least 6 characters"
+            placeholder={sn.passwordPlaceholder}
             autoComplete="off"
             required
           />
-          <p className="text-xs text-text-tertiary mt-2">
-            Share this with the sub-admin. They should change it after first sign-in from Settings.
-          </p>
+          <p className="text-xs text-text-tertiary mt-2">{sn.passwordHelp}</p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">Phone</label>
+          <label className="block text-sm font-medium mb-2">{sn.phoneLabel}</label>
           <input
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
-            placeholder="+1 555 123 4567"
+            placeholder={sn.phonePlaceholder}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">Sub-Contractor</label>
+          <label className="block text-sm font-medium mb-2">{sn.subContractorLabel}</label>
           <select
             value={subContractorId}
             onChange={(e) => setSubContractorId(e.target.value)}
             className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
             disabled={loadingContractors}
           >
-            <option value="">— None —</option>
+            <option value="">{sn.subContractorNone}</option>
             {subContractors.map((sc) => (
               <option key={sc.id} value={sc.id}>
                 {sc.name}
               </option>
             ))}
           </select>
-          <p className="text-xs text-text-tertiary mt-2">
-            Sub-admins see only technicians and orders scoped to this contractor.
-          </p>
+          <p className="text-xs text-text-tertiary mt-2">{sn.subContractorHelp}</p>
         </div>
 
         <div className="flex gap-3 pt-2">
@@ -203,7 +201,7 @@ export default function NewSubAdminPage() {
             href="/admin/sub-admins"
             className="flex-1 px-6 py-3 bg-surface-elevated hover:bg-surface-secondary text-center rounded-apple font-medium transition-all"
           >
-            Cancel
+            {sn.cancel}
           </Link>
           <button
             type="submit"
@@ -211,7 +209,7 @@ export default function NewSubAdminPage() {
             className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 disabled:opacity-60 text-white font-semibold rounded-apple transition-all hover:scale-[1.01] shadow-apple"
           >
             <UserPlus className="w-4 h-4" />
-            {loading ? 'Creating…' : 'Create sub-admin'}
+            {loading ? sn.submitting : sn.submit}
           </button>
         </div>
       </form>

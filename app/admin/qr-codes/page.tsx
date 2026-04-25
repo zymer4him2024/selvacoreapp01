@@ -17,6 +17,8 @@ import {
 import QRCodeLib from 'qrcode';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/hooks/useTranslation';
+import type { TranslationKeys } from '@/lib/translations';
 import {
   listQRCodes,
   createQRCode,
@@ -25,15 +27,17 @@ import {
 } from '@/lib/services/qrCodeService';
 import { QRCode, QRCodePurpose, CreateQRCodeInput } from '@/types/qrCode';
 
-const PURPOSE_OPTIONS: { value: QRCodePurpose; label: string }[] = [
-  { value: 'custom', label: 'Custom' },
-  { value: 'customer_signup', label: 'Customer Signup' },
-  { value: 'technician_signup', label: 'Technician Signup' },
-  { value: 'product_page', label: 'Product Page' },
-  { value: 'order_tracking', label: 'Order Tracking' },
-  { value: 'device_registration', label: 'Device Registration' },
-  { value: 'maintenance_card', label: 'Maintenance Card' },
-];
+function buildPurposeOptions(qr: TranslationKeys['admin']['qrCodes']): { value: QRCodePurpose; label: string }[] {
+  return [
+    { value: 'custom', label: qr.purposeCustom },
+    { value: 'customer_signup', label: qr.purposeCustomerSignup },
+    { value: 'technician_signup', label: qr.purposeTechnicianSignup },
+    { value: 'product_page', label: qr.purposeProductPage },
+    { value: 'order_tracking', label: qr.purposeOrderTracking },
+    { value: 'device_registration', label: qr.purposeDeviceRegistration },
+    { value: 'maintenance_card', label: qr.purposeMaintenanceCard },
+  ];
+}
 
 const MAINTENANCE_QR_PREFIX = 'SELVAVORE-MAINTENANCE';
 
@@ -88,6 +92,9 @@ function buildShareBody(qr: QRCode): string {
 
 export default function QRCodeManagementPage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
+  const qrt = t.admin.qrCodes;
+  const PURPOSE_OPTIONS = buildPurposeOptions(qrt);
   const [codes, setCodes] = useState<QRCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -106,7 +113,7 @@ export default function QRCodeManagementPage() {
       setCodes(data);
     } catch (error: unknown) {
       const message =
-        error instanceof Error ? error.message : 'Failed to load QR codes';
+        error instanceof Error ? error.message : qrt.loadError;
       toast.error(message);
     } finally {
       setLoading(false);
@@ -115,6 +122,7 @@ export default function QRCodeManagementPage() {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const resetForm = () => {
@@ -124,11 +132,11 @@ export default function QRCodeManagementPage() {
 
   const handleCreate = async () => {
     if (!user) {
-      toast.error('You must be signed in');
+      toast.error(qrt.mustBeSignedInToast);
       return;
     }
     if (!form.label.trim() || !form.content.trim()) {
-      toast.error('Label and content are required');
+      toast.error(qrt.labelAndContentRequiredToast);
       return;
     }
     try {
@@ -142,12 +150,12 @@ export default function QRCodeManagementPage() {
         },
         user.uid
       );
-      toast.success('QR code created');
+      toast.success(qrt.createdToast);
       resetForm();
       await load();
     } catch (error: unknown) {
       const message =
-        error instanceof Error ? error.message : 'Failed to create QR code';
+        error instanceof Error ? error.message : qrt.createError;
       toast.error(message);
     } finally {
       setSaving(false);
@@ -155,14 +163,14 @@ export default function QRCodeManagementPage() {
   };
 
   const handleDelete = async (qr: QRCode) => {
-    if (!confirm(`Delete "${qr.label}"? This cannot be undone.`)) return;
+    if (!confirm(qrt.confirmDeleteFormat.replace('{label}', qr.label))) return;
     try {
       await deleteQRCode(qr.id);
-      toast.success('QR code deleted');
+      toast.success(qrt.deletedToast);
       await load();
     } catch (error: unknown) {
       const message =
-        error instanceof Error ? error.message : 'Failed to delete QR code';
+        error instanceof Error ? error.message : qrt.deleteError;
       toast.error(message);
     }
   };
@@ -173,7 +181,7 @@ export default function QRCodeManagementPage() {
       await load();
     } catch (error: unknown) {
       const message =
-        error instanceof Error ? error.message : 'Failed to update QR code';
+        error instanceof Error ? error.message : qrt.updateError;
       toast.error(message);
     }
   };
@@ -181,9 +189,9 @@ export default function QRCodeManagementPage() {
   const handleCopy = async (qr: QRCode) => {
     try {
       await navigator.clipboard.writeText(qr.content);
-      toast.success('Content copied');
+      toast.success(qrt.contentCopiedToast);
     } catch {
-      toast.error('Clipboard not available');
+      toast.error(qrt.clipboardUnavailableToast);
     }
   };
 
@@ -193,12 +201,12 @@ export default function QRCodeManagementPage() {
       const safe = qr.label.replace(/[^a-z0-9-_]+/gi, '_').slice(0, 40);
       downloadDataURL(dataUrl, `qr-${safe || qr.id}.png`);
     } catch {
-      toast.error('Failed to generate PNG');
+      toast.error(qrt.pngFailedToast);
     }
   };
 
   const handleShareEmail = (qr: QRCode) => {
-    const subject = encodeURIComponent(`QR Code: ${qr.label}`);
+    const subject = encodeURIComponent(qrt.shareSubjectFormat.replace('{label}', qr.label));
     const body = encodeURIComponent(buildShareBody(qr));
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
   };
@@ -223,41 +231,39 @@ export default function QRCodeManagementPage() {
             href="/admin/settings"
             className="inline-flex items-center gap-2 text-sm text-text-secondary hover:text-primary mb-2"
           >
-            <ArrowLeft className="w-4 h-4" /> Back to Settings
+            <ArrowLeft className="w-4 h-4" /> {qrt.backToSettings}
           </Link>
-          <h1 className="text-4xl font-bold tracking-tight">QR Code Management</h1>
-          <p className="text-text-secondary mt-2">
-            Create and share QR codes for signup links, product pages, devices, or any URL.
-          </p>
+          <h1 className="text-4xl font-bold tracking-tight">{qrt.title}</h1>
+          <p className="text-text-secondary mt-2">{qrt.subtitle}</p>
         </div>
         <button
           onClick={() => setShowForm((v) => !v)}
           className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all shadow-apple"
         >
           {showForm ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
-          {showForm ? 'Cancel' : 'New QR Code'}
+          {showForm ? qrt.cancelButton : qrt.newQrCode}
         </button>
       </div>
 
       {/* Create form */}
       {showForm && (
         <div className="apple-card space-y-6">
-          <h2 className="text-2xl font-semibold">Create QR Code</h2>
+          <h2 className="text-2xl font-semibold">{qrt.createTitle}</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium mb-2">Label *</label>
+              <label className="block text-sm font-medium mb-2">{qrt.labelField}</label>
               <input
                 type="text"
                 value={form.label}
                 onChange={(e) => setForm({ ...form, label: e.target.value })}
-                placeholder="e.g. Onboarding flyer - Q2"
+                placeholder={qrt.labelPlaceholder}
                 className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Purpose</label>
+              <label className="block text-sm font-medium mb-2">{qrt.purposeField}</label>
               <select
                 value={form.purpose}
                 onChange={(e) => {
@@ -286,38 +292,34 @@ export default function QRCodeManagementPage() {
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium mb-2">
-                Content (URL or text) *
+                {qrt.contentField}
               </label>
               <input
                 type="text"
                 value={form.content}
                 onChange={(e) => setForm({ ...form, content: e.target.value })}
-                placeholder="https://selvacore.com/customer/register"
+                placeholder={qrt.contentPlaceholder}
                 readOnly={form.purpose === 'maintenance_card'}
                 className={`w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all ${
                   form.purpose === 'maintenance_card' ? 'font-mono text-sm opacity-80 cursor-not-allowed' : ''
                 }`}
               />
               {form.purpose === 'maintenance_card' ? (
-                <p className="text-xs text-text-tertiary mt-1">
-                  Auto-generated token. When a technician scans this card, the maintenance update form opens.
-                </p>
+                <p className="text-xs text-text-tertiary mt-1">{qrt.contentHelpMaintenance}</p>
               ) : (
-                <p className="text-xs text-text-tertiary mt-1">
-                  Whatever is encoded here is what people will see when they scan.
-                </p>
+                <p className="text-xs text-text-tertiary mt-1">{qrt.contentHelp}</p>
               )}
             </div>
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium mb-2">
-                Description (optional)
+                {qrt.descriptionField}
               </label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 rows={2}
-                placeholder="Short note included when sharing this QR"
+                placeholder={qrt.descriptionPlaceholder}
                 className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all resize-none"
               />
             </div>
@@ -328,7 +330,7 @@ export default function QRCodeManagementPage() {
             <div className="flex items-center gap-6 p-4 bg-surface-elevated rounded-apple">
               <QRPreview value={form.content} />
               <div className="text-sm text-text-secondary">
-                <p className="font-medium text-text-primary mb-1">Preview</p>
+                <p className="font-medium text-text-primary mb-1">{qrt.previewLabel}</p>
                 <p className="break-all">{form.content}</p>
               </div>
             </div>
@@ -339,7 +341,7 @@ export default function QRCodeManagementPage() {
               onClick={resetForm}
               className="px-6 py-3 border border-border text-text-secondary hover:text-text-primary rounded-apple transition-all"
             >
-              Cancel
+              {qrt.cancelButton}
             </button>
             <button
               onClick={handleCreate}
@@ -347,7 +349,7 @@ export default function QRCodeManagementPage() {
               className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-hover disabled:opacity-50 text-white font-semibold rounded-apple transition-all"
             >
               <Check className="w-5 h-5" />
-              {saving ? 'Creating...' : 'Create QR Code'}
+              {saving ? qrt.creatingButton : qrt.createButton}
             </button>
           </div>
         </div>
@@ -361,10 +363,8 @@ export default function QRCodeManagementPage() {
       ) : codes.length === 0 ? (
         <div className="apple-card text-center py-12">
           <QrCode className="w-16 h-16 text-text-tertiary mx-auto mb-4" />
-          <h3 className="text-xl font-semibold mb-2">No QR codes yet</h3>
-          <p className="text-text-secondary">
-            Click "New QR Code" to create one.
-          </p>
+          <h3 className="text-xl font-semibold mb-2">{qrt.noCodesTitle}</h3>
+          <p className="text-text-secondary">{qrt.noCodesDescription}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -391,7 +391,7 @@ export default function QRCodeManagementPage() {
                           : 'bg-surface-elevated text-text-tertiary'
                       }`}
                     >
-                      {qr.active ? 'Active' : 'Inactive'}
+                      {qr.active ? qrt.activeBadge : qrt.inactiveBadge}
                     </button>
                   </div>
 
@@ -407,42 +407,42 @@ export default function QRCodeManagementPage() {
                   <div className="flex flex-wrap gap-2 pt-2">
                     <button
                       onClick={() => handleCopy(qr)}
-                      title="Copy content"
+                      title={qrt.copyTitle}
                       className="flex items-center gap-1 px-3 py-1.5 text-xs bg-surface-elevated hover:bg-border rounded-apple transition-all"
                     >
-                      <Copy className="w-3.5 h-3.5" /> Copy
+                      <Copy className="w-3.5 h-3.5" /> {qrt.copyButton}
                     </button>
                     <button
                       onClick={() => handleDownload(qr)}
-                      title="Download PNG"
+                      title={qrt.downloadTitle}
                       className="flex items-center gap-1 px-3 py-1.5 text-xs bg-surface-elevated hover:bg-border rounded-apple transition-all"
                     >
-                      <Download className="w-3.5 h-3.5" /> PNG
+                      <Download className="w-3.5 h-3.5" /> {qrt.pngButton}
                     </button>
                     <button
                       onClick={() => handleShareEmail(qr)}
-                      title="Share via email"
+                      title={qrt.shareEmailTitle}
                       className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary/10 hover:bg-primary/20 text-primary rounded-apple transition-all"
                     >
-                      <Mail className="w-3.5 h-3.5" /> Email
+                      <Mail className="w-3.5 h-3.5" /> {qrt.emailButton}
                     </button>
                     <button
                       onClick={() => handleShareSMS(qr)}
-                      title="Share via SMS"
+                      title={qrt.shareSmsTitle}
                       className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary/10 hover:bg-primary/20 text-primary rounded-apple transition-all"
                     >
-                      <MessageSquare className="w-3.5 h-3.5" /> SMS
+                      <MessageSquare className="w-3.5 h-3.5" /> {qrt.smsButton}
                     </button>
                     <button
                       onClick={() => handleShareWhatsApp(qr)}
-                      title="Share via WhatsApp"
+                      title={qrt.shareWhatsappTitle}
                       className="flex items-center gap-1 px-3 py-1.5 text-xs bg-success/10 hover:bg-success/20 text-success rounded-apple transition-all"
                     >
-                      WhatsApp
+                      {qrt.whatsappButton}
                     </button>
                     <button
                       onClick={() => handleDelete(qr)}
-                      title="Delete"
+                      title={qrt.deleteTitle}
                       className="flex items-center gap-1 px-3 py-1.5 text-xs bg-error/10 hover:bg-error/20 text-error rounded-apple transition-all ml-auto"
                     >
                       <Trash2 className="w-3.5 h-3.5" />

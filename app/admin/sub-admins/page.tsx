@@ -18,8 +18,11 @@ import { getAllSubContractors } from '@/lib/services/subContractorService';
 import { SubContractor, User } from '@/types';
 import { formatPhone } from '@/lib/utils/formatters';
 import toast from 'react-hot-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function SubAdminsPage() {
+  const { t } = useTranslation();
+  const sa = t.admin.subAdmins;
   const [subAdmins, setSubAdmins] = useState<User[]>([]);
   const [contractorMap, setContractorMap] = useState<Record<string, SubContractor>>({});
   const [loading, setLoading] = useState(true);
@@ -49,7 +52,7 @@ export default function SubAdminsPage() {
       setSubAdmins(users);
       setContractorMap(map);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load sub-admins';
+      const message = error instanceof Error ? error.message : sa.loadError;
       toast.error(message);
     } finally {
       setLoading(false);
@@ -58,21 +61,23 @@ export default function SubAdminsPage() {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const toggleActive = async (user: User) => {
     const next = !user.active;
-    const verb = next ? 'activate' : 'deactivate';
-    if (!confirm(`${verb[0].toUpperCase() + verb.slice(1)} ${user.displayName}?`)) return;
+    const confirmMsg = (next ? sa.confirmActivateFormat : sa.confirmDeactivateFormat)
+      .replace('{name}', user.displayName);
+    if (!confirm(confirmMsg)) return;
     try {
       await updateDoc(doc(db, 'users', user.id), {
         active: next,
         updatedAt: Timestamp.now(),
       });
-      toast.success(`Sub-admin ${next ? 'activated' : 'deactivated'}`);
+      toast.success(next ? sa.activatedToast : sa.deactivatedToast);
       load();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Update failed';
+      const message = error instanceof Error ? error.message : sa.updateFailed;
       toast.error(message);
     }
   };
@@ -82,7 +87,7 @@ export default function SubAdminsPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-text-secondary">Loading sub-admins…</p>
+          <p className="text-text-secondary">{sa.loading}</p>
         </div>
       </div>
     );
@@ -92,41 +97,37 @@ export default function SubAdminsPage() {
     <div className="space-y-8 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight mb-2">Sub-Admins</h1>
-          <p className="text-text-secondary">
-            Scoped admin accounts. Each sub-admin sees only their sub-contractor's data.
-          </p>
+          <h1 className="text-4xl font-bold tracking-tight mb-2">{sa.title}</h1>
+          <p className="text-text-secondary">{sa.subtitle}</p>
         </div>
         <Link
           href="/admin/sub-admins/new"
           className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-white font-semibold rounded-apple transition-all hover:scale-105 shadow-apple"
         >
           <Plus className="w-5 h-5" />
-          New Sub-Admin
+          {sa.newSubAdmin}
         </Link>
       </div>
 
       {subAdmins.length === 0 ? (
         <div className="apple-card text-center py-16">
           <ShieldCheck className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
-          <h3 className="text-xl font-semibold mb-2">No sub-admins yet</h3>
-          <p className="text-text-secondary mb-6">
-            Create one to let a contractor manage their own technicians and orders.
-          </p>
+          <h3 className="text-xl font-semibold mb-2">{sa.noSubAdminsTitle}</h3>
+          <p className="text-text-secondary mb-6">{sa.noSubAdminsDescription}</p>
           <Link
             href="/admin/sub-admins/new"
             className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-white font-semibold rounded-apple transition-all"
           >
             <Plus className="w-5 h-5" />
-            Create first sub-admin
+            {sa.createFirst}
           </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {subAdmins.map((sa) => {
-            const contractor = sa.subContractorId ? contractorMap[sa.subContractorId] : null;
+          {subAdmins.map((user) => {
+            const contractor = user.subContractorId ? contractorMap[user.subContractorId] : null;
             return (
-              <div key={sa.id} className="apple-card">
+              <div key={user.id} className="apple-card">
                 <div className="flex items-start gap-4">
                   <div className="w-16 h-16 rounded-apple bg-primary/10 flex items-center justify-center flex-shrink-0">
                     <ShieldCheck className="w-8 h-8 text-primary" />
@@ -134,44 +135,44 @@ export default function SubAdminsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h3 className="text-xl font-semibold">{sa.displayName}</h3>
+                        <h3 className="text-xl font-semibold">{user.displayName}</h3>
                         <p className="text-sm text-text-secondary flex items-center gap-1.5 mt-1">
                           <Mail className="w-3.5 h-3.5" />
-                          {sa.email}
+                          {user.email}
                         </p>
-                        {sa.phone && (
+                        {user.phone && (
                           <p className="text-sm text-text-tertiary flex items-center gap-1.5 mt-1">
                             <Phone className="w-3.5 h-3.5" />
-                            {formatPhone(sa.phone)}
+                            {formatPhone(user.phone)}
                           </p>
                         )}
                       </div>
                       <span
                         className={`px-3 py-1 text-xs font-medium rounded-full ${
-                          sa.active
+                          user.active
                             ? 'bg-success/20 text-success'
                             : 'bg-error/20 text-error'
                         }`}
                       >
-                        {sa.active ? 'Active' : 'Inactive'}
+                        {user.active ? sa.activeBadge : sa.inactiveBadge}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2 text-sm text-text-secondary mb-4">
                       <Building2 className="w-4 h-4" />
-                      <span>{contractor ? contractor.name : 'No contractor assigned'}</span>
+                      <span>{contractor ? contractor.name : sa.noContractor}</span>
                     </div>
 
                     <div className="flex gap-2 pt-3 border-t border-border">
                       <button
-                        onClick={() => toggleActive(sa)}
+                        onClick={() => toggleActive(user)}
                         className={`flex-1 px-4 py-2 rounded-apple text-sm font-medium transition-all ${
-                          sa.active
+                          user.active
                             ? 'bg-surface-elevated hover:bg-error/20 hover:text-error'
                             : 'bg-success/20 text-success hover:bg-success/30'
                         }`}
                       >
-                        {sa.active ? 'Deactivate' : 'Activate'}
+                        {user.active ? sa.deactivate : sa.activate}
                       </button>
                     </div>
                   </div>
