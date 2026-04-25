@@ -11,7 +11,8 @@ import { InventoryItem, StockAdjustment, getInventoryStatus, AdjustmentType } fr
 import InventoryFormModal, { InventoryFormData } from '@/components/admin/InventoryFormModal';
 import StockAdjustmentModal from '@/components/admin/StockAdjustmentModal';
 import { useAuth } from '@/contexts/AuthContext';
-import { formatCurrency, formatDate } from '@/lib/utils/formatters';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import toast from 'react-hot-toast';
 
 const ADJUSTMENT_ICONS: Record<AdjustmentType, typeof Plus> = {
@@ -28,24 +29,34 @@ const ADJUSTMENT_COLORS: Record<AdjustmentType, string> = {
   returned: 'text-primary bg-primary/10',
 };
 
-const CATEGORY_LABELS: Record<string, string> = {
-  filter: 'Filter',
-  part: 'Part',
-  tool: 'Tool',
-  supply: 'Supply',
-  equipment: 'Equipment',
-};
-
 export default function InventoryDetailPage() {
   const router = useRouter();
   const params = useParams();
   const itemId = params.id as string;
   const { user, userData } = useAuth();
+  const { t } = useTranslation();
+  const { formatCurrency, formatDate } = useLocaleFormatters();
+  const inv = t.admin.inventory;
   const [item, setItem] = useState<InventoryItem | null>(null);
   const [adjustments, setAdjustments] = useState<StockAdjustment[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFormModal, setShowFormModal] = useState(false);
   const [showAdjustModal, setShowAdjustModal] = useState(false);
+
+  const CATEGORY_LABELS: Record<string, string> = {
+    filter: inv.categoryFilter,
+    part: inv.categoryPart,
+    tool: inv.categoryTool,
+    supply: inv.categorySupply,
+    equipment: inv.categoryEquipment,
+  };
+
+  const TYPE_LABELS: Record<AdjustmentType, string> = {
+    restock: inv.restock,
+    used: inv.used,
+    adjustment: inv.adjustment,
+    returned: inv.returned,
+  };
 
   useEffect(() => {
     loadData();
@@ -59,7 +70,7 @@ export default function InventoryDetailPage() {
       ]);
 
       if (!itemData) {
-        toast.error('Item not found');
+        toast.error(inv.itemNotFound);
         router.push('/admin/inventory');
         return;
       }
@@ -67,7 +78,7 @@ export default function InventoryDetailPage() {
       setItem(itemData);
       setAdjustments(adjustmentsData);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load item';
+      const message = error instanceof Error ? error.message : inv.loadItemError;
       toast.error(message);
       router.push('/admin/inventory');
     } finally {
@@ -78,7 +89,7 @@ export default function InventoryDetailPage() {
   const handleEditSubmit = async (data: InventoryFormData) => {
     if (!user || !item) return;
     await updateItem(item.id, data, user.uid);
-    toast.success('Item updated');
+    toast.success(inv.itemUpdatedShort);
     setShowFormModal(false);
     setLoading(true);
     await loadData();
@@ -88,7 +99,7 @@ export default function InventoryDetailPage() {
     if (!user || !item) return;
     const name = userData?.displayName || 'Admin';
     await adjustStock(item.id, type, quantity, reason, user.uid, name);
-    toast.success('Stock adjusted');
+    toast.success(inv.stockAdjustedShort);
     setShowAdjustModal(false);
     setLoading(true);
     await loadData();
@@ -96,9 +107,9 @@ export default function InventoryDetailPage() {
 
   const handleDelete = async () => {
     if (!user || !item) return;
-    if (!confirm('Are you sure you want to remove this item from inventory?')) return;
+    if (!confirm(inv.confirmRemove)) return;
     await deleteItem(item.id, user.uid);
-    toast.success('Item removed');
+    toast.success(inv.itemRemoved);
     router.push('/admin/inventory');
   };
 
@@ -107,7 +118,7 @@ export default function InventoryDetailPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading item...</p>
+          <p className="text-text-secondary">{inv.loadingItem}</p>
         </div>
       </div>
     );
@@ -117,9 +128,9 @@ export default function InventoryDetailPage() {
 
   const status = getInventoryStatus(item);
   const statusConfig = {
-    in_stock: { label: 'In Stock', icon: CheckCircle, color: 'text-success', bg: 'bg-success/10' },
-    low_stock: { label: 'Low Stock', icon: AlertTriangle, color: 'text-warning', bg: 'bg-warning/10' },
-    out_of_stock: { label: 'Out of Stock', icon: XCircle, color: 'text-error', bg: 'bg-error/10' },
+    in_stock: { label: inv.inStock, icon: CheckCircle, color: 'text-success', bg: 'bg-success/10' },
+    low_stock: { label: inv.lowStock, icon: AlertTriangle, color: 'text-warning', bg: 'bg-warning/10' },
+    out_of_stock: { label: inv.outOfStock, icon: XCircle, color: 'text-error', bg: 'bg-error/10' },
   }[status];
   const StatusIcon = statusConfig.icon;
 
@@ -142,7 +153,7 @@ export default function InventoryDetailPage() {
               </span>
             </div>
             <p className="text-text-secondary mt-1">
-              {CATEGORY_LABELS[item.category]} {item.supplier ? `from ${item.supplier}` : ''}
+              {CATEGORY_LABELS[item.category]} {item.supplier ? inv.fromSupplierFormat.replace('{supplier}', item.supplier) : ''}
             </p>
           </div>
         </div>
@@ -153,19 +164,19 @@ export default function InventoryDetailPage() {
             className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-white font-semibold rounded-apple transition-all"
           >
             <ArrowUpDown className="w-4 h-4" />
-            Adjust Stock
+            {inv.adjustStockButton}
           </button>
           <button
             onClick={() => setShowFormModal(true)}
             className="p-2.5 hover:bg-surface-elevated rounded-apple transition-colors border border-border"
-            title="Edit item"
+            title={inv.editItemTitle}
           >
             <Pencil className="w-4 h-4" />
           </button>
           <button
             onClick={handleDelete}
             className="p-2.5 hover:bg-error/10 rounded-apple transition-colors border border-border"
-            title="Remove item"
+            title={inv.removeItemTitle}
           >
             <Trash2 className="w-4 h-4 text-error" />
           </button>
@@ -180,10 +191,10 @@ export default function InventoryDetailPage() {
             <StatusIcon className={`w-8 h-8 ${statusConfig.color}`} />
           </div>
           <p className={`text-5xl font-bold ${statusConfig.color}`}>{item.quantity}</p>
-          <p className="text-text-tertiary text-sm mt-1">units in stock</p>
+          <p className="text-text-tertiary text-sm mt-1">{inv.unitsInStock}</p>
           <div className="mt-3 pt-3 border-t border-border">
             <p className="text-sm">
-              <span className="text-text-tertiary">Minimum:</span>{' '}
+              <span className="text-text-tertiary">{inv.minimumLabel}</span>{' '}
               <span className="font-medium">{item.minQuantity}</span>
             </p>
             <p className={`text-sm font-medium mt-1 ${statusConfig.color}`}>
@@ -194,34 +205,34 @@ export default function InventoryDetailPage() {
 
         {/* Item Info */}
         <div className="apple-card">
-          <h3 className="text-lg font-semibold mb-4">Item Details</h3>
+          <h3 className="text-lg font-semibold mb-4">{inv.itemDetails}</h3>
           <div className="space-y-3">
             <div className="flex items-center gap-3">
               <DollarSign className="w-5 h-5 text-primary flex-shrink-0" />
               <div>
-                <p className="text-sm text-text-tertiary">Unit Cost</p>
+                <p className="text-sm text-text-tertiary">{inv.unitCostLabel}</p>
                 <p className="font-medium">{formatCurrency(item.unitCost, item.currency)}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <DollarSign className="w-5 h-5 text-primary flex-shrink-0" />
               <div>
-                <p className="text-sm text-text-tertiary">Total Value</p>
+                <p className="text-sm text-text-tertiary">{inv.totalValueLabel}</p>
                 <p className="font-medium">{formatCurrency(item.quantity * item.unitCost, item.currency)}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <Package className="w-5 h-5 text-primary flex-shrink-0" />
               <div>
-                <p className="text-sm text-text-tertiary">Supplier</p>
-                <p className="font-medium">{item.supplier || 'Not specified'}</p>
+                <p className="text-sm text-text-tertiary">{inv.supplierLabel}</p>
+                <p className="font-medium">{item.supplier || inv.notSpecified}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <MapPin className="w-5 h-5 text-primary flex-shrink-0" />
               <div>
-                <p className="text-sm text-text-tertiary">Location</p>
-                <p className="font-medium">{item.location || 'Not specified'}</p>
+                <p className="text-sm text-text-tertiary">{inv.locationLabel}</p>
+                <p className="font-medium">{item.location || inv.notSpecified}</p>
               </div>
             </div>
           </div>
@@ -229,12 +240,12 @@ export default function InventoryDetailPage() {
 
         {/* Timestamps & Notes */}
         <div className="apple-card">
-          <h3 className="text-lg font-semibold mb-4">Additional Info</h3>
+          <h3 className="text-lg font-semibold mb-4">{inv.additionalInfo}</h3>
           <div className="space-y-3">
             <div className="flex items-center gap-3">
               <Calendar className="w-5 h-5 text-primary flex-shrink-0" />
               <div>
-                <p className="text-sm text-text-tertiary">Created</p>
+                <p className="text-sm text-text-tertiary">{inv.createdLabel}</p>
                 <p className="font-medium">{formatDate(item.createdAt, 'long')}</p>
               </div>
             </div>
@@ -242,20 +253,20 @@ export default function InventoryDetailPage() {
               <div className="flex items-center gap-3">
                 <Calendar className="w-5 h-5 text-success flex-shrink-0" />
                 <div>
-                  <p className="text-sm text-text-tertiary">Last Restocked</p>
+                  <p className="text-sm text-text-tertiary">{inv.lastRestockedLabel}</p>
                   <p className="font-medium">{formatDate(item.lastRestockedAt, 'long')}</p>
                 </div>
               </div>
             )}
             {item.description && (
               <div className="pt-2 border-t border-border">
-                <p className="text-sm text-text-tertiary mb-1">Description</p>
+                <p className="text-sm text-text-tertiary mb-1">{inv.descriptionLabel}</p>
                 <p className="text-sm">{item.description}</p>
               </div>
             )}
             {item.notes && (
               <div className="pt-2 border-t border-border">
-                <p className="text-sm text-text-tertiary mb-1">Notes</p>
+                <p className="text-sm text-text-tertiary mb-1">{inv.notesLabel}</p>
                 <p className="text-sm">{item.notes}</p>
               </div>
             )}
@@ -265,11 +276,11 @@ export default function InventoryDetailPage() {
 
       {/* Stock Adjustment History */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Stock History</h2>
+        <h2 className="text-2xl font-bold">{inv.stockHistory}</h2>
 
         {adjustments.length === 0 ? (
           <div className="apple-card text-center py-8">
-            <p className="text-text-secondary">No stock adjustments recorded yet.</p>
+            <p className="text-text-secondary">{inv.noAdjustments}</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -284,7 +295,7 @@ export default function InventoryDetailPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold capitalize">{adj.type}</span>
+                        <span className="font-semibold">{TYPE_LABELS[adj.type]}</span>
                         <span className={`text-sm font-mono ${adj.quantity > 0 ? 'text-success' : 'text-error'}`}>
                           {adj.quantity > 0 ? '+' : ''}{adj.quantity}
                         </span>

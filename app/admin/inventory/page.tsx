@@ -12,34 +12,20 @@ import { InventoryItem, InventoryCategory, StockAdjustment, AdjustmentType, getI
 import InventoryFormModal, { InventoryFormData } from '@/components/admin/InventoryFormModal';
 import StockAdjustmentModal from '@/components/admin/StockAdjustmentModal';
 import { useAuth } from '@/contexts/AuthContext';
-import { formatCurrency, formatDateTime } from '@/lib/utils/formatters';
 import toast from 'react-hot-toast';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 
 type PageTab = 'items' | 'transactions';
 type StatusFilter = 'all' | 'in_stock' | 'low_stock' | 'out_of_stock';
 type CategoryFilter = 'all' | InventoryCategory;
 type TypeFilter = 'all' | AdjustmentType;
 
-const TYPE_LABELS: Record<AdjustmentType, string> = {
-  restock: 'Restock',
-  used: 'Used',
-  adjustment: 'Adjustment',
-  returned: 'Returned',
-};
-
 const TYPE_COLORS: Record<AdjustmentType, string> = {
   restock: 'bg-success/20 text-success',
   used: 'bg-error/20 text-error',
   adjustment: 'bg-primary/20 text-primary',
   returned: 'bg-success/20 text-success',
-};
-
-const CATEGORY_LABELS: Record<InventoryCategory, string> = {
-  filter: 'Filter',
-  part: 'Part',
-  tool: 'Tool',
-  supply: 'Supply',
-  equipment: 'Equipment',
 };
 
 const CATEGORY_COLORS: Record<InventoryCategory, string> = {
@@ -50,16 +36,34 @@ const CATEGORY_COLORS: Record<InventoryCategory, string> = {
   equipment: 'bg-indigo-100 text-indigo-700',
 };
 
-function getStatusBadge(item: InventoryItem) {
-  const status = getInventoryStatus(item);
-  if (status === 'out_of_stock') return { label: 'Out of Stock', style: 'bg-error/20 text-error' };
-  if (status === 'low_stock') return { label: 'Low Stock', style: 'bg-warning/20 text-warning' };
-  return { label: 'In Stock', style: 'bg-success/20 text-success' };
-}
-
 export default function InventoryPage() {
   const router = useRouter();
   const { user, userData } = useAuth();
+  const { t } = useTranslation();
+  const { formatCurrency, formatDateTime } = useLocaleFormatters();
+  const inv = t.admin.inventory;
+
+  const TYPE_LABELS: Record<AdjustmentType, string> = {
+    restock: inv.restock,
+    used: inv.used,
+    adjustment: inv.adjustment,
+    returned: inv.returned,
+  };
+
+  const CATEGORY_LABELS: Record<InventoryCategory, string> = {
+    filter: inv.categoryFilter,
+    part: inv.categoryPart,
+    tool: inv.categoryTool,
+    supply: inv.categorySupply,
+    equipment: inv.categoryEquipment,
+  };
+
+  const getStatusBadge = (item: InventoryItem) => {
+    const status = getInventoryStatus(item);
+    if (status === 'out_of_stock') return { label: inv.outOfStock, style: 'bg-error/20 text-error' };
+    if (status === 'low_stock') return { label: inv.lowStock, style: 'bg-warning/20 text-warning' };
+    return { label: inv.inStock, style: 'bg-success/20 text-success' };
+  };
   const [activeTab, setActiveTab] = useState<PageTab>('items');
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [stats, setStats] = useState<InventoryStats | null>(null);
@@ -94,7 +98,7 @@ export default function InventoryPage() {
       setItems(itemsData);
       setStats(statsData);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load inventory';
+      const message = error instanceof Error ? error.message : inv.loadInventoryError;
       toast.error(message);
     } finally {
       setLoading(false);
@@ -108,7 +112,7 @@ export default function InventoryPage() {
       setTransactions(data);
       setTransactionsLoaded(true);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load transactions';
+      const message = error instanceof Error ? error.message : inv.loadTransactionsError;
       toast.error(message);
     } finally {
       setTransactionsLoading(false);
@@ -130,10 +134,10 @@ export default function InventoryPage() {
 
     if (editingItem) {
       await updateItem(editingItem.id, data, user.uid);
-      toast.success('Item updated');
+      toast.success(inv.itemUpdatedShort);
     } else {
       await createItem({ ...data, createdBy: user.uid });
-      toast.success('Item added');
+      toast.success(inv.itemAddedShort);
     }
 
     setShowFormModal(false);
@@ -147,7 +151,7 @@ export default function InventoryPage() {
 
     const name = userData?.displayName || 'Admin';
     await adjustStock(adjustingItem.id, type, quantity, reason, user.uid, name);
-    toast.success('Stock adjusted');
+    toast.success(inv.stockAdjustedShort);
     setAdjustingItem(null);
     setTransactionsLoaded(false);
     setLoading(true);
@@ -186,7 +190,7 @@ export default function InventoryPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading inventory...</p>
+          <p className="text-text-secondary">{inv.loading}</p>
         </div>
       </div>
     );
@@ -197,9 +201,9 @@ export default function InventoryPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight mb-2">Inventory</h1>
+          <h1 className="text-4xl font-bold tracking-tight mb-2">{inv.title}</h1>
           <p className="text-text-secondary">
-            Manage parts, filters, tools, and supplies
+            {inv.subtitle}
           </p>
         </div>
         {activeTab === 'items' && (
@@ -208,7 +212,7 @@ export default function InventoryPage() {
             className="flex items-center gap-2 px-5 py-3 bg-primary hover:bg-primary/90 text-white font-semibold rounded-apple transition-all"
           >
             <Plus className="w-5 h-5" />
-            Add Item
+            {inv.addItem}
           </button>
         )}
       </div>
@@ -224,7 +228,7 @@ export default function InventoryPage() {
           }`}
         >
           <Boxes className="w-4 h-4" />
-          Items
+          {inv.items}
         </button>
         <button
           onClick={() => setActiveTab('transactions')}
@@ -235,7 +239,7 @@ export default function InventoryPage() {
           }`}
         >
           <ArrowDownUp className="w-4 h-4" />
-          Transactions
+          {inv.transactions}
         </button>
       </div>
 
@@ -247,27 +251,27 @@ export default function InventoryPage() {
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="apple-card text-center">
                 <Boxes className="w-8 h-8 mx-auto mb-2 text-primary" />
-                <p className="text-text-tertiary text-sm">Total Items</p>
+                <p className="text-text-tertiary text-sm">{inv.totalItems}</p>
                 <p className="text-3xl font-bold mt-1">{stats.totalItems}</p>
               </div>
               <div className="apple-card text-center">
                 <CheckCircle className="w-8 h-8 mx-auto mb-2 text-success" />
-                <p className="text-text-tertiary text-sm">In Stock</p>
+                <p className="text-text-tertiary text-sm">{inv.inStock}</p>
                 <p className="text-3xl font-bold mt-1 text-success">{stats.inStock}</p>
               </div>
               <div className="apple-card text-center">
                 <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-warning" />
-                <p className="text-text-tertiary text-sm">Low Stock</p>
+                <p className="text-text-tertiary text-sm">{inv.lowStock}</p>
                 <p className="text-3xl font-bold mt-1 text-warning">{stats.lowStock}</p>
               </div>
               <div className="apple-card text-center">
                 <XCircle className="w-8 h-8 mx-auto mb-2 text-error" />
-                <p className="text-text-tertiary text-sm">Out of Stock</p>
+                <p className="text-text-tertiary text-sm">{inv.outOfStock}</p>
                 <p className="text-3xl font-bold mt-1 text-error">{stats.outOfStock}</p>
               </div>
               <div className="apple-card text-center">
                 <DollarSign className="w-8 h-8 mx-auto mb-2 text-primary" />
-                <p className="text-text-tertiary text-sm">Total Value</p>
+                <p className="text-text-tertiary text-sm">{inv.totalValue}</p>
                 <p className="text-2xl font-bold mt-1">{formatCurrency(stats.totalValue, 'BRL')}</p>
               </div>
             </div>
@@ -281,7 +285,7 @@ export default function InventoryPage() {
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
                   <input
                     type="text"
-                    placeholder="Search by name, SKU, supplier, or location..."
+                    placeholder={inv.searchPlaceholder}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-12 pr-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
@@ -292,7 +296,7 @@ export default function InventoryPage() {
                   onChange={(e) => setCategoryFilter(e.target.value as CategoryFilter)}
                   className="px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
                 >
-                  <option value="all">All Categories</option>
+                  <option value="all">{inv.allCategories}</option>
                   {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
                     <option key={value} value={value}>{label}</option>
                   ))}
@@ -303,10 +307,10 @@ export default function InventoryPage() {
             {/* Status Tabs */}
             <div className="flex gap-2">
               {([
-                { label: 'All', value: 'all' as StatusFilter },
-                { label: 'In Stock', value: 'in_stock' as StatusFilter },
-                { label: 'Low Stock', value: 'low_stock' as StatusFilter },
-                { label: 'Out of Stock', value: 'out_of_stock' as StatusFilter },
+                { label: inv.all, value: 'all' as StatusFilter },
+                { label: inv.inStock, value: 'in_stock' as StatusFilter },
+                { label: inv.lowStock, value: 'low_stock' as StatusFilter },
+                { label: inv.outOfStock, value: 'out_of_stock' as StatusFilter },
               ]).map((tab) => (
                 <button
                   key={tab.value}
@@ -327,11 +331,11 @@ export default function InventoryPage() {
           {filtered.length === 0 ? (
             <div className="apple-card text-center py-16">
               <Package className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
-              <h3 className="text-xl font-semibold mb-2">No items found</h3>
+              <h3 className="text-xl font-semibold mb-2">{inv.noItems}</h3>
               <p className="text-text-secondary">
                 {searchTerm || statusFilter !== 'all' || categoryFilter !== 'all'
-                  ? 'Try adjusting your search or filters'
-                  : 'Add your first inventory item to get started'}
+                  ? inv.tryAdjusting
+                  : inv.addFirstItem}
               </p>
             </div>
           ) : (
@@ -359,28 +363,28 @@ export default function InventoryPage() {
                         {/* Details */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                           <div>
-                            <p className="text-text-tertiary text-xs">Quantity</p>
+                            <p className="text-text-tertiary text-xs">{inv.quantityLabel}</p>
                             <p className={`font-bold text-lg ${
                               item.quantity <= 0 ? 'text-error' :
                               item.quantity <= item.minQuantity ? 'text-warning' :
                               'text-text-primary'
                             }`}>
                               {item.quantity}
-                              <span className="text-xs font-normal text-text-tertiary ml-1">(min: {item.minQuantity})</span>
+                              <span className="text-xs font-normal text-text-tertiary ml-1">({inv.minPrefix} {item.minQuantity})</span>
                             </p>
                           </div>
                           <div>
-                            <p className="text-text-tertiary text-xs">Unit Cost</p>
+                            <p className="text-text-tertiary text-xs">{inv.unitCostLabel}</p>
                             <p className="font-medium">{formatCurrency(item.unitCost, item.currency)}</p>
                           </div>
                           <div>
-                            <p className="text-text-tertiary text-xs">Supplier</p>
+                            <p className="text-text-tertiary text-xs">{inv.supplierLabel}</p>
                             <p className="font-medium truncate">{item.supplier || '—'}</p>
                           </div>
                           <div className="flex items-start gap-1">
                             <MapPin className="w-3.5 h-3.5 text-text-tertiary mt-0.5 flex-shrink-0" />
                             <div>
-                              <p className="text-text-tertiary text-xs">Location</p>
+                              <p className="text-text-tertiary text-xs">{inv.locationLabel}</p>
                               <p className="font-medium truncate">{item.location || '—'}</p>
                             </div>
                           </div>
@@ -396,22 +400,22 @@ export default function InventoryPage() {
                         <button
                           onClick={() => setAdjustingItem(item)}
                           className="flex items-center gap-1 px-3 py-1.5 bg-surface-elevated border border-border rounded-apple text-sm font-medium hover:border-primary transition-all"
-                          title="Adjust stock"
+                          title={inv.adjustStock}
                         >
                           <ArrowUpDown className="w-4 h-4" />
-                          Stock
+                          {inv.stockButton}
                         </button>
                         <button
                           onClick={() => handleEditItem(item)}
                           className="p-2 hover:bg-surface-elevated rounded-apple transition-colors"
-                          title="Edit item"
+                          title={inv.editItemTitle}
                         >
                           <Pencil className="w-4 h-4 text-text-tertiary" />
                         </button>
                         <button
                           onClick={() => router.push(`/admin/inventory/${item.id}`)}
                           className="p-2 hover:bg-surface-elevated rounded-apple transition-colors"
-                          title="View details"
+                          title={inv.viewDetails}
                         >
                           <ChevronRight className="w-5 h-5 text-text-tertiary" />
                         </button>
@@ -431,11 +435,11 @@ export default function InventoryPage() {
           {/* Type Filter */}
           <div className="flex gap-2 flex-wrap">
             {([
-              { label: 'All Types', value: 'all' as TypeFilter },
-              { label: 'Restock', value: 'restock' as TypeFilter },
-              { label: 'Used', value: 'used' as TypeFilter },
-              { label: 'Adjustment', value: 'adjustment' as TypeFilter },
-              { label: 'Returned', value: 'returned' as TypeFilter },
+              { label: inv.allTypes, value: 'all' as TypeFilter },
+              { label: inv.restock, value: 'restock' as TypeFilter },
+              { label: inv.used, value: 'used' as TypeFilter },
+              { label: inv.adjustment, value: 'adjustment' as TypeFilter },
+              { label: inv.returned, value: 'returned' as TypeFilter },
             ]).map((tab) => (
               <button
                 key={tab.value}
@@ -455,17 +459,17 @@ export default function InventoryPage() {
             <div className="flex items-center justify-center py-16">
               <div className="text-center space-y-4">
                 <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-                <p className="text-text-secondary">Loading transactions...</p>
+                <p className="text-text-secondary">{inv.loadingTransactions}</p>
               </div>
             </div>
           ) : filteredTransactions.length === 0 ? (
             <div className="apple-card text-center py-16">
               <ArrowDownUp className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
-              <h3 className="text-xl font-semibold mb-2">No transactions found</h3>
+              <h3 className="text-xl font-semibold mb-2">{inv.noTransactions}</h3>
               <p className="text-text-secondary">
                 {typeFilter !== 'all'
-                  ? 'Try selecting a different type filter'
-                  : 'Stock adjustments will appear here'}
+                  ? inv.tryDifferentType
+                  : inv.adjustmentsAppearHere}
               </p>
             </div>
           ) : (
