@@ -5,16 +5,17 @@ import Link from 'next/link';
 import { Plus, Search, Edit, Trash2, Eye, Package, X, Clock, Tag } from 'lucide-react';
 import { Product } from '@/types';
 import { getProductsPaginated, deleteProduct, updateProduct } from '@/lib/services/productService';
-import { formatCurrency } from '@/lib/utils/formatters';
 import { SUPPORTED_LANGUAGES } from '@/lib/utils/constants';
 import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 
 const PAGE_SIZE = 20;
 
 export default function ProductsPage() {
   const { t } = useTranslation();
+  const { formatCurrency } = useLocaleFormatters();
   const p = t.admin.products;
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +42,7 @@ export default function ProductsPage() {
       setHasMore(result.hasMore);
       setProducts((prev) => (reset ? result.items : [...prev, ...result.items]));
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load products';
+      const message = error instanceof Error ? error.message : p.loadProductsError;
       toast.error(message);
     } finally {
       setLoading(false);
@@ -50,14 +51,14 @@ export default function ProductsPage() {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
+    if (!confirm(p.confirmDeleteFormat.replace('{name}', name))) return;
 
     try {
       await deleteProduct(id);
-      toast.success('Product deleted successfully');
+      toast.success(p.productDeleted);
       loadProducts();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to delete product';
+      const message = error instanceof Error ? error.message : p.deleteProductError;
       toast.error(message);
     }
   };
@@ -65,10 +66,10 @@ export default function ProductsPage() {
   const handleToggleActive = async (id: string, currentActive: boolean, name: string) => {
     try {
       await updateProduct(id, { active: !currentActive });
-      toast.success(`Product ${!currentActive ? 'activated' : 'deactivated'} successfully`);
+      toast.success(!currentActive ? p.productActivated : p.productDeactivated);
       loadProducts();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to update product';
+      const message = error instanceof Error ? error.message : p.updateProductError;
       toast.error(message);
     }
   };
@@ -213,7 +214,7 @@ export default function ProductsPage() {
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-surface-elevated hover:bg-surface-secondary rounded-apple text-sm font-medium transition-all"
                   >
                     <Edit className="w-4 h-4" />
-                    Edit
+                    {p.editButton}
                   </Link>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleToggleActive(product.id, product.active, product.name.en); }}
@@ -222,7 +223,7 @@ export default function ProductsPage() {
                         ? 'bg-warning/20 hover:bg-warning/30 text-warning'
                         : 'bg-success/20 hover:bg-success/30 text-success'
                     }`}
-                    title={product.active ? 'Deactivate product' : 'Activate product'}
+                    title={product.active ? p.deactivateTitle : p.activateTitle}
                   >
                     {product.active ? p.hide : p.show}
                   </button>
@@ -255,7 +256,7 @@ export default function ProductsPage() {
       {/* Summary */}
       {filteredProducts.length > 0 && (
         <div className="text-center text-sm text-text-tertiary">
-          {p.showing} {filteredProducts.length} {p.products}{hasMore ? ' (more available)' : ''}
+          {p.showing} {filteredProducts.length} {p.products}{hasMore ? ` ${p.moreAvailable}` : ''}
         </div>
       )}
 
@@ -285,7 +286,7 @@ export default function ProductsPage() {
               {/* Status Badges */}
               <div className="flex gap-2">
                 <span className={`px-3 py-1 rounded-full text-xs font-semibold ${selectedProduct.active ? 'bg-success/20 text-success' : 'bg-error/20 text-error'}`}>
-                  {selectedProduct.active ? 'Active' : 'Inactive'}
+                  {selectedProduct.active ? p.active : p.inactive}
                 </span>
                 {selectedProduct.featured && (
                   <span className="px-3 py-1 rounded-full text-xs font-semibold bg-warning/20 text-warning">{p.featured}</span>
@@ -294,7 +295,7 @@ export default function ProductsPage() {
 
               {/* Name in All Languages */}
               <div>
-                <h3 className="text-sm font-semibold text-text-secondary mb-2">Product Name</h3>
+                <h3 className="text-sm font-semibold text-text-secondary mb-2">{p.modalProductName}</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {SUPPORTED_LANGUAGES.map((lang) => (
                     <div key={lang.code} className="p-3 bg-surface-elevated rounded-apple">
@@ -307,7 +308,7 @@ export default function ProductsPage() {
 
               {/* Description in All Languages */}
               <div>
-                <h3 className="text-sm font-semibold text-text-secondary mb-2">Description</h3>
+                <h3 className="text-sm font-semibold text-text-secondary mb-2">{p.modalDescription}</h3>
                 <div className="space-y-2">
                   {SUPPORTED_LANGUAGES.map((lang) => (
                     <div key={lang.code} className="p-3 bg-surface-elevated rounded-apple">
@@ -321,23 +322,23 @@ export default function ProductsPage() {
               {/* Details Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 <div className="p-3 bg-surface-elevated rounded-apple">
-                  <p className="text-xs text-text-tertiary">Category</p>
+                  <p className="text-xs text-text-tertiary">{p.modalCategory}</p>
                   <p className="font-medium mt-1">{selectedProduct.category}</p>
                 </div>
                 <div className="p-3 bg-surface-elevated rounded-apple">
-                  <p className="text-xs text-text-tertiary">Brand</p>
+                  <p className="text-xs text-text-tertiary">{p.modalBrand}</p>
                   <p className="font-medium mt-1">{selectedProduct.brand}</p>
                 </div>
                 <div className="p-3 bg-surface-elevated rounded-apple">
-                  <p className="text-xs text-text-tertiary">Base Price</p>
+                  <p className="text-xs text-text-tertiary">{p.modalBasePrice}</p>
                   <p className="font-medium mt-1 text-primary">{formatCurrency(selectedProduct.basePrice, selectedProduct.currency)}</p>
                 </div>
                 <div className="p-3 bg-surface-elevated rounded-apple">
-                  <p className="text-xs text-text-tertiary">Currency</p>
+                  <p className="text-xs text-text-tertiary">{p.modalCurrency}</p>
                   <p className="font-medium mt-1">{selectedProduct.currency}</p>
                 </div>
                 <div className="p-3 bg-surface-elevated rounded-apple">
-                  <p className="text-xs text-text-tertiary flex items-center gap-1"><Clock className="w-3 h-3" /> Installation Time</p>
+                  <p className="text-xs text-text-tertiary flex items-center gap-1"><Clock className="w-3 h-3" /> {p.modalInstallationTime}</p>
                   <p className="font-medium mt-1">{selectedProduct.installationTime}h</p>
                 </div>
               </div>
@@ -345,7 +346,7 @@ export default function ProductsPage() {
               {/* Tags */}
               {selectedProduct.tags && selectedProduct.tags.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-text-secondary mb-2 flex items-center gap-1"><Tag className="w-4 h-4" /> Tags</h3>
+                  <h3 className="text-sm font-semibold text-text-secondary mb-2 flex items-center gap-1"><Tag className="w-4 h-4" /> {p.modalTags}</h3>
                   <div className="flex flex-wrap gap-2">
                     {selectedProduct.tags.map((tag) => (
                       <span key={tag} className="px-3 py-1 bg-surface-elevated rounded-full text-xs font-medium">{tag}</span>
@@ -357,7 +358,7 @@ export default function ProductsPage() {
               {/* Specifications */}
               {selectedProduct.specifications && Object.keys(selectedProduct.specifications).length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-text-secondary mb-2">Specifications</h3>
+                  <h3 className="text-sm font-semibold text-text-secondary mb-2">{p.modalSpecifications}</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {Object.entries(selectedProduct.specifications).map(([key, value]) => (
                       <div key={key} className="flex justify-between p-3 bg-surface-elevated rounded-apple">
@@ -372,13 +373,13 @@ export default function ProductsPage() {
               {/* Variations */}
               {selectedProduct.variations && selectedProduct.variations.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-text-secondary mb-2">Variations ({selectedProduct.variations.length})</h3>
+                  <h3 className="text-sm font-semibold text-text-secondary mb-2">{p.modalVariations} ({selectedProduct.variations.length})</h3>
                   <div className="space-y-2">
                     {selectedProduct.variations.map((v) => (
                       <div key={v.id} className="p-3 bg-surface-elevated rounded-apple flex items-center justify-between">
                         <div>
                           <p className="font-medium text-sm">{v.name}</p>
-                          <p className="text-xs text-text-tertiary">SKU: {v.sku} | Stock: {v.stock}</p>
+                          <p className="text-xs text-text-tertiary">{p.skuLabel}: {v.sku} | {p.stockLabel}: {v.stock}</p>
                         </div>
                         <p className="font-semibold text-primary">{formatCurrency(v.price, selectedProduct.currency)}</p>
                       </div>
@@ -390,14 +391,14 @@ export default function ProductsPage() {
               {/* Maintenance Template */}
               {selectedProduct.maintenanceTemplate && (
                 <div>
-                  <h3 className="text-sm font-semibold text-text-secondary mb-2">Maintenance Template</h3>
+                  <h3 className="text-sm font-semibold text-text-secondary mb-2">{p.modalMaintenanceTemplate}</h3>
                   <div className="p-3 bg-surface-elevated rounded-apple space-y-2">
-                    <p className="text-sm">Ezer Interval: <span className="font-medium">{selectedProduct.maintenanceTemplate.ezerIntervalDays} days</span></p>
+                    <p className="text-sm">{p.modalEzerInterval}: <span className="font-medium">{selectedProduct.maintenanceTemplate.ezerIntervalDays} {p.daysSuffix}</span></p>
                     {selectedProduct.maintenanceTemplate.filters.length > 0 && (
                       <div>
-                        <p className="text-xs text-text-tertiary mb-1">Filters:</p>
+                        <p className="text-xs text-text-tertiary mb-1">{p.modalFilters}:</p>
                         {selectedProduct.maintenanceTemplate.filters.map((f, idx) => (
-                          <p key={idx} className="text-sm ml-2">{f.name}: every {f.intervalDays} days</p>
+                          <p key={idx} className="text-sm ml-2">{f.name}: {p.everyDaysFormat.replace('{days}', String(f.intervalDays))}</p>
                         ))}
                       </div>
                     )}
@@ -412,7 +413,7 @@ export default function ProductsPage() {
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all"
                 >
                   <Edit className="w-4 h-4" />
-                  Edit Product
+                  {p.editProductCta}
                 </Link>
                 <button
                   onClick={() => { handleToggleActive(selectedProduct.id, selectedProduct.active, selectedProduct.name.en); setSelectedProduct(null); }}

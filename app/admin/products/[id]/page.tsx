@@ -43,7 +43,7 @@ export default function EditProductPage() {
         router.push('/admin/products');
       }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load product';
+      const message = error instanceof Error ? error.message : pe.loadProductError;
       toast.error(message);
       router.push('/admin/products');
     } finally {
@@ -59,10 +59,10 @@ export default function EditProductPage() {
     try {
       setSaving(true);
       await updateProduct(productId, product);
-      toast.success('Product updated successfully!');
+      toast.success(pe.productUpdated);
       router.push('/admin/products');
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to update product';
+      const message = error instanceof Error ? error.message : pe.updateProductError;
       toast.error(message);
     } finally {
       setSaving(false);
@@ -80,9 +80,9 @@ export default function EditProductPage() {
         images: [...(prev.images || []), ...uploadedUrls]
       } : null);
       
-      toast.success(`${files.length} image(s) uploaded successfully!`);
+      toast.success(pe.imagesUploadedFormat.replace('{count}', String(files.length)));
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to upload images';
+      const message = error instanceof Error ? error.message : pe.uploadImagesError;
       toast.error(message);
       throw error;
     } finally {
@@ -101,9 +101,9 @@ export default function EditProductPage() {
         images: (prev.images || []).filter(url => url !== imageUrl)
       } : null);
       
-      toast.success('Image deleted successfully!');
+      toast.success(pe.imageDeleted);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to delete image';
+      const message = error instanceof Error ? error.message : pe.deleteImageError;
       toast.error(message);
       throw error;
     } finally {
@@ -122,7 +122,7 @@ export default function EditProductPage() {
       // Update in Firestore
       await reorderProductImages(productId, newImageOrder);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to reorder images';
+      const message = error instanceof Error ? error.message : pe.reorderImagesError;
       toast.error(message);
       // Reload product to restore correct order
       loadProduct();
@@ -254,7 +254,7 @@ export default function EditProductPage() {
             <div>
               <h3 className="font-semibold mb-2">{pe.variations}</h3>
               <p className="text-sm text-text-secondary">
-                {product.variations?.length || 0} variation(s)
+                {product.variations?.length || 0} {pe.variationsCountSuffix}
               </p>
             </div>
           </div>
@@ -341,7 +341,7 @@ function MaintenanceTemplateEditor({
           </div>
           {current.filters.length === 0 ? (
             <p className="text-sm text-text-tertiary text-center py-4">
-              No filter schedules configured. Click &quot;{labels.addFilter}&quot; to add one.
+              {labels.noFilterSchedulesFormat.replace('{action}', labels.addFilter)}
             </p>
           ) : (
             <div className="space-y-4">
