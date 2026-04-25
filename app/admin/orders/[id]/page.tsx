@@ -8,12 +8,14 @@ import {
 } from 'lucide-react';
 import { Order } from '@/types/order';
 import { getOrderById } from '@/lib/services/orderService';
-import { formatCurrency, formatDate, formatOptionalString, getOrderStatusLabel } from '@/lib/utils/formatters';
+import { formatOptionalString, getOrderStatusLabel } from '@/lib/utils/formatters';
 import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 
 export default function AdminOrderDetailPage() {
   const { t } = useTranslation();
+  const { formatCurrency, formatDate } = useLocaleFormatters();
   const od = t.admin.orderDetail;
   const params = useParams();
   const router = useRouter();
@@ -34,7 +36,7 @@ export default function AdminOrderDetailPage() {
       const data = await getOrderById(orderId);
       setOrder(data);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load order';
+      const message = error instanceof Error ? error.message : od.loadOrderError;
       toast.error(message);
       router.push('/admin/orders');
     } finally {
@@ -278,7 +280,7 @@ export default function AdminOrderDetailPage() {
                 <div className="w-full h-40 bg-white rounded-apple overflow-hidden">
                   <img
                     src={order.sitePhotos.waterSource.url}
-                    alt="Water source"
+                    alt={od.waterSourceAlt}
                     className="w-full h-full object-contain"
                   />
                 </div>
@@ -290,7 +292,7 @@ export default function AdminOrderDetailPage() {
                 <div className="w-full h-40 bg-white rounded-apple overflow-hidden">
                   <img
                     src={order.sitePhotos.productLocation.url}
-                    alt="Installation location"
+                    alt={od.installationLocationAlt}
                     className="w-full h-full object-contain"
                   />
                 </div>
@@ -302,7 +304,7 @@ export default function AdminOrderDetailPage() {
                 <div className="w-full h-40 bg-white rounded-apple overflow-hidden">
                   <img
                     src={order.sitePhotos.fullShot.url}
-                    alt="Full shot"
+                    alt={od.fullShotAlt}
                     className="w-full h-full object-contain"
                   />
                 </div>

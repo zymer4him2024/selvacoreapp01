@@ -5,15 +5,17 @@ import Link from 'next/link';
 import { Search, Eye, Trash2, Package as PackageIcon, Calendar, User } from 'lucide-react';
 import { Order } from '@/types';
 import { getOrdersPaginated, deleteOrder } from '@/lib/services/orderService';
-import { formatCurrency, formatDate, formatOptionalString, getOrderStatusLabel } from '@/lib/utils/formatters';
+import { formatOptionalString, getOrderStatusLabel } from '@/lib/utils/formatters';
 import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 
 const PAGE_SIZE = 20;
 
 export default function OrdersPage() {
   const { t } = useTranslation();
+  const { formatCurrency, formatDate } = useLocaleFormatters();
   const o = t.admin.orders;
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +43,7 @@ export default function OrdersPage() {
       setHasMore(result.hasMore);
       setOrders((prev) => (reset ? result.items : [...prev, ...result.items]));
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load orders';
+      const message = error instanceof Error ? error.message : o.loadOrdersError;
       toast.error(message);
     } finally {
       setLoading(false);
@@ -66,14 +68,14 @@ export default function OrdersPage() {
   };
 
   const handleDeleteOrder = async (orderId: string) => {
-    if (!confirm('Are you sure you want to delete this order? This action cannot be undone.')) return;
+    if (!confirm(o.confirmDelete)) return;
     try {
       setDeletingId(orderId);
       await deleteOrder(orderId);
-      setOrders(prev => prev.filter(o => o.id !== orderId));
-      toast.success('Order deleted');
+      setOrders(prev => prev.filter(ord => ord.id !== orderId));
+      toast.success(o.orderDeleted);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to delete order';
+      const message = error instanceof Error ? error.message : o.deleteOrderError;
       toast.error(message);
     } finally {
       setDeletingId(null);
@@ -227,7 +229,7 @@ export default function OrdersPage() {
                     onClick={() => handleDeleteOrder(order.id)}
                     disabled={deletingId === order.id}
                     className="p-2 bg-surface-elevated hover:bg-error/20 text-text-secondary hover:text-error rounded-apple transition-all disabled:opacity-50"
-                    aria-label="Delete order"
+                    aria-label={o.deleteOrderAria}
                   >
                     <Trash2 className="w-5 h-5" />
                   </button>

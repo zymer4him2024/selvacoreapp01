@@ -518,6 +518,7 @@ export const en = {
       viewAnalytics: 'View Analytics',
       businessInsights: 'Business insights',
       failedToLoad: 'Failed to load dashboard data',
+      logoAlt: 'Logo',
     },
     // Login
     login: {
@@ -532,6 +533,15 @@ export const en = {
       accountCreated: 'Admin account created! Welcome!',
       accessDenied: 'Access denied. Admin access only.',
       welcomeAdmin: 'Welcome, Admin!',
+      failedToSignIn: 'Failed to sign in',
+      incorrectCredentials: 'Incorrect email or password',
+      invalidEmail: 'Invalid email address',
+      tooManyAttempts: 'Too many attempts. Try again later.',
+      enterEmailPassword: 'Enter email and password',
+      orSignInWithEmail: 'or sign in with email',
+      emailPlaceholder: 'Email',
+      passwordPlaceholder: 'Password',
+      signInButton: 'Sign in',
     },
     // Orders
     orders: {
@@ -552,6 +562,11 @@ export const en = {
       technician: 'Technician',
       loaded: 'Loaded',
       created: 'Created',
+      loadOrdersError: 'Failed to load orders',
+      confirmDelete: 'Are you sure you want to delete this order? This action cannot be undone.',
+      orderDeleted: 'Order deleted',
+      deleteOrderError: 'Failed to delete order',
+      deleteOrderAria: 'Delete order',
     },
     // Order Detail
     orderDetail: {
@@ -585,6 +600,10 @@ export const en = {
       waterRunning: 'Water Running Video',
       minutes: 'minutes',
       na: 'N/A',
+      loadOrderError: 'Failed to load order',
+      waterSourceAlt: 'Water source',
+      installationLocationAlt: 'Installation location',
+      fullShotAlt: 'Full shot',
     },
     // Products
     products: {

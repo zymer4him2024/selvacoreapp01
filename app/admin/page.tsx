@@ -12,8 +12,9 @@ import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/config';
 import { Package, Wrench, Building2, ShoppingCart, TrendingUp, Users } from 'lucide-react';
 import { getAdminStats, getRecentOrders, RecentOrder, AdminStats } from '@/lib/services/adminStatsService';
-import { formatCurrency, formatOptionalNumber } from '@/lib/utils/formatters';
+import { formatOptionalNumber, getOrderStatusLabel } from '@/lib/utils/formatters';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
@@ -21,6 +22,7 @@ export default function AdminDashboard() {
   const router = useRouter();
   const { user, userData, loading: authLoading } = useAuth();
   const { t } = useTranslation();
+  const { formatCurrency } = useLocaleFormatters();
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
@@ -106,7 +108,7 @@ export default function AdminDashboard() {
             const isFirebaseError = error instanceof Error && 'code' in error;
             const code = isFirebaseError ? (error as { code: string }).code : '';
             if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') {
-              const message = error instanceof Error ? error.message : 'Failed to sign in';
+              const message = error instanceof Error ? error.message : l.failedToSignIn;
               toast.error(message);
             }
           } finally {
@@ -123,17 +125,17 @@ export default function AdminDashboard() {
               error && typeof error === 'object' && 'code' in error
                 ? String((error as { code?: unknown }).code ?? '')
                 : '';
-            let message = error instanceof Error ? error.message : 'Failed to sign in';
+            let message = error instanceof Error ? error.message : l.failedToSignIn;
             if (
               code === 'auth/invalid-credential' ||
               code === 'auth/wrong-password' ||
               code === 'auth/user-not-found'
             ) {
-              message = 'Incorrect email or password';
+              message = l.incorrectCredentials;
             } else if (code === 'auth/invalid-email') {
-              message = 'Invalid email address';
+              message = l.invalidEmail;
             } else if (code === 'auth/too-many-requests') {
-              message = 'Too many attempts. Try again later.';
+              message = l.tooManyAttempts;
             }
             toast.error(message);
           } finally {
@@ -190,7 +192,7 @@ export default function AdminDashboard() {
         {userData?.logoURL && (
           <img
             src={userData.logoURL}
-            alt="Logo"
+            alt={d.logoAlt}
             className="w-16 h-16 rounded-apple object-contain border border-border bg-white p-1"
           />
         )}
@@ -267,7 +269,7 @@ export default function AdminDashboard() {
                     order.status
                   )}`}
                 >
-                  {order.status.replace('_', ' ')}
+                  {getOrderStatusLabel(order.status, 'admin', t)}
                 </span>
                 <span className="text-sm text-text-tertiary">{order.id}</span>
                 <span className="font-semibold">{order.amount}</span>
@@ -338,7 +340,7 @@ function AdminLoginView({
   const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password) {
-      toast.error('Enter email and password');
+      toast.error(t.enterEmailPassword);
       return;
     }
     onEmailSignIn(email.trim(), password);
@@ -400,7 +402,7 @@ function AdminLoginView({
           <div className="flex items-center gap-3">
             <div className="flex-1 h-px bg-border" />
             <span className="text-xs text-text-tertiary uppercase tracking-wider">
-              or sign in with email
+              {t.orSignInWithEmail}
             </span>
             <div className="flex-1 h-px bg-border" />
           </div>
@@ -409,7 +411,7 @@ function AdminLoginView({
           <form onSubmit={handleEmailSubmit} className="space-y-4">
             <input
               type="email"
-              placeholder="Email"
+              placeholder={t.emailPlaceholder}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
@@ -417,7 +419,7 @@ function AdminLoginView({
             />
             <input
               type="password"
-              placeholder="Password"
+              placeholder={t.passwordPlaceholder}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
@@ -428,7 +430,7 @@ function AdminLoginView({
               disabled={loading}
               className="w-full px-6 py-3 bg-primary hover:bg-primary/90 disabled:opacity-60 text-white font-semibold rounded-apple transition-all hover:scale-[1.01] shadow-apple"
             >
-              {loading ? t.verifying : 'Sign in'}
+              {loading ? t.verifying : t.signInButton}
             </button>
           </form>
 
