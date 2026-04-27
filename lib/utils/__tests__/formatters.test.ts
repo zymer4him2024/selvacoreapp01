@@ -166,9 +166,9 @@ describe('formatOptionalBoolean', () => {
 });
 
 describe('formatRelativeTime', () => {
-  it('returns "Just now" for very recent dates', () => {
+  it('returns "now" for very recent dates', () => {
     const now = new Date();
-    expect(formatRelativeTime(now)).toBe('Just now');
+    expect(formatRelativeTime(now)).toBe('now');
   });
 
   it('returns minutes ago', () => {
