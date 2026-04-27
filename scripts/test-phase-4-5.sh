@@ -9,12 +9,6 @@
 #
 # Exits non-zero on the first failure. Each step is announced so you can
 # see which gate failed in CI-style output.
-#
-# Note: tests/admin.test.ts is an e2e smoke suite that requires a dev
-# server on :3000; it throws in beforeAll when :3000 is down, producing
-# 1 "failed suite" with 6 skipped tests. This is pre-existing to Phase 4.5
-# (introduced in commit 0c5c266). The script tolerates it by checking the
-# actual test-count line, not vitest's exit code alone.
 
 set -u
 
@@ -55,38 +49,14 @@ else
 fi
 
 # ------------------------------------------------------------------
-# 3. Full unit test suite — tolerate pre-existing admin.test.ts dev-server gap
+# 3. Full unit test suite
 # ------------------------------------------------------------------
 step "3/4 Full unit test suite (npm test)"
-TEST_OUT="$(mktemp)"
-trap 'rm -f "$TEST_OUT"' EXIT
-
-set +e
-npm test > "$TEST_OUT" 2>&1
-TEST_EXIT=$?
-set -e
-
-# Echo the tail so the user sees real test output regardless of outcome.
-tail -n 15 "$TEST_OUT"
-
-# Summary line from vitest looks like:  "Tests  N passed | M skipped (T)"
-SUMMARY_LINE="$(grep -E '^\s*Tests\s+' "$TEST_OUT" | tail -n 1 || true)"
-
-if [ -z "$SUMMARY_LINE" ]; then
-  fail "could not parse vitest summary line"
+if npm test; then
+  ok "unit tests pass"
+else
+  fail "unit tests failed"
 fi
-
-# Fail if ANY individual test failed. Skipped suites (admin.test.ts) are tolerated.
-if echo "$SUMMARY_LINE" | grep -qE '[0-9]+ failed'; then
-  fail "unit tests failed: $SUMMARY_LINE"
-fi
-
-# If vitest exited non-zero but no individual test failed, it's the pre-existing
-# admin.test.ts suite-level failure (dev server not running). Warn and continue.
-if [ $TEST_EXIT -ne 0 ]; then
-  warn "vitest exited $TEST_EXIT but no individual test failed — pre-existing tests/admin.test.ts dev-server gap (see docs_for_claude/backlog.md #3)"
-fi
-ok "unit tests pass: $SUMMARY_LINE"
 
 # ------------------------------------------------------------------
 # 4. Production build
