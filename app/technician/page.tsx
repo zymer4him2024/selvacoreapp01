@@ -7,7 +7,8 @@ import { Order } from '@/types/order';
 import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { MapPin, Calendar, DollarSign, Package, TrendingUp, Briefcase, Star, Award, AlertCircle, XCircle, Clock, QrCode, CloudOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { formatCurrency, formatDate } from '@/lib/utils/formatters';
+import { formatDate } from '@/lib/utils/formatters';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useOfflineQueue } from '@/contexts/OfflineQueueContext';
 import toast from 'react-hot-toast';
@@ -17,6 +18,8 @@ import InstallAppBanner from '@/components/technician/InstallAppBanner';
 export default function TechnicianDashboard() {
   const { user, userData } = useAuth();
   const { t } = useTranslation();
+  const { formatCurrency } = useLocaleFormatters();
+  const td = t.technician.dashboard;
   const { pendingCount, retryAll } = useOfflineQueue();
   const router = useRouter();
   const [jobs, setJobs] = useState<Order[]>([]);
@@ -48,7 +51,7 @@ export default function TechnicianDashboard() {
       setHasMore(result.hasMore);
       setStats(techStats);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load jobs';
+      const message = error instanceof Error ? error.message : td.loadJobsError;
       toast.error(message);
     } finally {
       setLoading(false);
@@ -64,12 +67,12 @@ export default function TechnicianDashboard() {
       setLastDoc(result.lastDoc);
       setHasMore(result.hasMore);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load more jobs';
+      const message = error instanceof Error ? error.message : td.loadMoreError;
       toast.error(message);
     } finally {
       setLoadingMore(false);
     }
-  }, [loadingMore, hasMore, lastDoc]);
+  }, [loadingMore, hasMore, lastDoc, td.loadMoreError]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -104,7 +107,7 @@ export default function TechnicianDashboard() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading available jobs...</p>
+          <p className="text-text-secondary">{td.loading}</p>
         </div>
       </div>
     );
@@ -119,24 +122,24 @@ export default function TechnicianDashboard() {
             <Clock className="w-10 h-10 text-warning" />
           </div>
           <div>
-            <h2 className="text-3xl font-bold mb-2">Application Under Review</h2>
+            <h2 className="text-3xl font-bold mb-2">{td.pendingTitle}</h2>
             <p className="text-text-secondary text-lg">
-              Thank you for applying! Your technician application is currently being reviewed by our admin team.
+              {td.pendingMessage}
             </p>
           </div>
           <div className="p-4 bg-surface-elevated rounded-apple text-left space-y-2">
             <h3 className="font-semibold flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-primary" />
-              What happens next?
+              {td.whatHappensNext}
             </h3>
             <ul className="space-y-2 text-sm text-text-secondary ml-7">
-              <li>• Our team will review your application within 1-2 business days</li>
-              <li>• You'll receive an email notification once your account is approved</li>
-              <li>• Once approved, you can start accepting jobs immediately</li>
+              <li>• {td.pendingStep1}</li>
+              <li>• {td.pendingStep2}</li>
+              <li>• {td.pendingStep3}</li>
             </ul>
           </div>
           <p className="text-sm text-text-tertiary">
-            Need help? Contact us at support@selvacore.com
+            {td.needHelp}
           </p>
         </div>
       </div>
@@ -151,19 +154,19 @@ export default function TechnicianDashboard() {
             <XCircle className="w-10 h-10 text-error" />
           </div>
           <div>
-            <h2 className="text-3xl font-bold mb-2">Application Not Approved</h2>
+            <h2 className="text-3xl font-bold mb-2">{td.declinedTitle}</h2>
             <p className="text-text-secondary text-lg">
-              Unfortunately, your technician application was not approved at this time.
+              {td.declinedMessage}
             </p>
           </div>
           {userData.adminNotes && (
             <div className="p-4 bg-surface-elevated rounded-apple text-left">
-              <h3 className="font-semibold mb-2">Reason:</h3>
+              <h3 className="font-semibold mb-2">{td.reasonLabel}</h3>
               <p className="text-text-secondary">{userData.adminNotes}</p>
             </div>
           )}
           <p className="text-sm text-text-tertiary">
-            Questions? Contact us at support@selvacore.com
+            {td.questions}
           </p>
         </div>
       </div>
@@ -178,19 +181,19 @@ export default function TechnicianDashboard() {
             <AlertCircle className="w-10 h-10 text-warning" />
           </div>
           <div>
-            <h2 className="text-3xl font-bold mb-2">Account Suspended</h2>
+            <h2 className="text-3xl font-bold mb-2">{td.suspendedTitle}</h2>
             <p className="text-text-secondary text-lg">
-              Your technician account has been temporarily suspended.
+              {td.suspendedMessage}
             </p>
           </div>
           {userData.adminNotes && (
             <div className="p-4 bg-surface-elevated rounded-apple text-left">
-              <h3 className="font-semibold mb-2">Reason:</h3>
+              <h3 className="font-semibold mb-2">{td.reasonLabel}</h3>
               <p className="text-text-secondary">{userData.adminNotes}</p>
             </div>
           )}
           <p className="text-sm text-text-tertiary">
-            Need assistance? Contact us at support@selvacore.com
+            {td.needAssistance}
           </p>
         </div>
       </div>
@@ -210,15 +213,15 @@ export default function TechnicianDashboard() {
                 <CloudOff className="w-5 h-5 text-warning" />
               </div>
               <div>
-                <p className="font-semibold">{pendingCount} {pendingCount === 1 ? 'job' : 'jobs'} offline pending sync</p>
-                <p className="text-sm text-text-secondary">Will sync automatically when online</p>
+                <p className="font-semibold">{pendingCount} {pendingCount === 1 ? td.jobSingular : td.jobPlural} {td.offlinePendingSync}</p>
+                <p className="text-sm text-text-secondary">{td.syncWillSync}</p>
               </div>
             </div>
             <button
               onClick={retryAll}
               className="px-4 py-2 min-h-[44px] bg-warning/10 text-warning font-medium text-sm rounded-apple transition-all"
             >
-              Sync Now
+              {td.syncNow}
             </button>
           </div>
         </div>
@@ -229,16 +232,16 @@ export default function TechnicianDashboard() {
         {userData?.logoURL && (
           <img
             src={userData.logoURL}
-            alt="Logo"
+            alt={td.logoAlt}
             className="w-16 h-16 rounded-apple object-contain border border-border bg-white p-1"
           />
         )}
         <div>
           <h1 className="text-4xl font-bold tracking-tight">
-            Welcome back, {userData?.displayName?.split(' ')[0] || 'Technician'}! 👋
+            {td.welcomeFormat.replace('{name}', userData?.displayName?.split(' ')[0] || td.defaultTechName)}
           </h1>
           <p className="text-text-secondary mt-2">
-            {jobs.length} {jobs.length === 1 ? 'job' : 'jobs'} available for you
+            {jobs.length} {jobs.length === 1 ? td.jobSingular : td.jobPlural} {td.availableForYou}
           </p>
         </div>
       </div>
@@ -253,7 +256,7 @@ export default function TechnicianDashboard() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.totalJobs}</p>
-                <p className="text-sm text-text-secondary">Total Jobs</p>
+                <p className="text-sm text-text-secondary">{td.totalJobs}</p>
               </div>
             </div>
           </div>
@@ -265,7 +268,7 @@ export default function TechnicianDashboard() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.completedJobs}</p>
-                <p className="text-sm text-text-secondary">Completed</p>
+                <p className="text-sm text-text-secondary">{td.completedLabel}</p>
               </div>
             </div>
           </div>
@@ -277,7 +280,7 @@ export default function TechnicianDashboard() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.averageRating.toFixed(1)}</p>
-                <p className="text-sm text-text-secondary">Rating</p>
+                <p className="text-sm text-text-secondary">{td.ratingLabel}</p>
               </div>
             </div>
           </div>
@@ -289,7 +292,7 @@ export default function TechnicianDashboard() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{formatCurrency(stats.totalEarnings, 'BRL')}</p>
-                <p className="text-sm text-text-secondary">Earnings</p>
+                <p className="text-sm text-text-secondary">{td.earningsLabel}</p>
               </div>
             </div>
           </div>
@@ -306,11 +309,11 @@ export default function TechnicianDashboard() {
             <QrCode className="w-7 h-7 text-primary" />
           </div>
           <div className="flex-1">
-            <h3 className="font-bold text-lg">Quick Scan</h3>
-            <p className="text-sm text-text-secondary">Scan a device QR code to complete maintenance</p>
+            <h3 className="font-bold text-lg">{td.quickScanTitle}</h3>
+            <p className="text-sm text-text-secondary">{td.quickScanDesc}</p>
           </div>
           <div className="px-4 py-2 bg-primary text-white text-sm font-semibold rounded-apple">
-            Scan
+            {td.scanCta}
           </div>
         </div>
       </div>
@@ -318,21 +321,21 @@ export default function TechnicianDashboard() {
       {/* Available Jobs */}
       <div>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Available Jobs</h2>
+          <h2 className="text-2xl font-bold">{td.availableJobsHeading}</h2>
           <button
             onClick={loadData}
             className="px-4 py-2 text-sm bg-surface hover:bg-surface-elevated rounded-apple transition-all"
           >
-            Refresh
+            {td.refresh}
           </button>
         </div>
 
         {jobs.length === 0 ? (
           <div className="apple-card text-center py-12">
             <Package className="w-16 h-16 text-text-tertiary mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No jobs available</h3>
+            <h3 className="text-xl font-semibold mb-2">{td.noJobsTitle}</h3>
             <p className="text-text-secondary">
-              Check back later for new installation requests
+              {td.noJobsDesc}
             </p>
           </div>
         ) : (
@@ -360,7 +363,7 @@ export default function TechnicianDashboard() {
                         {job.productSnapshot.name[userData?.preferredLanguage || 'en'] || job.productSnapshot.name.en}
                       </h3>
                       <p className="text-sm text-text-secondary">
-                        Order #{job.orderNumber}
+                        {td.orderHash}{job.orderNumber}
                       </p>
                     </div>
 
@@ -393,7 +396,7 @@ export default function TechnicianDashboard() {
                       }}
                       className="w-full px-4 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all hover:scale-[1.02]"
                     >
-                      View Details & Accept
+                      {td.viewDetailsAccept}
                     </button>
                   </div>
                 </div>

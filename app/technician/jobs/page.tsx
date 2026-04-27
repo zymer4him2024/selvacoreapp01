@@ -7,7 +7,8 @@ import { getTechnicianJobsPaginated, PaginatedResult } from '@/lib/services/tech
 import { Order, OrderStatus } from '@/types/order';
 import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { MapPin, Calendar, DollarSign, Package, Phone, MessageCircle } from 'lucide-react';
-import { formatCurrency, formatDate } from '@/lib/utils/formatters';
+import { formatDate } from '@/lib/utils/formatters';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import { useTranslation } from '@/hooks/useTranslation';
 import { generateWhatsAppLink, openWhatsApp } from '@/lib/utils/whatsappHelper';
 import toast from 'react-hot-toast';
@@ -18,6 +19,9 @@ export default function MyJobsPage() {
   const router = useRouter();
   const { user, userData } = useAuth();
   const { t } = useTranslation();
+  const { formatCurrency } = useLocaleFormatters();
+  const tj = t.technician.jobsList;
+  const tjd = t.technician.jobDetail;
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
   const [jobs, setJobs] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +53,7 @@ export default function MyJobsPage() {
       setLastDoc(result.lastDoc);
       setHasMore(result.hasMore);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load jobs';
+      const message = error instanceof Error ? error.message : tj.loadJobsError;
       toast.error(message);
     } finally {
       setLoading(false);
@@ -65,12 +69,12 @@ export default function MyJobsPage() {
       setLastDoc(result.lastDoc);
       setHasMore(result.hasMore);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load more jobs';
+      const message = error instanceof Error ? error.message : tj.loadMoreError;
       toast.error(message);
     } finally {
       setLoadingMore(false);
     }
-  }, [loadingMore, hasMore, lastDoc, user, activeTab]);
+  }, [loadingMore, hasMore, lastDoc, user, activeTab, tj.loadMoreError]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -112,17 +116,29 @@ export default function MyJobsPage() {
   };
 
   const tabs = [
-    { id: 'upcoming' as TabType, label: 'Upcoming', count: 0 },
-    { id: 'in_progress' as TabType, label: 'In Progress', count: 0 },
-    { id: 'completed' as TabType, label: 'Completed', count: 0 },
+    { id: 'upcoming' as TabType, label: tjd.upcoming, count: 0 },
+    { id: 'in_progress' as TabType, label: tjd.inProgress, count: 0 },
+    { id: 'completed' as TabType, label: tjd.completed, count: 0 },
   ];
+
+  const emptyTitleByTab: Record<TabType, string> = {
+    upcoming: tj.emptyUpcomingTitle,
+    in_progress: tj.emptyInProgressTitle,
+    completed: tj.emptyCompletedTitle,
+  };
+
+  const emptyDescByTab: Record<TabType, string> = {
+    upcoming: tj.emptyUpcoming,
+    in_progress: tj.emptyInProgress,
+    completed: tj.emptyCompleted,
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading your jobs...</p>
+          <p className="text-text-secondary">{tj.loading}</p>
         </div>
       </div>
     );
@@ -132,9 +148,9 @@ export default function MyJobsPage() {
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div>
-        <h1 className="text-4xl font-bold tracking-tight">My Jobs</h1>
+        <h1 className="text-4xl font-bold tracking-tight">{tj.title}</h1>
         <p className="text-text-secondary mt-2">
-          Manage your accepted and ongoing installations
+          {tj.subtitle}
         </p>
       </div>
 
@@ -164,11 +180,9 @@ export default function MyJobsPage() {
       {jobs.length === 0 ? (
         <div className="apple-card text-center py-12">
           <Package className="w-16 h-16 text-text-tertiary mx-auto mb-4" />
-          <h3 className="text-xl font-semibold mb-2">No {activeTab.replace('_', ' ')} jobs</h3>
+          <h3 className="text-xl font-semibold mb-2">{emptyTitleByTab[activeTab]}</h3>
           <p className="text-text-secondary">
-            {activeTab === 'upcoming' && 'Accept jobs from the Available Jobs page'}
-            {activeTab === 'in_progress' && 'Start your upcoming jobs to see them here'}
-            {activeTab === 'completed' && 'Complete jobs to see them in your history'}
+            {emptyDescByTab[activeTab]}
           </p>
         </div>
       ) : (
@@ -196,7 +210,7 @@ export default function MyJobsPage() {
                       {job.productSnapshot.name[lang] || job.productSnapshot.name.en}
                     </h3>
                     <p className="text-sm text-text-secondary">
-                      Order #{job.orderNumber}
+                      {tj.orderHash}{job.orderNumber}
                     </p>
                   </div>
 
@@ -237,7 +251,7 @@ export default function MyJobsPage() {
                     className="flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] bg-success hover:bg-success/80 text-white font-medium rounded-apple transition-all"
                   >
                     <MessageCircle className="w-4 h-4" />
-                    <span className="hidden md:inline">Contact</span>
+                    <span className="hidden md:inline">{tj.contact}</span>
                   </button>
 
                   <button
@@ -247,7 +261,7 @@ export default function MyJobsPage() {
                     }}
                     className="flex-1 md:flex-initial px-4 py-2 min-h-[44px] bg-primary hover:bg-primary-hover text-white font-medium rounded-apple transition-all"
                   >
-                    View Details
+                    {tj.viewDetails}
                   </button>
                 </div>
               </div>

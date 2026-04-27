@@ -7,6 +7,7 @@ import UserProfileDropdown from '@/components/customer/UserProfileDropdown';
 import NotificationBell from '@/components/common/NotificationBell';
 import NetworkStatusBar from '@/components/common/NetworkStatusBar';
 import { OfflineQueueProvider } from '@/contexts/OfflineQueueContext';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function TechnicianLayoutClient({
   children,
@@ -15,12 +16,14 @@ export default function TechnicianLayoutClient({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useTranslation();
+  const tl = t.technician.layout;
 
   const navigation = [
-    { name: 'Available Jobs', href: '/technician', icon: Home, current: pathname === '/technician' },
-    { name: 'My Jobs', href: '/technician/jobs', icon: Briefcase, current: pathname.startsWith('/technician/jobs') },
-    { name: 'Scan', href: '/technician/scan', icon: QrCode, current: pathname === '/technician/scan' },
-    { name: 'Profile', href: '/technician/profile', icon: User, current: pathname === '/technician/profile' },
+    { name: tl.navAvailableJobs, href: '/technician', icon: Home, current: pathname === '/technician' },
+    { name: tl.navMyJobs, href: '/technician/jobs', icon: Briefcase, current: pathname.startsWith('/technician/jobs') },
+    { name: tl.navScan, href: '/technician/scan', icon: QrCode, current: pathname === '/technician/scan' },
+    { name: tl.navProfile, href: '/technician/profile', icon: User, current: pathname === '/technician/profile' },
   ];
 
   return (
@@ -36,7 +39,7 @@ export default function TechnicianLayoutClient({
                   </div>
                   <div>
                     <h1 className="text-lg font-bold">Selvacore</h1>
-                    <p className="text-xs text-text-secondary">Technician Portal</p>
+                    <p className="text-xs text-text-secondary">{tl.portalSubtitle}</p>
                   </div>
                 </div>
 
