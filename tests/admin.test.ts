@@ -11,7 +11,7 @@ async function pageIsUp() {
   }
 }
 
-describe('admin page', () => {
+describe.runIf(process.env.TEST_E2E)('admin page', () => {
   beforeAll(async () => {
     const up = await pageIsUp();
     if (!up) {

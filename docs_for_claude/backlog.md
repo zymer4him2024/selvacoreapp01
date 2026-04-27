@@ -32,18 +32,9 @@ Format per item: **title** → context, why deferred, what "done" looks like.
 
 ---
 
-### 3. Fix or remove `tests/admin.test.ts`
+### 3. ~~Fix or remove `tests/admin.test.ts`~~ (RESOLVED 2026-04-26)
 
-**Context:** `tests/admin.test.ts` was introduced in commit `0c5c266` (Phase 4.4, "customer review submission UI"). Its `beforeAll` hook unconditionally throws "Dev server not reachable at http://localhost:3000" when the dev server isn't running, which makes `npm test` report a failed suite (the 6 tests inside are then skipped). This is pre-existing to Phase 4.5 — verified by stashing Phase 4.5 changes and re-running `npm test`, which produces the identical failure.
-
-**Why deferred:** It's noise, not a blocker. The 142 unit tests still pass; only the e2e smoke suite complains. But every future `npm test` run will show "1 failed" in CI-adjacent output, and someone will eventually chase it as a regression.
-
-**Done when:** ONE of the following:
-- The suite is moved behind a `TEST_E2E=1` env-var gate so it's inert on normal `npm test` runs, OR
-- A vitest `globalSetup` starts the dev server automatically before the suite and tears it down after, OR
-- The file is deleted and its coverage is replaced by Playwright (if/when we add Playwright).
-
-**Trigger to revisit:** When e2e testing becomes a real priority, OR next time anyone has 20 minutes and is in the mood for a tidy-up.
+Resolved by gating the suite behind `describe.runIf(process.env.TEST_E2E)` at `tests/admin.test.ts:14`. Default `npm test` runs are clean (suite skipped); run e2e via `npm run dev` (in one terminal) + `TEST_E2E=1 npm test` (in another). The `beforeAll` server-reachability check is preserved as a guardrail for opt-in runs.
 
 ---
 
