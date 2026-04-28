@@ -7,11 +7,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getSubAdminStats, SubAdminStats } from '@/lib/services/subAdminService';
 import { getSubContractorById } from '@/lib/services/subContractorService';
 import { SubContractor } from '@/types';
+import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
 export default function SubAdminDashboard() {
   const { userData } = useAuth();
   const router = useRouter();
+  const { t } = useTranslation();
+  const sd = t.subAdmin.dashboard;
   const [stats, setStats] = useState<SubAdminStats | null>(null);
   const [contractor, setContractor] = useState<SubContractor | null>(null);
   const [loading, setLoading] = useState(true);
@@ -33,7 +36,7 @@ export default function SubAdminDashboard() {
       setStats(statsData);
       setContractor(contractorData);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load dashboard';
+      const message = error instanceof Error ? error.message : sd.loadError;
       toast.error(message);
     } finally {
       setLoading(false);
@@ -45,7 +48,7 @@ export default function SubAdminDashboard() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading dashboard...</p>
+          <p className="text-text-secondary">{sd.loading}</p>
         </div>
       </div>
     );
@@ -54,9 +57,9 @@ export default function SubAdminDashboard() {
   if (!userData?.subContractorId) {
     return (
       <div className="text-center py-16">
-        <h2 className="text-2xl font-semibold mb-2">No Contractor Assigned</h2>
+        <h2 className="text-2xl font-semibold mb-2">{sd.noContractorTitle}</h2>
         <p className="text-text-secondary">
-          Your account is not linked to a sub-contractor. Please contact an administrator.
+          {sd.noContractorMessage}
         </p>
       </div>
     );
@@ -68,14 +71,14 @@ export default function SubAdminDashboard() {
         {userData?.logoURL && (
           <img
             src={userData.logoURL}
-            alt="Logo"
+            alt={sd.logoAlt}
             className="w-16 h-16 rounded-apple object-contain border border-border bg-white p-1"
           />
         )}
         <div>
-          <h1 className="text-4xl font-bold tracking-tight mb-2">Dashboard</h1>
+          <h1 className="text-4xl font-bold tracking-tight mb-2">{sd.title}</h1>
           <p className="text-text-secondary">
-            {contractor?.name || 'Sub-Contractor'} Overview
+            {contractor?.name || sd.defaultContractorName} {sd.overviewSuffix}
           </p>
         </div>
       </div>
@@ -87,10 +90,10 @@ export default function SubAdminDashboard() {
             className="apple-card text-center hover:scale-[1.02] transition-all cursor-pointer"
           >
             <Users className="w-8 h-8 mx-auto mb-2 text-primary" />
-            <p className="text-text-tertiary text-sm">Technicians</p>
+            <p className="text-text-tertiary text-sm">{sd.technicians}</p>
             <p className="text-3xl font-bold mt-1">{stats.totalTechnicians}</p>
             <p className="text-xs text-text-tertiary mt-1">
-              {stats.approvedTechnicians} approved
+              {stats.approvedTechnicians} {sd.approvedSuffix}
             </p>
           </button>
 
@@ -99,22 +102,22 @@ export default function SubAdminDashboard() {
             className="apple-card text-center hover:scale-[1.02] transition-all cursor-pointer"
           >
             <Package className="w-8 h-8 mx-auto mb-2 text-secondary" />
-            <p className="text-text-tertiary text-sm">Total Orders</p>
+            <p className="text-text-tertiary text-sm">{sd.totalOrders}</p>
             <p className="text-3xl font-bold mt-1">{stats.totalOrders}</p>
             <p className="text-xs text-text-tertiary mt-1">
-              {stats.pendingOrders} pending
+              {stats.pendingOrders} {sd.pendingSuffix}
             </p>
           </button>
 
           <div className="apple-card text-center">
             <Clock className="w-8 h-8 mx-auto mb-2 text-warning" />
-            <p className="text-text-tertiary text-sm">In Progress</p>
+            <p className="text-text-tertiary text-sm">{sd.inProgress}</p>
             <p className="text-3xl font-bold mt-1 text-warning">{stats.inProgressOrders}</p>
           </div>
 
           <div className="apple-card text-center">
             <CheckCircle className="w-8 h-8 mx-auto mb-2 text-success" />
-            <p className="text-text-tertiary text-sm">Completed</p>
+            <p className="text-text-tertiary text-sm">{sd.completed}</p>
             <p className="text-3xl font-bold mt-1 text-success">{stats.completedOrders}</p>
           </div>
         </div>
@@ -124,16 +127,16 @@ export default function SubAdminDashboard() {
         <div className="apple-card border-l-4 border-warning">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold">Pending Technician Applications</h3>
+              <h3 className="font-semibold">{sd.pendingApplicationsTitle}</h3>
               <p className="text-sm text-text-secondary">
-                {stats.pendingTechnicians} technician{stats.pendingTechnicians > 1 ? 's' : ''} awaiting approval
+                {stats.pendingTechnicians} {stats.pendingTechnicians === 1 ? sd.pendingApplicationsCountSingular : sd.pendingApplicationsCountPlural}
               </p>
             </div>
             <button
               onClick={() => router.push('/sub-admin/technicians')}
               className="px-4 py-2 bg-warning/20 text-warning font-medium rounded-apple hover:bg-warning/30 transition-all"
             >
-              Review
+              {sd.reviewButton}
             </button>
           </div>
         </div>

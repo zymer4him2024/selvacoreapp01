@@ -3,6 +3,7 @@
 import { Star, Flag, EyeOff } from 'lucide-react';
 import type { Review } from '@/types';
 import { formatDateTime } from '@/lib/utils/formatters';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface Props {
   review: Review;
@@ -10,11 +11,13 @@ interface Props {
 }
 
 export function ReviewRow({ review, onClick }: Props) {
+  const { t } = useTranslation();
+  const r = t.admin.reviews;
   const status = review.hidden
-    ? { text: 'hidden', className: 'bg-error/15 text-error' }
+    ? { text: r.statusHidden, className: 'bg-error/15 text-error' }
     : review.flagged
-      ? { text: 'flagged', className: 'bg-warning/15 text-warning' }
-      : { text: 'active', className: 'bg-success/15 text-success' };
+      ? { text: r.statusFlagged, className: 'bg-warning/15 text-warning' }
+      : { text: r.statusActive, className: 'bg-success/15 text-success' };
 
   return (
     <tr

@@ -6,10 +6,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getSubAdminTechnicians } from '@/lib/services/subAdminService';
 import { User } from '@/types';
 import { formatDate } from '@/lib/utils/formatters';
+import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
 export default function SubAdminTechniciansPage() {
   const { userData } = useAuth();
+  const { t } = useTranslation();
+  const st = t.subAdmin.technicians;
+  const at = t.admin.technicians;
   const [technicians, setTechnicians] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -27,7 +31,7 @@ export default function SubAdminTechniciansPage() {
       const data = await getSubAdminTechnicians(subContractorId);
       setTechnicians(data);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load technicians';
+      const message = error instanceof Error ? error.message : st.loadError;
       toast.error(message);
     } finally {
       setLoading(false);
@@ -53,7 +57,7 @@ export default function SubAdminTechniciansPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading technicians...</p>
+          <p className="text-text-secondary">{st.loading}</p>
         </div>
       </div>
     );
@@ -62,8 +66,8 @@ export default function SubAdminTechniciansPage() {
   return (
     <div className="space-y-8 animate-fade-in">
       <div>
-        <h1 className="text-4xl font-bold tracking-tight mb-2">Technicians</h1>
-        <p className="text-text-secondary">Manage your team of technicians</p>
+        <h1 className="text-4xl font-bold tracking-tight mb-2">{st.title}</h1>
+        <p className="text-text-secondary">{st.subtitle}</p>
       </div>
 
       <div className="apple-card">
@@ -72,22 +76,22 @@ export default function SubAdminTechniciansPage() {
           onChange={(e) => setStatusFilter(e.target.value)}
           className="w-full md:w-64 px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
         >
-          <option value="all">All Statuses</option>
-          <option value="approved">Approved</option>
-          <option value="pending">Pending</option>
-          <option value="declined">Declined</option>
-          <option value="suspended">Suspended</option>
+          <option value="all">{st.allStatuses}</option>
+          <option value="approved">{at.approved}</option>
+          <option value="pending">{at.pending}</option>
+          <option value="declined">{at.declined}</option>
+          <option value="suspended">{at.suspended}</option>
         </select>
       </div>
 
       {filteredTechnicians.length === 0 ? (
         <div className="apple-card text-center py-16">
           <Users className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
-          <h3 className="text-xl font-semibold mb-2">No technicians found</h3>
+          <h3 className="text-xl font-semibold mb-2">{st.noTechniciansTitle}</h3>
           <p className="text-text-secondary">
             {statusFilter !== 'all'
-              ? 'Try a different filter'
-              : 'Technicians assigned to your company will appear here'}
+              ? st.tryDifferent
+              : st.willAppearHere}
           </p>
         </div>
       ) : (
@@ -131,7 +135,7 @@ export default function SubAdminTechniciansPage() {
                   </div>
                   {tech.applicationDate && (
                     <p className="text-xs text-text-tertiary mt-2">
-                      Applied {formatDate(tech.applicationDate, 'short')}
+                      {st.appliedPrefix} {formatDate(tech.applicationDate, 'short')}
                     </p>
                   )}
                 </div>
@@ -142,7 +146,7 @@ export default function SubAdminTechniciansPage() {
       )}
 
       <div className="text-center text-sm text-text-tertiary">
-        {filteredTechnicians.length} technician{filteredTechnicians.length !== 1 ? 's' : ''}
+        {filteredTechnicians.length} {filteredTechnicians.length === 1 ? st.countSingular : st.countPlural}
       </div>
     </div>
   );

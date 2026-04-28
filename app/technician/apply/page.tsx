@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  User, Mail, Phone, MessageCircle, MapPin, Award, FileText, 
-  CheckCircle, AlertCircle, Plus, X 
+import { useTranslation } from '@/hooks/useTranslation';
+import {
+  User, Mail, Phone, MessageCircle, MapPin, Award, FileText,
+  CheckCircle, AlertCircle, Plus, X
 } from 'lucide-react';
 import { doc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
@@ -14,8 +15,10 @@ import toast from 'react-hot-toast';
 export default function TechnicianApplicationPage() {
   const router = useRouter();
   const { user, userData } = useAuth();
+  const { t } = useTranslation();
+  const a = t.technician.apply;
   const [loading, setLoading] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     displayName: userData?.displayName || '',
     phone: userData?.phone || '',
@@ -24,34 +27,34 @@ export default function TechnicianApplicationPage() {
     serviceAreas: [] as string[],
     certifications: [] as string[],
   });
-  
+
   const [newArea, setNewArea] = useState('');
   const [newCert, setNewCert] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!formData.displayName.trim()) {
-      newErrors.displayName = 'Full name is required';
+      newErrors.displayName = a.errorFullNameRequired;
     }
-    
+
     if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
+      newErrors.phone = a.errorPhoneRequired;
     }
-    
+
     if (!formData.whatsapp.trim()) {
-      newErrors.whatsapp = 'WhatsApp number is required';
+      newErrors.whatsapp = a.errorWhatsappRequired;
     }
-    
+
     if (!formData.bio.trim() || formData.bio.length < 50) {
-      newErrors.bio = 'Bio must be at least 50 characters';
+      newErrors.bio = a.errorBioMinLength;
     }
-    
+
     if (formData.serviceAreas.length === 0) {
-      newErrors.serviceAreas = 'At least one service area is required';
+      newErrors.serviceAreas = a.errorServiceAreasRequired;
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -93,19 +96,19 @@ export default function TechnicianApplicationPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
-      toast.error('Please fill in all required fields');
+      toast.error(a.toastFillRequired);
       return;
     }
-    
+
     if (!user) {
-      toast.error('You must be logged in to apply');
+      toast.error(a.toastMustLogin);
       return;
     }
-    
+
     setLoading(true);
-    
+
     try {
       const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, {
@@ -120,19 +123,19 @@ export default function TechnicianApplicationPage() {
         applicationDate: Timestamp.now(),
         updatedAt: Timestamp.now(),
       });
-      
-      toast.success('Application submitted successfully! 🎉');
-      toast('Your application is under review. We will contact you soon.', {
+
+      toast.success(a.toastSubmitted);
+      toast(a.toastUnderReview, {
         icon: '⏳',
         duration: 5000,
       });
-      
+
       // Redirect to technician dashboard
       setTimeout(() => {
         router.push('/technician');
       }, 2000);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to submit application';
+      const message = error instanceof Error ? error.message : a.toastSubmitError;
       toast.error(message);
     } finally {
       setLoading(false);
@@ -147,9 +150,9 @@ export default function TechnicianApplicationPage() {
           <div className="w-20 h-20 bg-primary/10 rounded-apple flex items-center justify-center mx-auto mb-4">
             <User className="w-10 h-10 text-primary" />
           </div>
-          <h1 className="text-4xl font-bold mb-2">Become a Technician</h1>
+          <h1 className="text-4xl font-bold mb-2">{a.pageTitle}</h1>
           <p className="text-text-secondary text-lg">
-            Join our team of professional technicians and start earning
+            {a.pageSubtitle}
           </p>
         </div>
 
@@ -159,35 +162,35 @@ export default function TechnicianApplicationPage() {
             <div className="w-12 h-12 bg-success/10 rounded-apple flex items-center justify-center mx-auto mb-2">
               <CheckCircle className="w-6 h-6 text-success" />
             </div>
-            <h3 className="font-semibold mb-1">Flexible Schedule</h3>
-            <p className="text-sm text-text-secondary">Work on your own time</p>
+            <h3 className="font-semibold mb-1">{a.benefitFlexibleTitle}</h3>
+            <p className="text-sm text-text-secondary">{a.benefitFlexibleDesc}</p>
           </div>
-          
+
           <div className="apple-card text-center">
             <div className="w-12 h-12 bg-primary/10 rounded-apple flex items-center justify-center mx-auto mb-2">
               <Award className="w-6 h-6 text-primary" />
             </div>
-            <h3 className="font-semibold mb-1">Competitive Pay</h3>
-            <p className="text-sm text-text-secondary">Earn more per job</p>
+            <h3 className="font-semibold mb-1">{a.benefitPayTitle}</h3>
+            <p className="text-sm text-text-secondary">{a.benefitPayDesc}</p>
           </div>
-          
+
           <div className="apple-card text-center">
             <div className="w-12 h-12 bg-warning/10 rounded-apple flex items-center justify-center mx-auto mb-2">
               <MapPin className="w-6 h-6 text-warning" />
             </div>
-            <h3 className="font-semibold mb-1">Local Jobs</h3>
-            <p className="text-sm text-text-secondary">Work in your area</p>
+            <h3 className="font-semibold mb-1">{a.benefitLocalTitle}</h3>
+            <p className="text-sm text-text-secondary">{a.benefitLocalDesc}</p>
           </div>
         </div>
 
         {/* Application Form */}
         <form onSubmit={handleSubmit} className="apple-card space-y-6">
-          <h2 className="text-2xl font-bold">Application Form</h2>
-          
+          <h2 className="text-2xl font-bold">{a.formTitle}</h2>
+
           {/* Full Name */}
           <div>
             <label className="block text-sm font-semibold mb-2">
-              Full Name <span className="text-error">*</span>
+              {a.fullNameLabel} <span className="text-error">*</span>
             </label>
             <div className="relative">
               <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
@@ -195,7 +198,7 @@ export default function TechnicianApplicationPage() {
                 type="text"
                 value={formData.displayName}
                 onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
-                placeholder="John Doe"
+                placeholder={a.fullNamePlaceholder}
                 className={`w-full pl-12 pr-4 py-3 bg-surface-elevated border rounded-apple focus:outline-none transition-all ${
                   errors.displayName ? 'border-error' : 'border-border focus:border-primary'
                 }`}
@@ -212,7 +215,7 @@ export default function TechnicianApplicationPage() {
           {/* Phone */}
           <div>
             <label className="block text-sm font-semibold mb-2">
-              Phone Number <span className="text-error">*</span>
+              {a.phoneLabel} <span className="text-error">*</span>
             </label>
             <div className="relative">
               <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
@@ -220,7 +223,7 @@ export default function TechnicianApplicationPage() {
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                placeholder="+55 11 99999-9999"
+                placeholder={a.phonePlaceholder}
                 className={`w-full pl-12 pr-4 py-3 bg-surface-elevated border rounded-apple focus:outline-none transition-all ${
                   errors.phone ? 'border-error' : 'border-border focus:border-primary'
                 }`}
@@ -237,7 +240,7 @@ export default function TechnicianApplicationPage() {
           {/* WhatsApp */}
           <div>
             <label className="block text-sm font-semibold mb-2">
-              WhatsApp Number <span className="text-error">*</span>
+              {a.whatsappLabel} <span className="text-error">*</span>
             </label>
             <div className="relative">
               <MessageCircle className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
@@ -245,7 +248,7 @@ export default function TechnicianApplicationPage() {
                 type="tel"
                 value={formData.whatsapp}
                 onChange={(e) => setFormData(prev => ({ ...prev, whatsapp: e.target.value }))}
-                placeholder="+55 11 99999-9999"
+                placeholder={a.whatsappPlaceholder}
                 className={`w-full pl-12 pr-4 py-3 bg-surface-elevated border rounded-apple focus:outline-none transition-all ${
                   errors.whatsapp ? 'border-error' : 'border-border focus:border-primary'
                 }`}
@@ -258,14 +261,14 @@ export default function TechnicianApplicationPage() {
               </p>
             )}
             <p className="text-sm text-text-secondary mt-1">
-              Customers will contact you via WhatsApp
+              {a.whatsappHint}
             </p>
           </div>
 
           {/* Service Areas */}
           <div>
             <label className="block text-sm font-semibold mb-2">
-              Service Areas <span className="text-error">*</span>
+              {a.serviceAreasLabel} <span className="text-error">*</span>
             </label>
             <div className="flex gap-2 mb-3">
               <div className="relative flex-1">
@@ -275,7 +278,7 @@ export default function TechnicianApplicationPage() {
                   value={newArea}
                   onChange={(e) => setNewArea(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addServiceArea())}
-                  placeholder="e.g., São Paulo, Rio de Janeiro"
+                  placeholder={a.serviceAreasPlaceholder}
                   className={`w-full pl-12 pr-4 py-3 bg-surface-elevated border rounded-apple focus:outline-none transition-all ${
                     errors.serviceAreas ? 'border-error' : 'border-border focus:border-primary'
                   }`}
@@ -287,7 +290,7 @@ export default function TechnicianApplicationPage() {
                 className="px-6 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all flex items-center gap-2"
               >
                 <Plus className="w-5 h-5" />
-                Add
+                {a.addButton}
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -319,7 +322,7 @@ export default function TechnicianApplicationPage() {
           {/* Certifications (Optional) */}
           <div>
             <label className="block text-sm font-semibold mb-2">
-              Certifications <span className="text-text-tertiary">(Optional)</span>
+              {a.certificationsLabel} <span className="text-text-tertiary">{a.optional}</span>
             </label>
             <div className="flex gap-2 mb-3">
               <div className="relative flex-1">
@@ -329,7 +332,7 @@ export default function TechnicianApplicationPage() {
                   value={newCert}
                   onChange={(e) => setNewCert(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCertification())}
-                  placeholder="e.g., Electrical License, Plumbing Certificate"
+                  placeholder={a.certificationsPlaceholder}
                   className="w-full pl-12 pr-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
                 />
               </div>
@@ -339,7 +342,7 @@ export default function TechnicianApplicationPage() {
                 className="px-6 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all flex items-center gap-2"
               >
                 <Plus className="w-5 h-5" />
-                Add
+                {a.addButton}
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -365,14 +368,14 @@ export default function TechnicianApplicationPage() {
           {/* Bio */}
           <div>
             <label className="block text-sm font-semibold mb-2">
-              Professional Bio <span className="text-error">*</span>
+              {a.bioLabel} <span className="text-error">*</span>
             </label>
             <div className="relative">
               <FileText className="absolute left-4 top-4 w-5 h-5 text-text-tertiary" />
               <textarea
                 value={formData.bio}
                 onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
-                placeholder="Tell us about your experience, skills, and why you'd be a great technician... (minimum 50 characters)"
+                placeholder={a.bioPlaceholder}
                 rows={5}
                 className={`w-full pl-12 pr-4 py-3 bg-surface-elevated border rounded-apple focus:outline-none transition-all resize-none ${
                   errors.bio ? 'border-error' : 'border-border focus:border-primary'
@@ -387,7 +390,7 @@ export default function TechnicianApplicationPage() {
                 </p>
               ) : (
                 <p className="text-text-secondary text-sm">
-                  {formData.bio.length} / 50 minimum characters
+                  {a.bioCounter.replace('{count}', String(formData.bio.length))}
                 </p>
               )}
             </div>
@@ -403,17 +406,17 @@ export default function TechnicianApplicationPage() {
               {loading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Submitting Application...
+                  {a.submittingButton}
                 </>
               ) : (
                 <>
                   <CheckCircle className="w-5 h-5" />
-                  Submit Application
+                  {a.submitButton}
                 </>
               )}
             </button>
             <p className="text-center text-sm text-text-secondary mt-3">
-              By submitting, you agree to our terms and conditions
+              {a.termsAgreement}
             </p>
           </div>
         </form>
@@ -421,4 +424,3 @@ export default function TechnicianApplicationPage() {
     </div>
   );
 }
-

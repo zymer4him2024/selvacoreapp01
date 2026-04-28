@@ -141,8 +141,32 @@ export default function ReviewPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-background pb-20">
+        <div className="bg-surface border-b border-border sticky top-0 z-10">
+          <div className="max-w-lg mx-auto px-4 py-4 min-h-[44px]" />
+        </div>
+        <div className="max-w-lg mx-auto px-4 py-8 space-y-6">
+          {/* Order summary skeleton */}
+          <div className="apple-card animate-pulse">
+            <div className="h-3 w-24 bg-surface-elevated rounded mb-4" />
+            <div className="space-y-3">
+              <div className="flex justify-between"><div className="h-3 w-20 bg-surface-elevated rounded" /><div className="h-3 w-32 bg-surface-elevated rounded" /></div>
+              <div className="flex justify-between"><div className="h-3 w-16 bg-surface-elevated rounded" /><div className="h-3 w-24 bg-surface-elevated rounded" /></div>
+              <div className="flex justify-between"><div className="h-3 w-20 bg-surface-elevated rounded" /><div className="h-3 w-28 bg-surface-elevated rounded" /></div>
+            </div>
+          </div>
+          {/* Star prompt skeleton */}
+          <div className="apple-card animate-pulse">
+            <div className="h-6 w-3/4 bg-surface-elevated rounded mb-6" />
+            <div className="flex justify-center gap-2 mt-5">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <div key={n} className="w-12 h-12 bg-surface-elevated rounded-apple" />
+              ))}
+            </div>
+          </div>
+          {/* Submit skeleton */}
+          <div className="h-12 bg-surface-elevated rounded-apple animate-pulse" />
+        </div>
       </div>
     );
   }
@@ -236,7 +260,7 @@ export default function ReviewPage() {
         <Header />
         <div className="max-w-lg mx-auto px-4 py-8 space-y-6 animate-fade-in">
           <div className="apple-card text-center">
-            <CheckCircle2 className="w-12 h-12 mx-auto mb-3 text-success" aria-hidden />
+            <CheckCircle2 className="w-14 h-14 mx-auto mb-3 text-success animate-success-pop" aria-hidden />
             <h1 className="text-2xl font-bold mb-1">{t.orders.reviewFlow.thanksFeedback}</h1>
           </div>
           <div className="apple-card">
@@ -288,7 +312,11 @@ export default function ReviewPage() {
           <OrderSummary />
 
           <div className="apple-card">
-            <h1 className="text-2xl font-bold mb-1">{t.orders.reviewFlow.howWasInstallation}</h1>
+            <h1 className="text-2xl font-bold mb-1">
+              {order.technicianInfo?.name
+                ? t.orders.reviewFlow.howWasInstallationWith.replace('{tech}', order.technicianInfo.name)
+                : t.orders.reviewFlow.howWasInstallation}
+            </h1>
             {existingReview && daysLeft > 0 && (
               <p className="text-xs text-warning mt-1">
                 {daysLeft} {daysLeft === 1

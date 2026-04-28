@@ -5,6 +5,7 @@ import { Home, Users, Package, LogOut, Settings } from 'lucide-react';
 import ProtectedRoute from '@/components/common/ProtectedRoute';
 import NotificationBell from '@/components/common/NotificationBell';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function SubAdminLayoutClient({
   children,
@@ -14,12 +15,14 @@ export default function SubAdminLayoutClient({
   const pathname = usePathname();
   const router = useRouter();
   const { userData, signOut } = useAuth();
+  const { t } = useTranslation();
+  const sl = t.subAdmin.layout;
 
   const navigation = [
-    { name: 'Dashboard', href: '/sub-admin', icon: Home, current: pathname === '/sub-admin' },
-    { name: 'Technicians', href: '/sub-admin/technicians', icon: Users, current: pathname.startsWith('/sub-admin/technicians') },
-    { name: 'Orders', href: '/sub-admin/orders', icon: Package, current: pathname.startsWith('/sub-admin/orders') },
-    { name: 'Settings', href: '/sub-admin/settings', icon: Settings, current: pathname === '/sub-admin/settings' },
+    { name: sl.navDashboard, href: '/sub-admin', icon: Home, current: pathname === '/sub-admin' },
+    { name: sl.navTechnicians, href: '/sub-admin/technicians', icon: Users, current: pathname.startsWith('/sub-admin/technicians') },
+    { name: sl.navOrders, href: '/sub-admin/orders', icon: Package, current: pathname.startsWith('/sub-admin/orders') },
+    { name: sl.navSettings, href: '/sub-admin/settings', icon: Settings, current: pathname === '/sub-admin/settings' },
   ];
 
   return (
@@ -34,7 +37,7 @@ export default function SubAdminLayoutClient({
                 </div>
                 <div>
                   <h1 className="text-lg font-bold">Selvacore</h1>
-                  <p className="text-xs text-text-secondary">Sub-Admin Portal</p>
+                  <p className="text-xs text-text-secondary">{sl.portalSubtitle}</p>
                 </div>
               </div>
 

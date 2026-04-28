@@ -20,8 +20,33 @@ export function ReviewsTable({ reviews, loading, loadingMore, hasMore, onLoadMor
 
   if (loading) {
     return (
-      <div className="flex justify-center py-16">
-        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="apple-card overflow-hidden p-0">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-surface-elevated">
+              <tr className="text-left text-xs text-text-secondary uppercase">
+                <th className="px-4 py-3 font-medium">{r.colRating}</th>
+                <th className="px-4 py-3 font-medium">{r.colCustomer}</th>
+                <th className="px-4 py-3 font-medium">{r.colTechnician}</th>
+                <th className="px-4 py-3 font-medium">{r.colComment}</th>
+                <th className="px-4 py-3 font-medium">{r.colDate}</th>
+                <th className="px-4 py-3 font-medium">{r.colStatus}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i} className="border-t border-border">
+                  <td className="px-4 py-4"><div className="h-4 w-16 bg-surface-elevated rounded animate-pulse" /></td>
+                  <td className="px-4 py-4"><div className="h-4 w-28 bg-surface-elevated rounded animate-pulse" /></td>
+                  <td className="px-4 py-4"><div className="h-4 w-28 bg-surface-elevated rounded animate-pulse" /></td>
+                  <td className="px-4 py-4"><div className="h-4 w-48 bg-surface-elevated rounded animate-pulse" /></td>
+                  <td className="px-4 py-4"><div className="h-4 w-20 bg-surface-elevated rounded animate-pulse" /></td>
+                  <td className="px-4 py-4"><div className="h-5 w-14 bg-surface-elevated rounded-full animate-pulse" /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     );
   }
