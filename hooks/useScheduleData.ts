@@ -4,6 +4,7 @@ import { TechnicianWithStats, getApprovedTechnicians } from '@/lib/services/tech
 import { getOrdersInDateRange, getUnscheduledOrders } from '@/lib/services/orderService';
 import { getAllSubContractors } from '@/lib/services/subContractorService';
 import { useScheduleMutations } from './useScheduleMutations';
+import { useTranslation } from './useTranslation';
 import toast from 'react-hot-toast';
 
 function getMonday(d: Date): Date {
@@ -15,6 +16,7 @@ function getMonday(d: Date): Date {
 }
 
 export function useScheduleData() {
+  const { t } = useTranslation();
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
   const [technicians, setTechnicians] = useState<TechnicianWithStats[]>([]);
   const [weekOrders, setWeekOrders] = useState<Order[]>([]);
@@ -50,11 +52,11 @@ export function useScheduleData() {
       setUnscheduled(unsched);
       setSubContractors(scs);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load schedule');
+      toast.error(err instanceof Error ? err.message : t.admin.schedule.loadError);
     } finally {
       setLoading(false);
     }
-  }, [weekStart, weekEnd]);
+  }, [weekStart, weekEnd, t.admin.schedule.loadError]);
 
   useEffect(() => { loadData(); }, [loadData]);
 

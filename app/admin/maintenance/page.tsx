@@ -166,12 +166,12 @@ export default function MaintenanceDashboardPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-semibold truncate">
-                        {device.productSnapshot.name?.en || 'Ezer Device'}
+                        {device.productSnapshot.name?.en || mt.ezerDevice}
                       </h3>
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                         device.status === 'active' ? 'bg-success/20 text-success' : 'bg-text-tertiary/20 text-text-tertiary'
                       }`}>
-                        {device.status.toUpperCase()}
+                        {device.status === 'active' ? mt.statusActive : mt.statusInactive}
                       </span>
                     </div>
                     <p className="text-sm text-text-secondary mb-3">

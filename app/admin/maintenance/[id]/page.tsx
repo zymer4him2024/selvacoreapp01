@@ -22,6 +22,7 @@ export default function DeviceDetailPage() {
   const { t } = useTranslation();
   const { formatDate } = useLocaleFormatters();
   const md = t.admin.maintenanceDetail;
+  const mt = t.admin.maintenance;
   const [device, setDevice] = useState<Device | null>(null);
   const [schedules, setSchedules] = useState<MaintenanceSchedule[]>([]);
   const [visits, setVisits] = useState<MaintenanceVisit[]>([]);
@@ -149,7 +150,7 @@ export default function DeviceDetailPage() {
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                 device.status === 'active' ? 'bg-success/20 text-success' : 'bg-text-tertiary/20 text-text-tertiary'
               }`}>
-                {device.status.toUpperCase()}
+                {device.status === 'active' ? mt.statusActive : mt.statusInactive}
               </span>
             </div>
           </div>

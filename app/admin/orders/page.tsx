@@ -10,12 +10,15 @@ import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
+import { useAuth } from '@/contexts/AuthContext';
 
 const PAGE_SIZE = 20;
 
 export default function OrdersPage() {
   const { t } = useTranslation();
   const { formatCurrency, formatDate } = useLocaleFormatters();
+  const { userData } = useAuth();
+  const isSubAdmin = userData?.role === 'sub-admin';
   const o = t.admin.orders;
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -225,14 +228,16 @@ export default function OrdersPage() {
                   >
                     <Eye className="w-5 h-5" />
                   </Link>
-                  <button
-                    onClick={() => handleDeleteOrder(order.id)}
-                    disabled={deletingId === order.id}
-                    className="p-2 bg-surface-elevated hover:bg-error/20 text-text-secondary hover:text-error rounded-apple transition-all disabled:opacity-50"
-                    aria-label={o.deleteOrderAria}
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+                  {!isSubAdmin && (
+                    <button
+                      onClick={() => handleDeleteOrder(order.id)}
+                      disabled={deletingId === order.id}
+                      className="p-2 bg-surface-elevated hover:bg-error/20 text-text-secondary hover:text-error rounded-apple transition-all disabled:opacity-50"
+                      aria-label={o.deleteOrderAria}
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

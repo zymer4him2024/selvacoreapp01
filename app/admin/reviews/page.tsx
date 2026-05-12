@@ -50,11 +50,11 @@ export default function AdminReviewsPage() {
     try {
       setStats(await getReviewStats());
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load stats');
+      toast.error(err instanceof Error ? err.message : r.loadStatsError);
     } finally {
       setStatsLoading(false);
     }
-  }, []);
+  }, [r.loadStatsError]);
 
   const loadPage = useCallback(async () => {
     setLoading(true);
@@ -68,11 +68,11 @@ export default function AdminReviewsPage() {
       setCursor(result.lastDoc);
       setHasMore(result.hasMore);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load reviews');
+      toast.error(err instanceof Error ? err.message : r.loadReviewsError);
     } finally {
       setLoading(false);
     }
-  }, [tab, technicianId, effectiveRating]);
+  }, [tab, technicianId, effectiveRating, r.loadReviewsError]);
 
   const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore || !cursor) return;
@@ -86,21 +86,21 @@ export default function AdminReviewsPage() {
       setCursor(result.lastDoc);
       setHasMore(result.hasMore);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load more');
+      toast.error(err instanceof Error ? err.message : r.loadMoreError);
     } finally {
       setLoadingMore(false);
     }
-  }, [loadingMore, hasMore, cursor, tab, technicianId, effectiveRating]);
+  }, [loadingMore, hasMore, cursor, tab, technicianId, effectiveRating, r.loadMoreError]);
 
   useEffect(() => {
     (async () => {
       const techs = await getAllTechnicians('approved');
       setTechnicians(techs.map((ti) => ({ id: ti.id, name: ti.displayName || ti.email || ti.id })));
     })().catch((err) => {
-      toast.error(err instanceof Error ? err.message : 'Failed to load technicians');
+      toast.error(err instanceof Error ? err.message : r.loadTechniciansError);
     });
     loadStats();
-  }, [loadStats]);
+  }, [loadStats, r.loadTechniciansError]);
 
   useEffect(() => {
     loadPage();

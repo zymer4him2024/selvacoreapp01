@@ -1,20 +1,31 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, TrendingDown, DollarSign, Package as PackageIcon, Users } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { BarChart3, Package as PackageIcon } from 'lucide-react';
 import { getAnalyticsMetrics, getTopProducts, AnalyticsMetrics, TopProduct } from '@/lib/services/adminStatsService';
 import { formatOptionalNumber } from '@/lib/utils/formatters';
+import { useAuth } from '@/contexts/AuthContext';
 import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { DEFAULT_CURRENCY } from '@/lib/utils/constants';
 
 export default function AnalyticsPage() {
   const { t } = useTranslation();
+  const { userData } = useAuth();
+  const router = useRouter();
   const { formatCurrency } = useLocaleFormatters();
   const an = t.admin.analytics;
   const [metrics, setMetrics] = useState<AnalyticsMetrics | null>(null);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (userData && userData.role !== 'admin') {
+      router.replace('/admin');
+    }
+  }, [userData, router]);
 
   useEffect(() => {
     loadAnalytics();
@@ -37,6 +48,8 @@ export default function AnalyticsPage() {
     }
   };
 
+  if (userData && userData.role !== 'admin') return null;
+
   if (loading || !metrics) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -48,33 +61,24 @@ export default function AnalyticsPage() {
     );
   }
 
-  // Format metrics for display
   const metricsData = [
     {
       name: an.totalRevenue,
-      value: formatCurrency(metrics.totalRevenue, 'BRL'),
-      change: '+18.2%',
-      trend: 'up' as const
+      value: formatCurrency(metrics.totalRevenue, DEFAULT_CURRENCY),
     },
     {
       name: an.totalOrders,
       value: formatOptionalNumber(metrics.totalOrders),
-      change: '+12.5%',
-      trend: 'up' as const
     },
     {
       name: an.avgOrderValue,
       value: formatOptionalNumber(Math.round(metrics.avgOrderValue)) === 'N/A'
         ? an.naLabel
-        : formatCurrency(metrics.avgOrderValue, 'BRL'),
-      change: '+5.3%',
-      trend: 'up' as const
+        : formatCurrency(metrics.avgOrderValue, DEFAULT_CURRENCY),
     },
     {
       name: an.conversionRate,
       value: `${metrics.conversionRate.toFixed(2)}%`,
-      change: '-0.5%',
-      trend: 'down' as const
     },
   ];
 
@@ -90,27 +94,8 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {metricsData.map((metric) => (
           <div key={metric.name} className="apple-card">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <p className="text-text-tertiary text-sm mb-1">{metric.name}</p>
-                <p className="text-3xl font-bold">{metric.value}</p>
-              </div>
-              {metric.trend === 'up' ? (
-                <TrendingUp className="w-6 h-6 text-success" />
-              ) : (
-                <TrendingDown className="w-6 h-6 text-error" />
-              )}
-            </div>
-            <div className="flex items-center gap-1">
-              <span
-                className={`text-sm font-medium ${
-                  metric.trend === 'up' ? 'text-success' : 'text-error'
-                }`}
-              >
-                {metric.change}
-              </span>
-              <span className="text-xs text-text-tertiary">{t.common.vsLastMonth}</span>
-            </div>
+            <p className="text-text-tertiary text-sm mb-1">{metric.name}</p>
+            <p className="text-3xl font-bold">{metric.value}</p>
           </div>
         ))}
       </div>
@@ -140,7 +125,7 @@ export default function AnalyticsPage() {
                     <p className="text-sm text-text-secondary">{product.sales} {an.sales}</p>
                   </div>
                 </div>
-                <p className="text-xl font-bold text-success">{formatCurrency(product.revenue, 'BRL')}</p>
+                <p className="text-xl font-bold text-success">{formatCurrency(product.revenue, DEFAULT_CURRENCY)}</p>
               </div>
             ))}
           </div>

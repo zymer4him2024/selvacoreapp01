@@ -10,12 +10,15 @@ import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
+import { useAuth } from '@/contexts/AuthContext';
 
 const PAGE_SIZE = 20;
 
 export default function ProductsPage() {
   const { t } = useTranslation();
   const { formatCurrency } = useLocaleFormatters();
+  const { userData } = useAuth();
+  const isSubAdmin = userData?.role === 'sub-admin';
   const p = t.admin.products;
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,16 +101,18 @@ export default function ProductsPage() {
         <div>
           <h1 className="text-4xl font-bold tracking-tight mb-2">{p.title}</h1>
           <p className="text-text-secondary">
-            {p.subtitle}
+            {isSubAdmin ? p.subtitleSubAdmin : p.subtitle}
           </p>
         </div>
-        <Link
-          href="/admin/products/new"
-          className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all hover:scale-105 shadow-apple"
-        >
-          <Plus className="w-5 h-5" />
-          {p.addProduct}
-        </Link>
+        {!isSubAdmin && (
+          <Link
+            href="/admin/products/new"
+            className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all hover:scale-105 shadow-apple"
+          >
+            <Plus className="w-5 h-5" />
+            {p.addProduct}
+          </Link>
+        )}
       </div>
 
       {/* Search */}
@@ -130,9 +135,9 @@ export default function ProductsPage() {
           <Package className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
           <h3 className="text-xl font-semibold mb-2">{p.noProducts}</h3>
           <p className="text-text-secondary mb-6">
-            {searchTerm ? p.tryDifferent : p.getStarted}
+            {searchTerm ? p.tryDifferent : (isSubAdmin ? '' : p.getStarted)}
           </p>
-          {!searchTerm && (
+          {!searchTerm && !isSubAdmin && (
             <Link
               href="/admin/products/new"
               className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all"
@@ -206,34 +211,36 @@ export default function ProductsPage() {
                   </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex gap-2 pt-3 border-t border-border">
-                  <Link
-                    href={`/admin/products/${product.id}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-surface-elevated hover:bg-surface-secondary rounded-apple text-sm font-medium transition-all"
-                  >
-                    <Edit className="w-4 h-4" />
-                    {p.editButton}
-                  </Link>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleToggleActive(product.id, product.active, product.name.en); }}
-                    className={`flex items-center justify-center gap-2 px-4 py-2 rounded-apple text-sm font-medium transition-all ${
-                      product.active
-                        ? 'bg-warning/20 hover:bg-warning/30 text-warning'
-                        : 'bg-success/20 hover:bg-success/30 text-success'
-                    }`}
-                    title={product.active ? p.deactivateTitle : p.activateTitle}
-                  >
-                    {product.active ? p.hide : p.show}
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDelete(product.id, product.name.en); }}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-surface-elevated hover:bg-error/20 hover:text-error rounded-apple text-sm font-medium transition-all"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                {/* Actions (admin only) */}
+                {!isSubAdmin && (
+                  <div className="flex gap-2 pt-3 border-t border-border">
+                    <Link
+                      href={`/admin/products/${product.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-surface-elevated hover:bg-surface-secondary rounded-apple text-sm font-medium transition-all"
+                    >
+                      <Edit className="w-4 h-4" />
+                      {p.editButton}
+                    </Link>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleToggleActive(product.id, product.active, product.name.en); }}
+                      className={`flex items-center justify-center gap-2 px-4 py-2 rounded-apple text-sm font-medium transition-all ${
+                        product.active
+                          ? 'bg-warning/20 hover:bg-warning/30 text-warning'
+                          : 'bg-success/20 hover:bg-success/30 text-success'
+                      }`}
+                      title={product.active ? p.deactivateTitle : p.activateTitle}
+                    >
+                      {product.active ? p.hide : p.show}
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDelete(product.id, product.name.en); }}
+                      className="flex items-center justify-center gap-2 px-4 py-2 bg-surface-elevated hover:bg-error/20 hover:text-error rounded-apple text-sm font-medium transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -406,28 +413,30 @@ export default function ProductsPage() {
                 </div>
               )}
 
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-4 border-t border-border">
-                <Link
-                  href={`/admin/products/${selectedProduct.id}`}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all"
-                >
-                  <Edit className="w-4 h-4" />
-                  {p.editProductCta}
-                </Link>
-                <button
-                  onClick={() => { handleToggleActive(selectedProduct.id, selectedProduct.active, selectedProduct.name.en); setSelectedProduct(null); }}
-                  className={`px-4 py-3 rounded-apple font-semibold transition-all ${selectedProduct.active ? 'bg-warning/20 hover:bg-warning/30 text-warning' : 'bg-success/20 hover:bg-success/30 text-success'}`}
-                >
-                  {selectedProduct.active ? p.hide : p.show}
-                </button>
-                <button
-                  onClick={() => { handleDelete(selectedProduct.id, selectedProduct.name.en); setSelectedProduct(null); }}
-                  className="px-4 py-3 bg-error/20 hover:bg-error/30 text-error rounded-apple font-semibold transition-all"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
+              {/* Action Buttons (admin only) */}
+              {!isSubAdmin && (
+                <div className="flex gap-3 pt-4 border-t border-border">
+                  <Link
+                    href={`/admin/products/${selectedProduct.id}`}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all"
+                  >
+                    <Edit className="w-4 h-4" />
+                    {p.editProductCta}
+                  </Link>
+                  <button
+                    onClick={() => { handleToggleActive(selectedProduct.id, selectedProduct.active, selectedProduct.name.en); setSelectedProduct(null); }}
+                    className={`px-4 py-3 rounded-apple font-semibold transition-all ${selectedProduct.active ? 'bg-warning/20 hover:bg-warning/30 text-warning' : 'bg-success/20 hover:bg-success/30 text-success'}`}
+                  >
+                    {selectedProduct.active ? p.hide : p.show}
+                  </button>
+                  <button
+                    onClick={() => { handleDelete(selectedProduct.id, selectedProduct.name.en); setSelectedProduct(null); }}
+                    className="px-4 py-3 bg-error/20 hover:bg-error/30 text-error rounded-apple font-semibold transition-all"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
