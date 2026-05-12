@@ -1605,6 +1605,11 @@ export const en = {
       purposeOrderTracking: 'Order Tracking',
       purposeDeviceRegistration: 'Device Registration',
       purposeMaintenanceCard: 'Maintenance Card',
+      editTitle: 'Edit QR Code',
+      editTooltip: 'Edit',
+      saveButton: 'Save Changes',
+      savingButton: 'Saving...',
+      updatedToast: 'QR code updated',
     },
     // Shared / reusable admin strings
     dashboard_legacy: 'Dashboard',

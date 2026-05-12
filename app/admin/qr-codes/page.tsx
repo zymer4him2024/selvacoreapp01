@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   QrCode,
   Plus,
@@ -13,6 +14,7 @@ import {
   ArrowLeft,
   X,
   Check,
+  Pencil,
 } from 'lucide-react';
 import QRCodeLib from 'qrcode';
 import toast from 'react-hot-toast';
@@ -91,7 +93,8 @@ function buildShareBody(qr: QRCode): string {
 }
 
 export default function QRCodeManagementPage() {
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
+  const router = useRouter();
   const { t } = useTranslation();
   const qrt = t.admin.qrCodes;
   const PURPOSE_OPTIONS = buildPurposeOptions(qrt);
@@ -99,12 +102,19 @@ export default function QRCodeManagementPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<CreateQRCodeInput>({
     label: '',
     purpose: 'custom',
     content: '',
     description: '',
   });
+
+  useEffect(() => {
+    if (userData && userData.role !== 'admin') {
+      router.replace('/admin');
+    }
+  }, [userData, router]);
 
   const load = async () => {
     try {
@@ -128,9 +138,24 @@ export default function QRCodeManagementPage() {
   const resetForm = () => {
     setForm({ label: '', purpose: 'custom', content: '', description: '' });
     setShowForm(false);
+    setEditingId(null);
   };
 
-  const handleCreate = async () => {
+  const handleStartEdit = (qr: QRCode) => {
+    setEditingId(qr.id);
+    setForm({
+      label: qr.label,
+      purpose: qr.purpose,
+      content: qr.content,
+      description: qr.description || '',
+    });
+    setShowForm(true);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleSubmit = async () => {
     if (!user) {
       toast.error(qrt.mustBeSignedInToast);
       return;
@@ -141,21 +166,31 @@ export default function QRCodeManagementPage() {
     }
     try {
       setSaving(true);
-      await createQRCode(
-        {
+      if (editingId) {
+        await updateQRCode(editingId, {
           label: form.label.trim(),
           purpose: form.purpose,
           content: form.content.trim(),
           description: form.description?.trim() || '',
-        },
-        user.uid
-      );
-      toast.success(qrt.createdToast);
+        });
+        toast.success(qrt.updatedToast);
+      } else {
+        await createQRCode(
+          {
+            label: form.label.trim(),
+            purpose: form.purpose,
+            content: form.content.trim(),
+            description: form.description?.trim() || '',
+          },
+          user.uid
+        );
+        toast.success(qrt.createdToast);
+      }
       resetForm();
       await load();
     } catch (error: unknown) {
       const message =
-        error instanceof Error ? error.message : qrt.createError;
+        error instanceof Error ? error.message : editingId ? qrt.updateError : qrt.createError;
       toast.error(message);
     } finally {
       setSaving(false);
@@ -222,6 +257,8 @@ export default function QRCodeManagementPage() {
     window.open(`https://wa.me/?text=${body}`, '_blank', 'noopener,noreferrer');
   };
 
+  if (userData && userData.role !== 'admin') return null;
+
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
@@ -237,7 +274,15 @@ export default function QRCodeManagementPage() {
           <p className="text-text-secondary mt-2">{qrt.subtitle}</p>
         </div>
         <button
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => {
+            if (showForm) {
+              resetForm();
+            } else {
+              setEditingId(null);
+              setForm({ label: '', purpose: 'custom', content: '', description: '' });
+              setShowForm(true);
+            }
+          }}
           className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all shadow-apple"
         >
           {showForm ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
@@ -245,10 +290,12 @@ export default function QRCodeManagementPage() {
         </button>
       </div>
 
-      {/* Create form */}
+      {/* Create / Edit form */}
       {showForm && (
         <div className="apple-card space-y-6">
-          <h2 className="text-2xl font-semibold">{qrt.createTitle}</h2>
+          <h2 className="text-2xl font-semibold">
+            {editingId ? qrt.editTitle : qrt.createTitle}
+          </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -344,12 +391,14 @@ export default function QRCodeManagementPage() {
               {qrt.cancelButton}
             </button>
             <button
-              onClick={handleCreate}
+              onClick={handleSubmit}
               disabled={saving}
               className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-hover disabled:opacity-50 text-white font-semibold rounded-apple transition-all"
             >
               <Check className="w-5 h-5" />
-              {saving ? qrt.creatingButton : qrt.createButton}
+              {saving
+                ? editingId ? qrt.savingButton : qrt.creatingButton
+                : editingId ? qrt.saveButton : qrt.createButton}
             </button>
           </div>
         </div>
@@ -441,9 +490,16 @@ export default function QRCodeManagementPage() {
                       {qrt.whatsappButton}
                     </button>
                     <button
+                      onClick={() => handleStartEdit(qr)}
+                      title={qrt.editTooltip}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs bg-surface-elevated hover:bg-border rounded-apple transition-all ml-auto"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
                       onClick={() => handleDelete(qr)}
                       title={qrt.deleteTitle}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs bg-error/10 hover:bg-error/20 text-error rounded-apple transition-all ml-auto"
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs bg-error/10 hover:bg-error/20 text-error rounded-apple transition-all"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
