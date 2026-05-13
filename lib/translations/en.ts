@@ -1610,6 +1610,12 @@ export const en = {
       saveButton: 'Save Changes',
       savingButton: 'Saving...',
       updatedToast: 'QR code updated',
+      useSuggestedUrl: 'Use suggested URL',
+      suggestedUrlLabel: 'Suggested',
+      referenceTitle: 'URL Reference',
+      referenceSubtitle: 'Copy these URLs when creating new QR codes. Replace {id} placeholders with the actual ID.',
+      copyTooltip: 'Copy URL',
+      copiedToast: 'URL copied',
     },
     // Shared / reusable admin strings
     dashboard_legacy: 'Dashboard',

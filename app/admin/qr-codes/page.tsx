@@ -43,12 +43,37 @@ function buildPurposeOptions(qr: TranslationKeys['admin']['qrCodes']): { value: 
 
 const MAINTENANCE_QR_PREFIX = 'SELVAVORE-MAINTENANCE';
 
-function generateMaintenanceToken(): string {
-  const id =
-    typeof crypto !== 'undefined' && 'randomUUID' in crypto
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-  return `${MAINTENANCE_QR_PREFIX}-${id}`;
+function getSuggestedURL(purpose: QRCodePurpose, origin: string): string | null {
+  switch (purpose) {
+    case 'customer_signup':
+      return `${origin}/login?role=customer`;
+    case 'technician_signup':
+      return `${origin}/login?role=technician`;
+    case 'product_page':
+      return `${origin}/customer/products/{productId}`;
+    case 'order_tracking':
+      return `${origin}/customer/orders/{orderId}`;
+    case 'device_registration':
+      return `${origin}/technician/jobs/{orderId}?register=true`;
+    case 'maintenance_card':
+      return `${origin}/technician/scan?card={cardId}`;
+    default:
+      return null;
+  }
+}
+
+function generateCardId(): string {
+  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function generateMaintenanceUrl(origin: string): string {
+  return `${origin}/technician/scan?card=${generateCardId()}`;
+}
+
+function isMaintenanceContent(content: string): boolean {
+  return content.startsWith(MAINTENANCE_QR_PREFIX) || content.includes('/technician/scan?card=');
 }
 
 function QRPreview({ value, size = 160 }: { value: string; size?: number }) {
@@ -109,6 +134,11 @@ export default function QRCodeManagementPage() {
     content: '',
     description: '',
   });
+  const [origin, setOrigin] = useState('');
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
+  const suggestedURL = getSuggestedURL(form.purpose, origin);
 
   useEffect(() => {
     if (userData && userData.role !== 'admin') {
@@ -290,6 +320,46 @@ export default function QRCodeManagementPage() {
         </button>
       </div>
 
+      {/* URL Reference */}
+      <div className="apple-card space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold">{qrt.referenceTitle}</h2>
+          <p className="text-sm text-text-secondary mt-1">{qrt.referenceSubtitle}</p>
+        </div>
+        <div className="space-y-2">
+          {PURPOSE_OPTIONS.filter((opt) => opt.value !== 'custom').map((opt) => {
+            const url = getSuggestedURL(opt.value, origin);
+            if (!url) return null;
+            return (
+              <div
+                key={opt.value}
+                className="flex items-center gap-3 p-3 bg-surface-elevated rounded-apple"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium">{opt.label}</div>
+                  <code className="text-xs text-text-secondary font-mono break-all">{url}</code>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(url);
+                      toast.success(qrt.copiedToast);
+                    } catch {
+                      toast.error(qrt.clipboardUnavailableToast);
+                    }
+                  }}
+                  title={qrt.copyTooltip}
+                  className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 text-xs bg-primary/10 hover:bg-primary/20 text-primary rounded-apple transition-all"
+                >
+                  <Copy className="w-3.5 h-3.5" /> {qrt.copyButton}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Create / Edit form */}
       {showForm && (
         <div className="apple-card space-y-6">
@@ -317,11 +387,9 @@ export default function QRCodeManagementPage() {
                   const purpose = e.target.value as QRCodePurpose;
                   setForm((prev) => {
                     const next = { ...prev, purpose };
-                    if (purpose === 'maintenance_card') {
-                      // Always regenerate so each card has a unique token
-                      next.content = generateMaintenanceToken();
-                    } else if (prev.purpose === 'maintenance_card' && prev.content.startsWith(MAINTENANCE_QR_PREFIX)) {
-                      // Leaving maintenance_card — clear the auto-filled token
+                    if (purpose === 'maintenance_card' && origin) {
+                      next.content = generateMaintenanceUrl(origin);
+                    } else if (prev.purpose === 'maintenance_card' && isMaintenanceContent(prev.content)) {
                       next.content = '';
                     }
                     return next;
@@ -345,12 +413,26 @@ export default function QRCodeManagementPage() {
                 type="text"
                 value={form.content}
                 onChange={(e) => setForm({ ...form, content: e.target.value })}
-                placeholder={qrt.contentPlaceholder}
+                placeholder={suggestedURL || qrt.contentPlaceholder}
                 readOnly={form.purpose === 'maintenance_card'}
                 className={`w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all ${
                   form.purpose === 'maintenance_card' ? 'font-mono text-sm opacity-80 cursor-not-allowed' : ''
                 }`}
               />
+              {suggestedURL && form.content !== suggestedURL && (
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-xs text-text-tertiary">
+                    {qrt.suggestedUrlLabel}: <code className="font-mono">{suggestedURL}</code>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, content: suggestedURL })}
+                    className="text-xs px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded transition-all"
+                  >
+                    {qrt.useSuggestedUrl}
+                  </button>
+                </div>
+              )}
               {form.purpose === 'maintenance_card' ? (
                 <p className="text-xs text-text-tertiary mt-1">{qrt.contentHelpMaintenance}</p>
               ) : (
