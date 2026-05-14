@@ -61,7 +61,6 @@ SelvacoreApp is a **water filtration system installation management platform**. 
 | `adminStatsService.ts`    | Dashboard analytics from Firestore          |
 | `serviceService.ts`       | Installation service CRUD                   |
 | `subContractorService.ts` | Sub-contractor management                   |
-| `subAdminService.ts`      | Scoped queries for sub-admin portal         |
 | `deviceService.ts`        | Device registration via QR, lookup, customer device queries |
 | `maintenanceService.ts`   | Maintenance schedules, completion tracking, maintenance visits, email on completion |
 | `inventoryService.ts`     | Inventory CRUD, stock adjustments with audit trail, stats |
@@ -96,10 +95,9 @@ Google Sign-In only (Firebase Auth). New users go through a role selection flow 
 ```
 ┌─────────────────────────────────────────────────┐
 │                   Frontend (Next.js)             │
-│   /app/admin        — Admin dashboard, inventory, schedule, reviews, settings │
+│   /app/admin        — Admin dashboard, inventory, schedule, reviews, settings (sub-admins share this portal, role-gated) │
 │   /app/customer     — Customer ordering + device portal│
 │   /app/technician   — Technician jobs, profile, QR scan │
-│   /app/sub-admin    — Sub-contractor dashboard + settings │
 │   /app/login        — Auth + language selection   │
 │   /app/select-role  — New user role selection     │
 └──────────────┬──────────────────────────────────┘
@@ -179,7 +177,7 @@ cd functions && npm run build        # Build Cloud Functions only
 - Maintenance Automation: 5-level escalation (reminder -> due -> overdue -> critical -> auto-assign), daily Cloud Function at 09:00 UTC, email notifications via Firebase Trigger Email extension (`mail` collection), auto-assigns technician at 14+ days overdue
 - Products can define `maintenanceTemplate` with default Ezer interval and filter schedules; auto-populates when creating devices
 - Customer Device Portal at `/customer/devices` shows registered devices with maintenance status (overdue/due-soon/ok)
-- Sub-Admin Portal at `/sub-admin` provides scoped views filtered by `subContractorId`, includes settings with logo upload
+- Sub-admin role: platform-wide Selvacore staff (NOT scoped to a sub-contractor). Shares `/app/admin/*` portal; pages branch on `userData?.role === 'sub-admin'` to hide admin-only controls. Firestore rules: read everything; write orders/users/reviews/maintenance; cannot write products/services/sub-contractors, cannot create/modify admins or sub-admins.
 - Dispatcher Schedule at `/admin/schedule` is a weekly calendar view for assigning technicians to orders via drag-and-drop (@dnd-kit/core). Uses `scheduledAt` field (coexists with customer-chosen `installationDate`). Supports keyboard navigation (J/K/arrows), print view, workload indicators, and optimistic UI with Firestore transaction rollback
 - Inventory Management at `/admin/inventory` manages internal parts/supplies stock with Items and Transactions tabs, stock adjustments, and audit trail
 - Device/Maintenance Tracking at `/admin/maintenance` tracks registered Ezer devices and filter schedules with urgency sorting

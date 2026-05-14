@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const PROTECTED_ROUTES = ['/admin', '/customer', '/technician', '/sub-admin'];
+const PROTECTED_ROUTES = ['/admin', '/customer', '/technician'];
 const PUBLIC_ROUTES = ['/login', '/select-role'];
 const SESSION_COOKIE = '__session';
 
@@ -34,7 +34,6 @@ export const config = {
     '/admin/:path*',
     '/customer/:path*',
     '/technician/:path*',
-    '/sub-admin/:path*',
     '/login',
     '/select-role',
   ],

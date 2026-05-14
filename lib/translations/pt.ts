@@ -2,6 +2,14 @@
 export const pt = {
   common: {
     loading: 'Carregando...',
+    settings: 'Configurações',
+    displayAndAppearance: 'Tela e aparência',
+    displayAndAppearanceDesc: 'Escolha como o Selvacore aparece neste dispositivo.',
+    theme: 'Tema',
+    themeLight: 'Claro',
+    themeDark: 'Escuro',
+    themeSystem: 'Sistema',
+    themeSystemDesc: 'Seguir a configuração do dispositivo',
     save: 'Salvar',
     cancel: 'Cancelar',
     delete: 'Excluir',
@@ -1825,6 +1833,7 @@ export const pt = {
       navMyJobs: 'Meus Trabalhos',
       navScan: 'Escanear',
       navProfile: 'Perfil',
+      navSettings: 'Configurações',
     },
     dashboard: {
       loadJobsError: 'Falha ao carregar trabalhos',

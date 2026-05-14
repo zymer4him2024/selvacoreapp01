@@ -2,6 +2,14 @@
 export const en = {
   common: {
     loading: 'Loading...',
+    settings: 'Settings',
+    displayAndAppearance: 'Display & Appearance',
+    displayAndAppearanceDesc: 'Choose how Selvacore looks on this device.',
+    theme: 'Theme',
+    themeLight: 'Light',
+    themeDark: 'Dark',
+    themeSystem: 'System',
+    themeSystemDesc: 'Follow your device setting',
     save: 'Save',
     cancel: 'Cancel',
     delete: 'Delete',
@@ -1861,6 +1869,7 @@ export const en = {
       navMyJobs: 'My Jobs',
       navScan: 'Scan',
       navProfile: 'Profile',
+      navSettings: 'Settings',
     },
     dashboard: {
       loadJobsError: 'Failed to load jobs',

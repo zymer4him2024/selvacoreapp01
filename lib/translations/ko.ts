@@ -2,6 +2,14 @@
 export const ko = {
   common: {
     loading: '로딩 중...',
+    settings: '설정',
+    displayAndAppearance: '디스플레이 및 모양',
+    displayAndAppearanceDesc: '이 기기에서 Selvacore가 표시되는 방식을 선택하세요.',
+    theme: '테마',
+    themeLight: '라이트',
+    themeDark: '다크',
+    themeSystem: '시스템',
+    themeSystemDesc: '기기 설정 따르기',
     save: '저장',
     cancel: '취소',
     delete: '삭제',
@@ -1825,6 +1833,7 @@ export const ko = {
       navMyJobs: '내 작업',
       navScan: '스캔',
       navProfile: '프로필',
+      navSettings: '설정',
     },
     dashboard: {
       loadJobsError: '작업을 불러오지 못했습니다',
