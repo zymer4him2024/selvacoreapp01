@@ -43,6 +43,7 @@ const ROUTES: Route[] = [
   { path: '/technician/jobs', role: 'technician' },
   { path: '/technician/profile', role: 'technician' },
   { path: '/technician/scan', role: 'technician' },
+  { path: '/technician/settings', role: 'technician' },
 
   { path: '/admin', role: 'admin' },
   { path: '/admin/analytics', role: 'admin' },

@@ -10,6 +10,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { formatCurrency } from '@/lib/utils/formatters';
+import { DEFAULT_CURRENCY } from '@/lib/utils/constants';
 
 export interface AdminStats {
   totalProducts: number;
@@ -105,7 +106,7 @@ export async function getRecentOrders(limitCount: number = 5): Promise<RecentOrd
         customer: data.customerInfo?.name || 'N/A',
         product: data.productSnapshot?.name?.en || data.productSnapshot?.name || 'N/A',
         status: data.status || 'pending',
-        amount: data.totalAmount ? formatCurrency(data.totalAmount, 'BRL') : 'N/A',
+        amount: data.totalAmount ? formatCurrency(data.totalAmount, data.payment?.currency || DEFAULT_CURRENCY) : 'N/A',
         createdAt: data.createdAt || Timestamp.now(),
       };
     });

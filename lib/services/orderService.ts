@@ -189,22 +189,28 @@ export async function cancelOrder(
     ],
   });
 
-  await logTransaction({
-    type: 'order_cancelled',
-    orderId,
-    orderNumber: order.orderNumber,
-    customerId: order.customerId,
-    technicianId: order.technicianId || undefined,
-    subContractorId: order.subContractorId || undefined,
-    metadata: {
-      previousStatus: order.status,
-      newStatus: 'cancelled',
-      reason,
-      cancelledBy,
-    },
-    performedBy: userId,
-    performedByRole: cancelledBy === 'admin' ? 'admin' : 'customer',
-  });
+  // Audit log is best-effort: cancellation has already succeeded above,
+  // so a logTransaction failure must not surface to the caller as an error.
+  try {
+    await logTransaction({
+      type: 'order_cancelled',
+      orderId,
+      orderNumber: order.orderNumber,
+      customerId: order.customerId,
+      ...(order.technicianId ? { technicianId: order.technicianId } : {}),
+      ...(order.subContractorId ? { subContractorId: order.subContractorId } : {}),
+      metadata: {
+        previousStatus: order.status,
+        newStatus: 'cancelled',
+        reason,
+        cancelledBy,
+      },
+      performedBy: userId,
+      performedByRole: cancelledBy === 'admin' ? 'admin' : 'customer',
+    });
+  } catch (err) {
+    console.error('cancelOrder: audit log failed (non-fatal):', err);
+  }
 }
 
 /**

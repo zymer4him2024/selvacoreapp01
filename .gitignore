@@ -55,3 +55,6 @@ public/swe-worker-*.js
 
 # claude code per-session local files
 .claude/
+
+# binary user-facing docs — store on Drive / internal wiki, not in git
+Doc/
