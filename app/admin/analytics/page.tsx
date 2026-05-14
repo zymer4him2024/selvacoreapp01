@@ -38,7 +38,7 @@ export default function AnalyticsPage() {
         getAnalyticsMetrics(),
         getTopProducts(10)
       ]);
-      
+
       setMetrics(analyticsData);
       setTopProducts(products);
     } catch {
@@ -52,10 +52,10 @@ export default function AnalyticsPage() {
 
   if (loading || !metrics) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">{an.loading}</p>
+      <div className="sc" style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+          <div className="sc-spinner" />
+          <p className="sc-helper">{an.loading}</p>
         </div>
       </div>
     );
@@ -83,69 +83,89 @@ export default function AnalyticsPage() {
   ];
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
+    <div className="sc" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
       <div>
-        <h1 className="text-4xl font-bold tracking-tight mb-2">{an.title}</h1>
-        <p className="text-text-secondary">{an.subtitle}</p>
+        <h1 className="sc-h1" style={{ marginTop: 0, marginBottom: 8 }}>{an.title}</h1>
+        <p className="sc-helper" style={{ margin: 0 }}>{an.subtitle}</p>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
         {metricsData.map((metric) => (
-          <div key={metric.name} className="apple-card">
-            <p className="text-text-tertiary text-sm mb-1">{metric.name}</p>
-            <p className="text-3xl font-bold">{metric.value}</p>
+          <div key={metric.name} className="sc-card-static">
+            <p className="sc-helper" style={{ margin: 0, marginBottom: 4 }}>{metric.name}</p>
+            <p style={{ fontSize: 28, fontWeight: 700, color: 'var(--ink)', margin: 0 }}>{metric.value}</p>
           </div>
         ))}
       </div>
 
-      {/* Top Products */}
-      <div className="apple-card">
-        <h2 className="text-2xl font-semibold mb-6">{an.topProducts}</h2>
+      <div className="sc-card-static">
+        <h2 className="sc-h2" style={{ marginTop: 0, marginBottom: 24 }}>{an.topProducts}</h2>
         {topProducts.length === 0 ? (
-          <div className="py-12 text-center">
-            <PackageIcon className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
-            <p className="text-text-secondary">{an.noOrders}</p>
-            <p className="text-sm text-text-tertiary mt-2">{an.topProductsAppear}</p>
+          <div style={{ padding: '48px 0', textAlign: 'center' }}>
+            <PackageIcon size={64} color="var(--soft)" style={{ margin: '0 auto 16px' }} />
+            <p className="sc-helper" style={{ marginBottom: 8 }}>{an.noOrders}</p>
+            <p className="sc-helper" style={{ fontSize: 13, margin: 0 }}>{an.topProductsAppear}</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {topProducts.map((product, index) => (
               <div
                 key={product.name}
-                className="flex items-center justify-between p-4 rounded-apple bg-surface hover:bg-surface-elevated transition-colors"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: 16,
+                  borderRadius: 'var(--radius-md)',
+                  background: 'var(--off-paper)',
+                  transition: 'background 0.15s ease',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--off-paper)'; }}
               >
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-apple bg-primary/10 flex items-center justify-center">
-                    <span className="font-bold text-primary">#{index + 1}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <div style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--brand-tint)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <span style={{ fontWeight: 700, color: 'var(--brand)' }}>#{index + 1}</span>
                   </div>
                   <div>
-                    <p className="font-medium">{product.name}</p>
-                    <p className="text-sm text-text-secondary">{product.sales} {an.sales}</p>
+                    <p style={{ fontWeight: 500, color: 'var(--ink)', margin: 0 }}>{product.name}</p>
+                    <p className="sc-helper" style={{ fontSize: 13, margin: 0, marginTop: 2 }}>{product.sales} {an.sales}</p>
                   </div>
                 </div>
-                <p className="text-xl font-bold text-success">{formatCurrency(product.revenue, DEFAULT_CURRENCY)}</p>
+                <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--brand)', margin: 0 }}>
+                  {formatCurrency(product.revenue, DEFAULT_CURRENCY)}
+                </p>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* Charts Placeholder */}
-      <div className="apple-card">
-        <h2 className="text-2xl font-semibold mb-6">{an.revenueTrend}</h2>
-        <div className="h-64 flex items-center justify-center bg-surface-elevated rounded-apple">
-          <div className="text-center">
-            <BarChart3 className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
-            <p className="text-text-secondary">{an.chartsComingSoon}</p>
-            <p className="text-sm text-text-tertiary mt-2">
-              {an.chartsDescription}
-            </p>
+      <div className="sc-card-static">
+        <h2 className="sc-h2" style={{ marginTop: 0, marginBottom: 24 }}>{an.revenueTrend}</h2>
+        <div style={{
+          height: 256,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'var(--off-paper)',
+          borderRadius: 'var(--radius-md)',
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <BarChart3 size={64} color="var(--soft)" style={{ margin: '0 auto 16px' }} />
+            <p className="sc-helper" style={{ marginBottom: 8 }}>{an.chartsComingSoon}</p>
+            <p className="sc-helper" style={{ fontSize: 13, margin: 0 }}>{an.chartsDescription}</p>
           </div>
         </div>
       </div>
     </div>
   );
 }
-

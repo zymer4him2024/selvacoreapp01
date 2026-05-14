@@ -10,7 +10,12 @@ interface DragOverlayCardProps {
 
 export default function DragOverlayCard({ order, timeTbdLabel }: DragOverlayCardProps) {
   return (
-    <div className="w-[140px] opacity-90 rotate-2 shadow-[0_8px_24px_rgba(0,0,0,0.15)]">
+    <div className="sc" style={{
+      width: 140,
+      opacity: 0.9,
+      transform: 'rotate(2deg)',
+      boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+    }}>
       <JobCard order={order} timeTbdLabel={timeTbdLabel} />
     </div>
   );

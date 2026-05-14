@@ -13,6 +13,7 @@ import {
   TechnicianWithStats,
 } from '@/lib/services/technicianAdminService';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { TechnicianOverviewTab } from '@/components/admin/technicians/TechnicianOverviewTab';
 import { TechnicianReviewsTab } from '@/components/admin/technicians/TechnicianReviewsTab';
@@ -20,18 +21,33 @@ import type { EditedProfile } from '@/components/admin/technicians/TechnicianPro
 
 type DetailTab = 'overview' | 'reviews';
 
-function statusClassFor(status: TechnicianWithStats['technicianStatus']): string {
+function statusStyleFor(status: TechnicianWithStats['technicianStatus']): { color: string; bg: string } {
   switch (status) {
-    case 'approved': return 'bg-success/10 text-success';
-    case 'pending': return 'bg-warning/10 text-warning';
-    case 'declined': return 'bg-error/10 text-error';
-    case 'suspended': return 'bg-text-tertiary/10 text-text-tertiary';
-    default: return 'bg-surface-elevated text-text-secondary';
+    case 'approved': return { color: 'var(--brand)', bg: 'var(--brand-tint)' };
+    case 'pending': return { color: 'var(--warn)', bg: 'var(--warn-tint)' };
+    case 'declined': return { color: '#ef4444', bg: 'rgba(239,68,68,0.15)' };
+    case 'suspended': return { color: 'var(--soft)', bg: 'var(--off-paper)' };
+    default: return { color: 'var(--soft)', bg: 'var(--off-paper)' };
   }
 }
 
+const subTabStyle = (active: boolean): React.CSSProperties => ({
+  padding: '8px 16px',
+  borderRadius: 'var(--radius-sm)',
+  fontSize: 13,
+  fontWeight: 500,
+  border: 'none',
+  background: active ? 'var(--paper)' : 'transparent',
+  color: active ? 'var(--ink)' : 'var(--soft)',
+  boxShadow: active ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
+  cursor: 'pointer',
+  transition: 'all 0.15s ease',
+});
+
 export default function TechnicianDetailPage() {
   const { t } = useTranslation();
+  const { userData } = useAuth();
+  const canModify = userData?.role !== 'sub-admin';
   const td = t.admin.technicianDetail;
   const router = useRouter();
   const params = useParams();
@@ -128,10 +144,10 @@ export default function TechnicianDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-text-secondary">{td.loading}</p>
+      <div className="sc" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
+          <div className="sc-spinner" />
+          <p className="sc-helper">{td.loading}</p>
         </div>
       </div>
     );
@@ -139,9 +155,9 @@ export default function TechnicianDetailPage() {
 
   if (!technician) {
     return (
-      <div className="text-center py-12">
-        <h2 className="text-2xl font-bold mb-4">{td.notFound}</h2>
-        <button onClick={() => router.push('/admin/technicians')} className="apple-button-primary">
+      <div className="sc" style={{ textAlign: 'center', padding: 48 }}>
+        <h2 className="sc-h2" style={{ marginBottom: 16 }}>{td.notFound}</h2>
+        <button onClick={() => router.push('/admin/technicians')} className="sc-cta">
           {td.backToTechnicians}
         </button>
       </div>
@@ -154,38 +170,67 @@ export default function TechnicianDetailPage() {
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center gap-4">
-        <button onClick={() => router.push('/admin/technicians')} className="p-2 hover:bg-surface-elevated rounded-apple transition-all">
-          <ArrowLeft className="w-6 h-6" />
+    <div className="sc" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+        <button
+          onClick={() => router.push('/admin/technicians')}
+          style={{
+            padding: 8,
+            background: 'transparent',
+            border: 'none',
+            borderRadius: 'var(--radius-md)',
+            color: 'var(--ink)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+        >
+          <ArrowLeft size={24} />
         </button>
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold">{td.title}</h1>
-          <p className="text-text-secondary">{td.subtitle}</p>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <h1 className="sc-h1" style={{ margin: 0 }}>{td.title}</h1>
+          <p className="sc-helper" style={{ margin: 0 }}>{td.subtitle}</p>
         </div>
-        {tab === 'overview' && (
-          <>
-            <button onClick={isEditing ? cancelEdit : () => setIsEditing(true)} className="apple-button-secondary flex items-center gap-2">
-              {isEditing ? <X className="w-5 h-5" /> : <Edit className="w-5 h-5" />}
+        {tab === 'overview' && canModify && (
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={isEditing ? cancelEdit : () => setIsEditing(true)}
+              className="sc-cta-ghost"
+              style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+            >
+              {isEditing ? <X size={18} /> : <Edit size={18} />}
               {isEditing ? t.common.cancel : t.common.edit}
             </button>
             {isEditing && (
-              <button onClick={handleSaveEdit} disabled={actionLoading} className="apple-button-primary flex items-center gap-2">
-                <Save className="w-5 h-5" />{td.saveChanges}
+              <button
+                onClick={handleSaveEdit}
+                disabled={actionLoading}
+                className="sc-cta"
+                style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+              >
+                <Save size={18} />{td.saveChanges}
               </button>
             )}
-          </>
+          </div>
         )}
       </div>
 
-      <div className="flex gap-1 bg-surface-elevated rounded-apple p-1 w-fit">
+      <div style={{
+        display: 'flex',
+        gap: 4,
+        background: 'var(--off-paper)',
+        borderRadius: 'var(--radius-md)',
+        padding: 4,
+        width: 'fit-content',
+      }}>
         {tabs.map((tb) => (
           <button
             key={tb.key}
             onClick={() => setTab(tb.key)}
-            className={`px-4 py-2 rounded-apple text-sm font-medium transition-colors ${
-              tab === tb.key ? 'bg-surface shadow-sm text-text-primary' : 'text-text-secondary hover:text-text-primary'
-            }`}
+            style={subTabStyle(tab === tb.key)}
           >
             {tb.label}
           </button>
@@ -195,11 +240,12 @@ export default function TechnicianDetailPage() {
       {tab === 'overview' ? (
         <TechnicianOverviewTab
           technician={technician}
-          statusClassName={statusClassFor(technician.technicianStatus)}
+          statusStyle={statusStyleFor(technician.technicianStatus)}
           isEditing={isEditing}
           edited={edited}
           setEdited={setEdited}
           actionLoading={actionLoading}
+          canModify={canModify}
           onApprove={handleApprove}
           onDecline={handleDecline}
           onSuspend={handleSuspend}

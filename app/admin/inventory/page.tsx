@@ -15,25 +15,50 @@ import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
+import { DEFAULT_CURRENCY } from '@/lib/utils/constants';
 
 type PageTab = 'items' | 'transactions';
 type StatusFilter = 'all' | 'in_stock' | 'low_stock' | 'out_of_stock';
 type CategoryFilter = 'all' | InventoryCategory;
 type TypeFilter = 'all' | AdjustmentType;
 
-const TYPE_COLORS: Record<AdjustmentType, string> = {
-  restock: 'bg-success/20 text-success',
-  used: 'bg-error/20 text-error',
-  adjustment: 'bg-primary/20 text-primary',
-  returned: 'bg-success/20 text-success',
+const TYPE_STYLES: Record<AdjustmentType, { color: string; bg: string }> = {
+  restock: { color: 'var(--brand)', bg: 'var(--brand-tint)' },
+  used: { color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
+  adjustment: { color: 'var(--brand)', bg: 'var(--brand-tint)' },
+  returned: { color: 'var(--brand)', bg: 'var(--brand-tint)' },
 };
 
-const CATEGORY_COLORS: Record<InventoryCategory, string> = {
-  filter: 'bg-primary/10 text-primary',
-  part: 'bg-warning/10 text-warning',
-  tool: 'bg-purple-100 text-purple-700',
-  supply: 'bg-teal-100 text-teal-700',
-  equipment: 'bg-indigo-100 text-indigo-700',
+const CATEGORY_STYLES: Record<InventoryCategory, { color: string; bg: string }> = {
+  filter: { color: 'var(--brand)', bg: 'var(--brand-tint)' },
+  part: { color: 'var(--warn)', bg: 'var(--warn-tint)' },
+  tool: { color: '#9333ea', bg: 'rgba(147,51,234,0.15)' },
+  supply: { color: '#0891b2', bg: 'rgba(8,145,178,0.15)' },
+  equipment: { color: '#4f46e5', bg: 'rgba(79,70,229,0.15)' },
+};
+
+const tabBtnStyle = (active: boolean): React.CSSProperties => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '8px 16px',
+  borderRadius: 'var(--radius-md)',
+  fontSize: 13,
+  fontWeight: 600,
+  border: `1px solid ${active ? 'var(--brand)' : 'var(--hairline)'}`,
+  background: active ? 'var(--brand)' : 'var(--off-paper)',
+  color: active ? '#fff' : 'var(--soft)',
+  cursor: 'pointer',
+  transition: 'all 0.15s ease',
+});
+
+const statTileStyle: React.CSSProperties = {
+  textAlign: 'center',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: 6,
+  padding: 20,
 };
 
 export default function InventoryPage() {
@@ -60,10 +85,11 @@ export default function InventoryPage() {
 
   const getStatusBadge = (item: InventoryItem) => {
     const status = getInventoryStatus(item);
-    if (status === 'out_of_stock') return { label: inv.outOfStock, style: 'bg-error/20 text-error' };
-    if (status === 'low_stock') return { label: inv.lowStock, style: 'bg-warning/20 text-warning' };
-    return { label: inv.inStock, style: 'bg-success/20 text-success' };
+    if (status === 'out_of_stock') return { label: inv.outOfStock, color: '#ef4444', bg: 'rgba(239,68,68,0.15)' };
+    if (status === 'low_stock') return { label: inv.lowStock, color: 'var(--warn)', bg: 'var(--warn-tint)' };
+    return { label: inv.inStock, color: 'var(--brand)', bg: 'var(--brand-tint)' };
   };
+
   const [activeTab, setActiveTab] = useState<PageTab>('items');
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [stats, setStats] = useState<InventoryStats | null>(null);
@@ -78,6 +104,12 @@ export default function InventoryPage() {
   const [transactionsLoaded, setTransactionsLoaded] = useState(false);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
+
+  useEffect(() => {
+    if (userData && userData.role !== 'admin') {
+      router.replace('/admin');
+    }
+  }, [userData, router]);
 
   useEffect(() => {
     loadData();
@@ -185,116 +217,103 @@ export default function InventoryPage() {
     return true;
   });
 
+  if (userData && userData.role !== 'admin') return null;
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">{inv.loading}</p>
+      <div className="sc" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
+          <div className="sc-spinner" />
+          <p className="sc-helper">{inv.loading}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-start justify-between">
+    <div className="sc" style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <div>
-          <h1 className="text-4xl font-bold tracking-tight mb-2">{inv.title}</h1>
-          <p className="text-text-secondary">
-            {inv.subtitle}
-          </p>
+          <h1 className="sc-h1" style={{ marginBottom: 8 }}>{inv.title}</h1>
+          <p className="sc-helper">{inv.subtitle}</p>
         </div>
         {activeTab === 'items' && (
           <button
             onClick={handleAddItem}
-            className="flex items-center gap-2 px-5 py-3 bg-primary hover:bg-primary/90 text-white font-semibold rounded-apple transition-all"
+            className="sc-cta"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
           >
-            <Plus className="w-5 h-5" />
+            <Plus size={18} />
             {inv.addItem}
           </button>
         )}
       </div>
 
-      {/* Top-level Tabs */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => setActiveTab('items')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-apple text-sm font-medium transition-all ${
-            activeTab === 'items'
-              ? 'bg-primary text-white'
-              : 'bg-surface-elevated text-text-secondary hover:text-text-primary'
-          }`}
-        >
-          <Boxes className="w-4 h-4" />
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={() => setActiveTab('items')} style={tabBtnStyle(activeTab === 'items')}>
+          <Boxes size={16} />
           {inv.items}
         </button>
-        <button
-          onClick={() => setActiveTab('transactions')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-apple text-sm font-medium transition-all ${
-            activeTab === 'transactions'
-              ? 'bg-primary text-white'
-              : 'bg-surface-elevated text-text-secondary hover:text-text-primary'
-          }`}
-        >
-          <ArrowDownUp className="w-4 h-4" />
+        <button onClick={() => setActiveTab('transactions')} style={tabBtnStyle(activeTab === 'transactions')}>
+          <ArrowDownUp size={16} />
           {inv.transactions}
         </button>
       </div>
 
-      {/* Items Tab Content */}
       {activeTab === 'items' && (
         <>
-          {/* Summary Stats */}
           {stats && (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div className="apple-card text-center">
-                <Boxes className="w-8 h-8 mx-auto mb-2 text-primary" />
-                <p className="text-text-tertiary text-sm">{inv.totalItems}</p>
-                <p className="text-3xl font-bold mt-1">{stats.totalItems}</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
+              <div className="sc-card-static" style={statTileStyle}>
+                <Boxes size={28} color="var(--brand)" />
+                <p className="sc-helper" style={{ fontSize: 13 }}>{inv.totalItems}</p>
+                <p style={{ fontSize: 26, fontWeight: 700, color: 'var(--ink)' }}>{stats.totalItems}</p>
               </div>
-              <div className="apple-card text-center">
-                <CheckCircle className="w-8 h-8 mx-auto mb-2 text-success" />
-                <p className="text-text-tertiary text-sm">{inv.inStock}</p>
-                <p className="text-3xl font-bold mt-1 text-success">{stats.inStock}</p>
+              <div className="sc-card-static" style={statTileStyle}>
+                <CheckCircle size={28} color="var(--brand)" />
+                <p className="sc-helper" style={{ fontSize: 13 }}>{inv.inStock}</p>
+                <p style={{ fontSize: 26, fontWeight: 700, color: 'var(--brand)' }}>{stats.inStock}</p>
               </div>
-              <div className="apple-card text-center">
-                <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-warning" />
-                <p className="text-text-tertiary text-sm">{inv.lowStock}</p>
-                <p className="text-3xl font-bold mt-1 text-warning">{stats.lowStock}</p>
+              <div className="sc-card-static" style={statTileStyle}>
+                <AlertTriangle size={28} color="var(--warn)" />
+                <p className="sc-helper" style={{ fontSize: 13 }}>{inv.lowStock}</p>
+                <p style={{ fontSize: 26, fontWeight: 700, color: 'var(--warn)' }}>{stats.lowStock}</p>
               </div>
-              <div className="apple-card text-center">
-                <XCircle className="w-8 h-8 mx-auto mb-2 text-error" />
-                <p className="text-text-tertiary text-sm">{inv.outOfStock}</p>
-                <p className="text-3xl font-bold mt-1 text-error">{stats.outOfStock}</p>
+              <div className="sc-card-static" style={statTileStyle}>
+                <XCircle size={28} color="#ef4444" />
+                <p className="sc-helper" style={{ fontSize: 13 }}>{inv.outOfStock}</p>
+                <p style={{ fontSize: 26, fontWeight: 700, color: '#ef4444' }}>{stats.outOfStock}</p>
               </div>
-              <div className="apple-card text-center">
-                <DollarSign className="w-8 h-8 mx-auto mb-2 text-primary" />
-                <p className="text-text-tertiary text-sm">{inv.totalValue}</p>
-                <p className="text-2xl font-bold mt-1">{formatCurrency(stats.totalValue, 'BRL')}</p>
+              <div className="sc-card-static" style={statTileStyle}>
+                <DollarSign size={28} color="var(--brand)" />
+                <p className="sc-helper" style={{ fontSize: 13 }}>{inv.totalValue}</p>
+                <p style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink)' }}>{formatCurrency(stats.totalValue, DEFAULT_CURRENCY)}</p>
               </div>
             </div>
           )}
 
-          {/* Search & Filters */}
-          <div className="space-y-4">
-            <div className="apple-card">
-              <div className="flex flex-col md:flex-row gap-3">
-                <div className="relative flex-1">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="sc-card-static">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 12, alignItems: 'center' }}>
+                <div style={{ position: 'relative' }}>
+                  <Search
+                    size={20}
+                    style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--soft)', pointerEvents: 'none' }}
+                  />
                   <input
                     type="text"
                     placeholder={inv.searchPlaceholder}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                    className="sc-input"
+                    style={{ paddingLeft: 44 }}
                   />
                 </div>
                 <select
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value as CategoryFilter)}
-                  className="px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                  className="sc-select"
+                  style={{ minWidth: 160 }}
                 >
                   <option value="all">{inv.allCategories}</option>
                   {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
@@ -304,8 +323,7 @@ export default function InventoryPage() {
               </div>
             </div>
 
-            {/* Status Tabs */}
-            <div className="flex gap-2">
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {([
                 { label: inv.all, value: 'all' as StatusFilter },
                 { label: inv.inStock, value: 'in_stock' as StatusFilter },
@@ -315,11 +333,7 @@ export default function InventoryPage() {
                 <button
                   key={tab.value}
                   onClick={() => setStatusFilter(tab.value)}
-                  className={`px-4 py-2 rounded-apple text-sm font-medium transition-all ${
-                    statusFilter === tab.value
-                      ? 'bg-primary text-white'
-                      : 'bg-surface-elevated text-text-secondary hover:text-text-primary'
-                  }`}
+                  style={tabBtnStyle(statusFilter === tab.value)}
                 >
                   {tab.label} ({statusCounts[tab.value]})
                 </button>
@@ -327,97 +341,162 @@ export default function InventoryPage() {
             </div>
           </div>
 
-          {/* Items List */}
           {filtered.length === 0 ? (
-            <div className="apple-card text-center py-16">
-              <Package className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
-              <h3 className="text-xl font-semibold mb-2">{inv.noItems}</h3>
-              <p className="text-text-secondary">
+            <div className="sc-card-static" style={{ textAlign: 'center', padding: '64px 24px' }}>
+              <Package size={56} color="var(--soft)" style={{ margin: '0 auto 16px' }} />
+              <h3 className="sc-h2" style={{ marginBottom: 8 }}>{inv.noItems}</h3>
+              <p className="sc-helper">
                 {searchTerm || statusFilter !== 'all' || categoryFilter !== 'all'
                   ? inv.tryAdjusting
                   : inv.addFirstItem}
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {filtered.map((item) => {
                 const badge = getStatusBadge(item);
+                const catStyle = CATEGORY_STYLES[item.category];
                 return (
-                  <div key={item.id} className="apple-card hover:shadow-lg transition-all">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        {/* Name + Badges */}
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <h3 className="font-semibold">{item.name}</h3>
-                          <span className="font-mono text-xs text-text-tertiary bg-surface-elevated px-2 py-0.5 rounded">
+                  <div key={item.id} className="sc-card-static">
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                          <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>{item.name}</h3>
+                          <span
+                            style={{
+                              fontFamily: 'monospace',
+                              fontSize: 11,
+                              color: 'var(--soft)',
+                              background: 'var(--off-paper)',
+                              padding: '2px 8px',
+                              borderRadius: 'var(--radius-sm)',
+                            }}
+                          >
                             {item.sku}
                           </span>
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${CATEGORY_COLORS[item.category]}`}>
+                          <span
+                            style={{
+                              padding: '2px 10px',
+                              borderRadius: 'var(--radius-full)',
+                              fontSize: 11,
+                              fontWeight: 600,
+                              color: catStyle.color,
+                              background: catStyle.bg,
+                            }}
+                          >
                             {CATEGORY_LABELS[item.category]}
                           </span>
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${badge.style}`}>
+                          <span
+                            style={{
+                              padding: '2px 10px',
+                              borderRadius: 'var(--radius-full)',
+                              fontSize: 11,
+                              fontWeight: 600,
+                              color: badge.color,
+                              background: badge.bg,
+                            }}
+                          >
                             {badge.label}
                           </span>
                         </div>
 
-                        {/* Details */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
                           <div>
-                            <p className="text-text-tertiary text-xs">{inv.quantityLabel}</p>
-                            <p className={`font-bold text-lg ${
-                              item.quantity <= 0 ? 'text-error' :
-                              item.quantity <= item.minQuantity ? 'text-warning' :
-                              'text-text-primary'
-                            }`}>
+                            <p className="sc-helper" style={{ fontSize: 11 }}>{inv.quantityLabel}</p>
+                            <p style={{
+                              fontWeight: 700,
+                              fontSize: 18,
+                              margin: 0,
+                              color:
+                                item.quantity <= 0 ? '#ef4444' :
+                                item.quantity <= item.minQuantity ? 'var(--warn)' :
+                                'var(--ink)',
+                            }}>
                               {item.quantity}
-                              <span className="text-xs font-normal text-text-tertiary ml-1">({inv.minPrefix} {item.minQuantity})</span>
+                              <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--soft)', marginLeft: 4 }}>
+                                ({inv.minPrefix} {item.minQuantity})
+                              </span>
                             </p>
                           </div>
                           <div>
-                            <p className="text-text-tertiary text-xs">{inv.unitCostLabel}</p>
-                            <p className="font-medium">{formatCurrency(item.unitCost, item.currency)}</p>
+                            <p className="sc-helper" style={{ fontSize: 11 }}>{inv.unitCostLabel}</p>
+                            <p style={{ fontWeight: 600, color: 'var(--ink)', margin: 0, fontSize: 14 }}>{formatCurrency(item.unitCost, item.currency)}</p>
                           </div>
                           <div>
-                            <p className="text-text-tertiary text-xs">{inv.supplierLabel}</p>
-                            <p className="font-medium truncate">{item.supplier || '—'}</p>
+                            <p className="sc-helper" style={{ fontSize: 11 }}>{inv.supplierLabel}</p>
+                            <p style={{ fontWeight: 600, color: 'var(--ink)', margin: 0, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.supplier || '—'}</p>
                           </div>
-                          <div className="flex items-start gap-1">
-                            <MapPin className="w-3.5 h-3.5 text-text-tertiary mt-0.5 flex-shrink-0" />
-                            <div>
-                              <p className="text-text-tertiary text-xs">{inv.locationLabel}</p>
-                              <p className="font-medium truncate">{item.location || '—'}</p>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
+                            <MapPin size={14} color="var(--soft)" style={{ marginTop: 2, flexShrink: 0 }} />
+                            <div style={{ minWidth: 0 }}>
+                              <p className="sc-helper" style={{ fontSize: 11 }}>{inv.locationLabel}</p>
+                              <p style={{ fontWeight: 600, color: 'var(--ink)', margin: 0, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.location || '—'}</p>
                             </div>
                           </div>
                         </div>
 
                         {item.description && (
-                          <p className="text-sm text-text-secondary mt-2 line-clamp-1">{item.description}</p>
+                          <p className="sc-helper" style={{ marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.description}</p>
                         )}
                       </div>
 
-                      {/* Actions */}
-                      <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                         <button
                           onClick={() => setAdjustingItem(item)}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-surface-elevated border border-border rounded-apple text-sm font-medium hover:border-primary transition-all"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '6px 12px',
+                            background: 'var(--off-paper)',
+                            border: '1px solid var(--hairline)',
+                            borderRadius: 'var(--radius-md)',
+                            fontSize: 13,
+                            fontWeight: 600,
+                            color: 'var(--ink)',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--brand)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--hairline)'; }}
                           title={inv.adjustStock}
                         >
-                          <ArrowUpDown className="w-4 h-4" />
+                          <ArrowUpDown size={14} />
                           {inv.stockButton}
                         </button>
                         <button
                           onClick={() => handleEditItem(item)}
-                          className="p-2 hover:bg-surface-elevated rounded-apple transition-colors"
+                          style={{
+                            padding: 8,
+                            background: 'transparent',
+                            border: 'none',
+                            borderRadius: 'var(--radius-md)',
+                            cursor: 'pointer',
+                            color: 'var(--soft)',
+                            transition: 'background 0.15s ease',
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                           title={inv.editItemTitle}
                         >
-                          <Pencil className="w-4 h-4 text-text-tertiary" />
+                          <Pencil size={16} />
                         </button>
                         <button
                           onClick={() => router.push(`/admin/inventory/${item.id}`)}
-                          className="p-2 hover:bg-surface-elevated rounded-apple transition-colors"
+                          style={{
+                            padding: 8,
+                            background: 'transparent',
+                            border: 'none',
+                            borderRadius: 'var(--radius-md)',
+                            cursor: 'pointer',
+                            color: 'var(--soft)',
+                            transition: 'background 0.15s ease',
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                           title={inv.viewDetails}
                         >
-                          <ChevronRight className="w-5 h-5 text-text-tertiary" />
+                          <ChevronRight size={18} />
                         </button>
                       </div>
                     </div>
@@ -429,11 +508,9 @@ export default function InventoryPage() {
         </>
       )}
 
-      {/* Transactions Tab Content */}
       {activeTab === 'transactions' && (
         <>
-          {/* Type Filter */}
-          <div className="flex gap-2 flex-wrap">
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {([
               { label: inv.allTypes, value: 'all' as TypeFilter },
               { label: inv.restock, value: 'restock' as TypeFilter },
@@ -444,11 +521,7 @@ export default function InventoryPage() {
               <button
                 key={tab.value}
                 onClick={() => setTypeFilter(tab.value)}
-                className={`px-4 py-2 rounded-apple text-sm font-medium transition-all ${
-                  typeFilter === tab.value
-                    ? 'bg-primary text-white'
-                    : 'bg-surface-elevated text-text-secondary hover:text-text-primary'
-                }`}
+                style={tabBtnStyle(typeFilter === tab.value)}
               >
                 {tab.label}
               </button>
@@ -456,71 +529,86 @@ export default function InventoryPage() {
           </div>
 
           {transactionsLoading ? (
-            <div className="flex items-center justify-center py-16">
-              <div className="text-center space-y-4">
-                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-                <p className="text-text-secondary">{inv.loadingTransactions}</p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 64 }}>
+              <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
+                <div className="sc-spinner" />
+                <p className="sc-helper">{inv.loadingTransactions}</p>
               </div>
             </div>
           ) : filteredTransactions.length === 0 ? (
-            <div className="apple-card text-center py-16">
-              <ArrowDownUp className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
-              <h3 className="text-xl font-semibold mb-2">{inv.noTransactions}</h3>
-              <p className="text-text-secondary">
-                {typeFilter !== 'all'
-                  ? inv.tryDifferentType
-                  : inv.adjustmentsAppearHere}
+            <div className="sc-card-static" style={{ textAlign: 'center', padding: '64px 24px' }}>
+              <ArrowDownUp size={56} color="var(--soft)" style={{ margin: '0 auto 16px' }} />
+              <h3 className="sc-h2" style={{ marginBottom: 8 }}>{inv.noTransactions}</h3>
+              <p className="sc-helper">
+                {typeFilter !== 'all' ? inv.tryDifferentType : inv.adjustmentsAppearHere}
               </p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {filteredTransactions.map((t) => {
                 const isPositive = t.type === 'restock' || t.type === 'returned';
+                const typeStyle = TYPE_STYLES[t.type];
+                const deltaColor = isPositive ? 'var(--brand)' : t.type === 'used' ? '#ef4444' : 'var(--ink)';
                 return (
-                  <div key={t.id} className="apple-card hover:shadow-lg transition-all">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4 flex-1 min-w-0">
-                        {/* Type indicator */}
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          isPositive ? 'bg-success/10' : t.type === 'used' ? 'bg-error/10' : 'bg-primary/10'
-                        }`}>
-                          <ArrowDownUp className={`w-5 h-5 ${
-                            isPositive ? 'text-success' : t.type === 'used' ? 'text-error' : 'text-primary'
-                          }`} />
+                  <div key={t.id} className="sc-card-static">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                            background: typeStyle.bg,
+                            color: typeStyle.color,
+                          }}
+                        >
+                          <ArrowDownUp size={18} />
                         </div>
 
-                        <div className="flex-1 min-w-0">
-                          {/* Item name + type badge */}
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <h3 className="font-semibold truncate">{t.itemName || t.itemId}</h3>
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${TYPE_COLORS[t.type]}`}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                            <h3 style={{ fontWeight: 600, color: 'var(--ink)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {t.itemName || t.itemId}
+                            </h3>
+                            <span
+                              style={{
+                                padding: '2px 10px',
+                                borderRadius: 'var(--radius-full)',
+                                fontSize: 11,
+                                fontWeight: 600,
+                                color: typeStyle.color,
+                                background: typeStyle.bg,
+                              }}
+                            >
                               {TYPE_LABELS[t.type]}
                             </span>
                           </div>
 
-                          {/* Details row */}
-                          <div className="flex items-center gap-4 text-sm text-text-secondary flex-wrap">
-                            <span className={`font-bold ${isPositive ? 'text-success' : t.type === 'used' ? 'text-error' : 'text-text-primary'}`}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 13, color: 'var(--soft)', flexWrap: 'wrap' }}>
+                            <span style={{ fontWeight: 700, color: deltaColor }}>
                               {t.quantity > 0 ? '+' : ''}{t.quantity}
                             </span>
-                            <span className="text-text-tertiary">
-                              {t.previousQuantity} → {t.newQuantity}
-                            </span>
+                            <span>{t.previousQuantity} → {t.newQuantity}</span>
                             {t.reason && (
-                              <span className="truncate max-w-[200px]" title={t.reason}>{t.reason}</span>
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }} title={t.reason}>
+                                {t.reason}
+                              </span>
                             )}
                           </div>
                         </div>
                       </div>
 
-                      {/* Right side: performer + date */}
-                      <div className="text-right ml-4 flex-shrink-0">
-                        <div className="flex items-center gap-1 text-sm text-text-secondary justify-end mb-1">
-                          <User className="w-3.5 h-3.5" />
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: 'var(--soft)', justifyContent: 'flex-end', marginBottom: 2 }}>
+                          <User size={14} />
                           <span>{t.performedByName}</span>
                         </div>
-                        <div className="flex items-center gap-1 text-xs text-text-tertiary justify-end">
-                          <Clock className="w-3 h-3" />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--soft)', justifyContent: 'flex-end' }}>
+                          <Clock size={12} />
                           <span>{t.createdAt ? formatDateTime(t.createdAt) : '—'}</span>
                         </div>
                       </div>
@@ -533,7 +621,6 @@ export default function InventoryPage() {
         </>
       )}
 
-      {/* Modals */}
       {showFormModal && (
         <InventoryFormModal
           item={editingItem}

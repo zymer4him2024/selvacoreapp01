@@ -4,30 +4,24 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, UserPlus } from 'lucide-react';
-import {
-  createUserWithEmailAndPassword,
-  updateProfile,
-} from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { getSecondaryAuth, disposeSecondaryApp } from '@/lib/firebase/secondary';
 import { getActiveSubContractors } from '@/lib/services/subContractorService';
-import { SubContractor, User } from '@/types';
-import toast from 'react-hot-toast';
+import { SubContractor, User, UserRole } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 
-export default function NewSubAdminPage() {
+export default function NewUserPage() {
   const router = useRouter();
-  const { userData } = useAuth();
   const { t } = useTranslation();
-  const sn = t.admin.subAdminNew;
+  const { userData } = useAuth();
+  const u = t.admin.users;
+  const isSubAdmin = userData?.role === 'sub-admin';
 
-  useEffect(() => {
-    if (userData && userData.role !== 'admin') {
-      router.replace('/admin');
-    }
-  }, [userData, router]);
+  const [role, setRole] = useState<UserRole>('customer');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -37,6 +31,8 @@ export default function NewSubAdminPage() {
   const [loading, setLoading] = useState(false);
   const [loadingContractors, setLoadingContractors] = useState(true);
 
+  const showSubContractor = role === 'sub-admin' || role === 'technician';
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -44,7 +40,7 @@ export default function NewSubAdminPage() {
         setSubContractors(data);
       } catch (error: unknown) {
         const message =
-          error instanceof Error ? error.message : sn.loadContractorsError;
+          error instanceof Error ? error.message : u.loadContractorsError;
         toast.error(message);
       } finally {
         setLoadingContractors(false);
@@ -58,11 +54,11 @@ export default function NewSubAdminPage() {
     e.preventDefault();
 
     if (!email.trim() || !password || !displayName.trim()) {
-      toast.error(sn.requiredFieldsToast);
+      toast.error(u.requiredFieldsToast);
       return;
     }
     if (password.length < 6) {
-      toast.error(sn.passwordTooShortToast);
+      toast.error(u.passwordTooShortToast);
       return;
     }
 
@@ -84,34 +80,35 @@ export default function NewSubAdminPage() {
 
       const newUser: User = {
         id: newUid,
-        role: 'sub-admin',
+        role,
         email: email.trim(),
         displayName: displayName.trim(),
         phone: phone.trim(),
         preferredLanguage: 'en',
-        subContractorId: subContractorId || null,
+        subContractorId: showSubContractor ? subContractorId || null : null,
         active: true,
         emailVerified: false,
         roleSelected: true,
+        ...(role === 'technician' ? { technicianStatus: 'approved' as const } : {}),
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       };
       await setDoc(doc(db, 'users', newUid), newUser);
 
-      toast.success(sn.createdToast);
-      router.push('/admin/sub-admins');
+      toast.success(u.createdToast);
+      router.push('/admin/users');
     } catch (error: unknown) {
       const code =
         error && typeof error === 'object' && 'code' in error
           ? String((error as { code?: unknown }).code ?? '')
           : '';
-      let message = error instanceof Error ? error.message : sn.createError;
+      let message = error instanceof Error ? error.message : u.createError;
       if (code === 'auth/email-already-in-use') {
-        message = sn.emailInUseToast;
+        message = u.emailInUseToast;
       } else if (code === 'auth/invalid-email') {
-        message = sn.invalidEmailToast;
+        message = u.invalidEmailToast;
       } else if (code === 'auth/weak-password') {
-        message = sn.passwordTooShortToast;
+        message = u.passwordTooShortToast;
       }
       toast.error(message);
     } finally {
@@ -120,12 +117,32 @@ export default function NewSubAdminPage() {
     }
   };
 
-  if (userData && userData.role !== 'admin') return null;
+  const allRoleOptions: Array<{ value: UserRole; label: string }> = [
+    { value: 'admin', label: u.roleAdmin },
+    { value: 'sub-admin', label: u.roleSubAdmin },
+    { value: 'technician', label: u.roleTechnician },
+    { value: 'customer', label: u.roleCustomer },
+  ];
+  const roleOptions = isSubAdmin
+    ? allRoleOptions.filter((opt) => opt.value !== 'admin' && opt.value !== 'sub-admin')
+    : allRoleOptions;
+
+  const roleBtnStyle = (active: boolean): React.CSSProperties => ({
+    padding: '10px 12px',
+    borderRadius: 'var(--radius-md)',
+    fontSize: 14,
+    fontWeight: 500,
+    border: `1px solid ${active ? 'var(--brand)' : 'var(--hairline)'}`,
+    background: active ? 'var(--brand)' : 'var(--off-paper)',
+    color: active ? '#fff' : 'var(--soft)',
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  });
 
   return (
     <div className="sc" style={{ display: 'flex', flexDirection: 'column', gap: 32, maxWidth: 720 }}>
       <Link
-        href="/admin/sub-admins"
+        href="/admin/users"
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -138,91 +155,111 @@ export default function NewSubAdminPage() {
         onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--soft)'; }}
       >
         <ArrowLeft className="w-4 h-4" />
-        {sn.backToSubAdmins}
+        {u.backToUsers}
       </Link>
 
       <div>
-        <h1 className="sc-h1" style={{ margin: 0, marginBottom: 8 }}>{sn.pageTitle}</h1>
-        <p className="sc-helper" style={{ margin: 0 }}>{sn.pageSubtitle}</p>
+        <h1 className="sc-h1" style={{ margin: 0, marginBottom: 8 }}>{u.newPageTitle}</h1>
+        <p className="sc-helper" style={{ margin: 0 }}>{u.newPageSubtitle}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="sc-card-static" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         <div>
-          <label className="sc-label">{sn.displayNameLabel}</label>
+          <label className="sc-label">{u.roleLabel}</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
+            {roleOptions.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setRole(opt.value)}
+                style={roleBtnStyle(role === opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="sc-label">{u.displayNameLabel}</label>
           <input
             type="text"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             className="sc-input"
-            placeholder={sn.displayNamePlaceholder}
+            placeholder={u.displayNamePlaceholder}
             required
           />
         </div>
 
         <div>
-          <label className="sc-label">{sn.emailLabel}</label>
+          <label className="sc-label">{u.emailLabel}</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="sc-input"
-            placeholder={sn.emailPlaceholder}
+            placeholder={u.emailPlaceholder}
             autoComplete="off"
             required
           />
         </div>
 
         <div>
-          <label className="sc-label">{sn.passwordLabel}</label>
+          <label className="sc-label">{u.passwordLabel}</label>
           <input
             type="text"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="sc-input"
             style={{ fontFamily: 'monospace' }}
-            placeholder={sn.passwordPlaceholder}
+            placeholder={u.passwordPlaceholder}
             autoComplete="off"
             required
           />
-          <p className="sc-helper" style={{ margin: '8px 0 0', fontSize: 12 }}>{sn.passwordHelp}</p>
+          <p className="sc-helper" style={{ margin: '8px 0 0', fontSize: 12 }}>{u.passwordHelp}</p>
         </div>
 
         <div>
-          <label className="sc-label">{sn.phoneLabel}</label>
+          <label className="sc-label">{u.phoneLabel}</label>
           <input
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             className="sc-input"
-            placeholder={sn.phonePlaceholder}
+            placeholder={u.phonePlaceholder}
           />
         </div>
 
-        <div>
-          <label className="sc-label">{sn.subContractorLabel}</label>
-          <select
-            value={subContractorId}
-            onChange={(e) => setSubContractorId(e.target.value)}
-            className="sc-select"
-            disabled={loadingContractors}
-          >
-            <option value="">{sn.subContractorNone}</option>
-            {subContractors.map((sc) => (
-              <option key={sc.id} value={sc.id}>
-                {sc.name}
-              </option>
-            ))}
-          </select>
-          <p className="sc-helper" style={{ margin: '8px 0 0', fontSize: 12 }}>{sn.subContractorHelp}</p>
-        </div>
+        {showSubContractor && (
+          <div>
+            <label className="sc-label">{u.subContractorLabel}</label>
+            <select
+              value={subContractorId}
+              onChange={(e) => setSubContractorId(e.target.value)}
+              className="sc-select"
+              disabled={loadingContractors}
+            >
+              <option value="">{u.subContractorNone}</option>
+              {subContractors.map((sc) => (
+                <option key={sc.id} value={sc.id}>
+                  {sc.name}
+                </option>
+              ))}
+            </select>
+            <p className="sc-helper" style={{ margin: '8px 0 0', fontSize: 12 }}>
+              {role === 'sub-admin' ? u.subContractorHelpSubAdmin : u.subContractorHelpTechnician}
+            </p>
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: 12, paddingTop: 8 }}>
           <Link
-            href="/admin/sub-admins"
+            href="/admin/users"
             className="sc-cta-ghost"
             style={{ flex: 1, textAlign: 'center', textDecoration: 'none' }}
           >
-            {sn.cancel}
+            {u.cancel}
           </Link>
           <button
             type="submit"
@@ -231,7 +268,7 @@ export default function NewSubAdminPage() {
             style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
           >
             <UserPlus className="w-4 h-4" />
-            {loading ? sn.submitting : sn.submit}
+            {loading ? u.submitting : u.submit}
           </button>
         </div>
       </form>

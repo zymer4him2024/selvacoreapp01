@@ -13,34 +13,79 @@ interface Props {
   onReactivate: () => void;
 }
 
+const actionBtnStyle = (color: string, disabled: boolean): React.CSSProperties => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '12px 24px',
+  background: color,
+  color: '#fff',
+  fontWeight: 600,
+  fontSize: 14,
+  borderRadius: 'var(--radius-md)',
+  border: 'none',
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  opacity: disabled ? 0.5 : 1,
+  transition: 'all 0.15s ease',
+});
+
 export function TechnicianActionButtons(props: Props) {
   const { technician, disabled, onApprove, onDecline, onSuspend, onReactivate } = props;
   const { t } = useTranslation();
   const td = t.admin.technicianDetail;
   const status = technician.technicianStatus;
 
+  const hoverable = (baseColor: string, hoverColor: string) => ({
+    onMouseEnter: (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (!disabled) e.currentTarget.style.background = hoverColor;
+    },
+    onMouseLeave: (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.currentTarget.style.background = baseColor;
+    },
+  });
+
   return (
-    <div className="apple-card">
-      <h3 className="text-xl font-semibold mb-4">{td.actions}</h3>
-      <div className="flex flex-wrap gap-3">
+    <div className="sc-card-static">
+      <h3 className="sc-h2" style={{ marginTop: 0, marginBottom: 16 }}>{td.actions}</h3>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
         {status === 'pending' && (
           <>
-            <button onClick={onApprove} disabled={disabled} className="flex items-center gap-2 px-6 py-3 bg-success hover:bg-success/90 text-white font-semibold rounded-apple transition-all disabled:opacity-50">
-              <CheckCircle className="w-5 h-5" />{td.approveTechnician}
+            <button
+              onClick={onApprove}
+              disabled={disabled}
+              style={actionBtnStyle('var(--brand)', disabled)}
+              {...hoverable('var(--brand)', 'var(--brand-hover)')}
+            >
+              <CheckCircle size={20} />{td.approveTechnician}
             </button>
-            <button onClick={onDecline} disabled={disabled} className="flex items-center gap-2 px-6 py-3 bg-error hover:bg-error/90 text-white font-semibold rounded-apple transition-all disabled:opacity-50">
-              <XCircle className="w-5 h-5" />{td.declineApplication}
+            <button
+              onClick={onDecline}
+              disabled={disabled}
+              style={actionBtnStyle('#ef4444', disabled)}
+              {...hoverable('#ef4444', '#dc2626')}
+            >
+              <XCircle size={20} />{td.declineApplication}
             </button>
           </>
         )}
         {status === 'approved' && (
-          <button onClick={onSuspend} disabled={disabled} className="flex items-center gap-2 px-6 py-3 bg-warning hover:bg-warning/90 text-white font-semibold rounded-apple transition-all disabled:opacity-50">
-            <Pause className="w-5 h-5" />{td.suspendTechnician}
+          <button
+            onClick={onSuspend}
+            disabled={disabled}
+            style={actionBtnStyle('var(--warn)', disabled)}
+            {...hoverable('var(--warn)', '#d97706')}
+          >
+            <Pause size={20} />{td.suspendTechnician}
           </button>
         )}
         {(status === 'suspended' || status === 'declined') && (
-          <button onClick={onReactivate} disabled={disabled} className="flex items-center gap-2 px-6 py-3 bg-success hover:bg-success/90 text-white font-semibold rounded-apple transition-all disabled:opacity-50">
-            <Play className="w-5 h-5" />{td.reactivateTechnician}
+          <button
+            onClick={onReactivate}
+            disabled={disabled}
+            style={actionBtnStyle('var(--brand)', disabled)}
+            {...hoverable('var(--brand)', 'var(--brand-hover)')}
+          >
+            <Play size={20} />{td.reactivateTechnician}
           </button>
         )}
       </div>

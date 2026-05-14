@@ -10,7 +10,10 @@ import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 
-function getDueStatus(dueDate: FirebaseTimestamp): 'overdue' | 'soon' | 'ok' {
+type FirebaseTimestamp = { toDate: () => Date };
+type DueStatus = 'overdue' | 'soon' | 'ok';
+
+function getDueStatus(dueDate: FirebaseTimestamp): DueStatus {
   const now = Date.now();
   const due = dueDate.toDate().getTime();
   const diff = due - now;
@@ -19,13 +22,11 @@ function getDueStatus(dueDate: FirebaseTimestamp): 'overdue' | 'soon' | 'ok' {
   return 'ok';
 }
 
-function getDueColor(status: 'overdue' | 'soon' | 'ok'): string {
-  if (status === 'overdue') return 'text-error';
-  if (status === 'soon') return 'text-warning';
-  return 'text-success';
+function getDueColor(status: DueStatus): string {
+  if (status === 'overdue') return '#ef4444';
+  if (status === 'soon') return 'var(--warn)';
+  return 'var(--brand)';
 }
-
-type FirebaseTimestamp = { toDate: () => Date };
 
 export default function MaintenanceDashboardPage() {
   const router = useRouter();
@@ -67,7 +68,6 @@ export default function MaintenanceDashboardPage() {
       );
     })
     .sort((a, b) => {
-      // Sort overdue devices first (earliest due date = most urgent)
       const aDue = Math.min(
         a.nextEzerMaintenanceDue?.toDate?.()?.getTime?.() || Infinity,
         a.nextFilterReplacementDue?.toDate?.()?.getTime?.() || Infinity
@@ -81,125 +81,149 @@ export default function MaintenanceDashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">{mt.loading}</p>
+      <div className="sc" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
+          <div className="sc-spinner" />
+          <p className="sc-helper">{mt.loading}</p>
         </div>
       </div>
     );
   }
 
+  const statTileStyle: React.CSSProperties = {
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 8,
+    padding: 20,
+  };
+
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="sc" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
       <div>
-        <h1 className="text-4xl font-bold tracking-tight mb-2">{mt.title}</h1>
-        <p className="text-text-secondary">{mt.subtitle}</p>
+        <h1 className="sc-h1" style={{ marginBottom: 8 }}>{mt.title}</h1>
+        <p className="sc-helper">{mt.subtitle}</p>
       </div>
 
-      {/* Stats Cards */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="apple-card text-center">
-            <Cpu className="w-8 h-8 mx-auto mb-2 text-primary" />
-            <p className="text-text-tertiary text-sm">{mt.totalDevices}</p>
-            <p className="text-3xl font-bold mt-1">{stats.totalDevices}</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
+          <div className="sc-card-static" style={statTileStyle}>
+            <Cpu size={28} color="var(--brand)" />
+            <p className="sc-helper" style={{ fontSize: 13 }}>{mt.totalDevices}</p>
+            <p style={{ fontSize: 28, fontWeight: 700, color: 'var(--ink)' }}>{stats.totalDevices}</p>
           </div>
-          <div className="apple-card text-center">
-            <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-error" />
-            <p className="text-text-tertiary text-sm">{mt.overdue}</p>
-            <p className={`text-3xl font-bold mt-1 ${stats.overdueCount > 0 ? 'text-error' : ''}`}>
+          <div className="sc-card-static" style={statTileStyle}>
+            <AlertTriangle size={28} color="#ef4444" />
+            <p className="sc-helper" style={{ fontSize: 13 }}>{mt.overdue}</p>
+            <p style={{ fontSize: 28, fontWeight: 700, color: stats.overdueCount > 0 ? '#ef4444' : 'var(--ink)' }}>
               {stats.overdueCount}
             </p>
           </div>
-          <div className="apple-card text-center">
-            <CalendarClock className="w-8 h-8 mx-auto mb-2 text-warning" />
-            <p className="text-text-tertiary text-sm">{mt.dueThisWeek}</p>
-            <p className="text-3xl font-bold mt-1 text-warning">{stats.upcomingThisWeek}</p>
+          <div className="sc-card-static" style={statTileStyle}>
+            <CalendarClock size={28} color="var(--warn)" />
+            <p className="sc-helper" style={{ fontSize: 13 }}>{mt.dueThisWeek}</p>
+            <p style={{ fontSize: 28, fontWeight: 700, color: 'var(--warn)' }}>{stats.upcomingThisWeek}</p>
           </div>
-          <div className="apple-card text-center">
-            <CalendarClock className="w-8 h-8 mx-auto mb-2 text-secondary" />
-            <p className="text-text-tertiary text-sm">{mt.dueThisMonth}</p>
-            <p className="text-3xl font-bold mt-1">{stats.upcomingThisMonth}</p>
+          <div className="sc-card-static" style={statTileStyle}>
+            <CalendarClock size={28} color="var(--soft)" />
+            <p className="sc-helper" style={{ fontSize: 13 }}>{mt.dueThisMonth}</p>
+            <p style={{ fontSize: 28, fontWeight: 700, color: 'var(--ink)' }}>{stats.upcomingThisMonth}</p>
           </div>
         </div>
       )}
 
-      {/* Search */}
-      <div className="apple-card">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
+      <div className="sc-card-static">
+        <div style={{ position: 'relative' }}>
+          <Search
+            size={20}
+            style={{
+              position: 'absolute',
+              left: 16,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--soft)',
+              pointerEvents: 'none',
+            }}
+          />
           <input
             type="text"
             placeholder={mt.searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+            className="sc-input"
+            style={{ paddingLeft: 44 }}
           />
         </div>
       </div>
 
-      {/* Devices List */}
       {filteredDevices.length === 0 ? (
-        <div className="apple-card text-center py-16">
-          <Cpu className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
-          <h3 className="text-xl font-semibold mb-2">{mt.noDevices}</h3>
-          <p className="text-text-secondary">
-            {searchTerm
-              ? mt.tryAdjusting
-              : mt.devicesWillAppear}
+        <div className="sc-card-static" style={{ textAlign: 'center', padding: '64px 24px' }}>
+          <Cpu size={56} color="var(--soft)" style={{ margin: '0 auto 16px' }} />
+          <h3 className="sc-h2" style={{ marginBottom: 8 }}>{mt.noDevices}</h3>
+          <p className="sc-helper">
+            {searchTerm ? mt.tryAdjusting : mt.devicesWillAppear}
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {filteredDevices.map((device) => {
             const ezerStatus = getDueStatus(device.nextEzerMaintenanceDue as unknown as FirebaseTimestamp);
             const filterStatus = getDueStatus(device.nextFilterReplacementDue as unknown as FirebaseTimestamp);
+            const isActive = device.status === 'active';
 
             return (
               <button
                 key={device.id}
                 onClick={() => router.push(`/admin/maintenance/${device.id}`)}
-                className="apple-card w-full text-left hover:scale-[1.01] transition-all cursor-pointer"
+                className="sc-card"
+                style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'transparent', border: '1px solid var(--hairline)' }}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold truncate">
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                      <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>
                         {device.productSnapshot.name?.en || mt.ezerDevice}
                       </h3>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        device.status === 'active' ? 'bg-success/20 text-success' : 'bg-text-tertiary/20 text-text-tertiary'
-                      }`}>
-                        {device.status === 'active' ? mt.statusActive : mt.statusInactive}
+                      <span
+                        style={{
+                          padding: '2px 10px',
+                          borderRadius: 'var(--radius-full)',
+                          fontSize: 11,
+                          fontWeight: 600,
+                          background: isActive ? 'var(--brand-tint)' : 'var(--off-paper)',
+                          color: isActive ? 'var(--brand)' : 'var(--soft)',
+                        }}
+                      >
+                        {isActive ? mt.statusActive : mt.statusInactive}
                       </span>
                     </div>
-                    <p className="text-sm text-text-secondary mb-3">
+                    <p className="sc-helper" style={{ marginBottom: 12 }}>
                       {device.customerInfo.name} — {device.installationAddress.city}
                     </p>
 
-                    <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
                       <div>
-                        <p className="text-text-tertiary text-xs">{mt.ezerMaintenance}</p>
-                        <p className={`font-medium ${getDueColor(ezerStatus)}`}>
+                        <p className="sc-helper" style={{ fontSize: 11, marginBottom: 2 }}>{mt.ezerMaintenance}</p>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: getDueColor(ezerStatus), margin: 0 }}>
                           {formatDate(device.nextEzerMaintenanceDue, 'short')}
                           {ezerStatus === 'overdue' && ` ${mt.overdueLabel}`}
                         </p>
                       </div>
                       <div>
-                        <p className="text-text-tertiary text-xs">{mt.filterReplacement}</p>
-                        <p className={`font-medium ${getDueColor(filterStatus)}`}>
+                        <p className="sc-helper" style={{ fontSize: 11, marginBottom: 2 }}>{mt.filterReplacement}</p>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: getDueColor(filterStatus), margin: 0 }}>
                           {formatDate(device.nextFilterReplacementDue, 'short')}
                           {filterStatus === 'overdue' && ` ${mt.overdueLabel}`}
                         </p>
                       </div>
                     </div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-text-tertiary flex-shrink-0 mt-1" />
+                  <ChevronRight size={20} color="var(--soft)" style={{ flexShrink: 0, marginTop: 4 }} />
                 </div>
 
-                <div className="mt-3 pt-3 border-t border-border">
-                  <p className="text-xs text-text-tertiary font-mono truncate">
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--hairline)' }}>
+                  <p className="sc-helper" style={{ fontSize: 11, fontFamily: 'monospace', margin: 0 }}>
                     QR: {device.qrCodeData}
                   </p>
                 </div>

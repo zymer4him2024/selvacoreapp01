@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import { X, ArrowRight } from 'lucide-react';
 import { InventoryItem, AdjustmentType } from '@/types/inventory';
+import { useTranslation } from '@/hooks/useTranslation';
 
-const ADJUSTMENT_TYPES: { value: AdjustmentType; label: string; color: string }[] = [
-  { value: 'restock', label: 'Restock', color: 'text-success' },
-  { value: 'used', label: 'Used', color: 'text-warning' },
-  { value: 'adjustment', label: 'Adjustment', color: 'text-primary' },
-  { value: 'returned', label: 'Returned', color: 'text-primary' },
+const ADJUSTMENT_TYPES: { value: AdjustmentType; label: string }[] = [
+  { value: 'restock', label: 'Restock' },
+  { value: 'used', label: 'Used' },
+  { value: 'adjustment', label: 'Adjustment' },
+  { value: 'returned', label: 'Returned' },
 ];
 
 interface StockAdjustmentModalProps {
@@ -18,6 +19,7 @@ interface StockAdjustmentModalProps {
 }
 
 export default function StockAdjustmentModal({ item, onSubmit, onClose }: StockAdjustmentModalProps) {
+  const { t: tr } = useTranslation();
   const [type, setType] = useState<AdjustmentType>('restock');
   const [quantity, setQuantity] = useState(1);
   const [reason, setReason] = useState('');
@@ -38,91 +40,149 @@ export default function StockAdjustmentModal({ item, onSubmit, onClose }: StockA
     }
   };
 
+  const newQtyColor =
+    newQuantity <= 0 ? '#ef4444' :
+    newQuantity <= item.minQuantity ? 'var(--warn)' :
+    'var(--brand)';
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-background rounded-apple shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-6 border-b border-border">
+    <div
+      className="sc"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.5)',
+        backdropFilter: 'blur(4px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 50,
+        padding: 16,
+      }}
+      onClick={onClose}
+    >
+      <div
+        className="sc-card-static"
+        style={{ width: '100%', maxWidth: 448, padding: 0, background: 'var(--paper)' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: 24,
+            borderBottom: '1px solid var(--hairline)',
+            gap: 12,
+          }}
+        >
           <div>
-            <h2 className="text-xl font-bold">Adjust Stock</h2>
-            <p className="text-sm text-text-secondary">{item.name} ({item.sku})</p>
+            <h2 className="sc-h2" style={{ margin: 0 }}>{tr.components.stockAdjustment.adjustStock}</h2>
+            <p className="sc-helper" style={{ margin: '2px 0 0' }}>{item.name} ({item.sku})</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-surface-elevated rounded-apple transition-colors">
-            <X className="w-5 h-5" />
+          <button
+            onClick={onClose}
+            style={{
+              padding: 8,
+              background: 'transparent',
+              border: 'none',
+              borderRadius: 'var(--radius-md)',
+              color: 'var(--soft)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+          >
+            <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <label className="block text-sm font-medium mb-2">Type</label>
-            <div className="grid grid-cols-2 gap-2">
-              {ADJUSTMENT_TYPES.map((t) => (
-                <button
-                  key={t.value}
-                  type="button"
-                  onClick={() => setType(t.value)}
-                  className={`px-4 py-2.5 rounded-apple text-sm font-medium transition-all border ${
-                    type === t.value
-                      ? 'bg-primary text-white border-primary'
-                      : 'bg-surface-elevated text-text-secondary border-border hover:border-primary'
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
+            <label className="sc-label" style={{ marginBottom: 8 }}>Type</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+              {ADJUSTMENT_TYPES.map((t) => {
+                const active = type === t.value;
+                return (
+                  <button
+                    key={t.value}
+                    type="button"
+                    onClick={() => setType(t.value)}
+                    style={{
+                      padding: '10px 16px',
+                      borderRadius: 'var(--radius-md)',
+                      fontSize: 13,
+                      fontWeight: 500,
+                      border: `1px solid ${active ? 'var(--brand)' : 'var(--hairline)'}`,
+                      background: active ? 'var(--brand)' : 'var(--off-paper)',
+                      color: active ? '#fff' : 'var(--soft)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Quantity</label>
+            <label className="sc-label">Quantity</label>
             <input
               type="number"
               min={1}
               value={quantity}
               onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
-              className="w-full px-4 py-2.5 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+              className="sc-input"
             />
           </div>
 
-          {/* Preview */}
-          <div className="flex items-center justify-center gap-3 p-4 bg-surface-elevated rounded-apple">
-            <div className="text-center">
-              <p className="text-xs text-text-tertiary">Current</p>
-              <p className="text-2xl font-bold">{item.quantity}</p>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 12,
+              padding: 16,
+              background: 'var(--off-paper)',
+              borderRadius: 'var(--radius-md)',
+            }}
+          >
+            <div style={{ textAlign: 'center' }}>
+              <p className="sc-helper" style={{ fontSize: 11, margin: 0 }}>Current</p>
+              <p style={{ fontSize: 24, fontWeight: 700, color: 'var(--ink)', margin: 0 }}>{item.quantity}</p>
             </div>
-            <ArrowRight className="w-5 h-5 text-text-tertiary" />
-            <div className="text-center">
-              <p className="text-xs text-text-tertiary">New</p>
-              <p className={`text-2xl font-bold ${
-                newQuantity <= 0 ? 'text-error' :
-                newQuantity <= item.minQuantity ? 'text-warning' :
-                'text-success'
-              }`}>{newQuantity}</p>
+            <ArrowRight size={20} color="var(--soft)" />
+            <div style={{ textAlign: 'center' }}>
+              <p className="sc-helper" style={{ fontSize: 11, margin: 0 }}>New</p>
+              <p style={{ fontSize: 24, fontWeight: 700, color: newQtyColor, margin: 0 }}>{newQuantity}</p>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Reason</label>
+            <label className="sc-label">Reason</label>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Why is this adjustment being made?"
+              placeholder={tr.components.stockAdjustment.reasonPlaceholder}
               rows={2}
-              className="w-full px-4 py-2.5 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all resize-none"
+              className="sc-textarea"
             />
           </div>
 
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-6 py-3 text-text-secondary hover:text-text-primary font-medium rounded-apple transition-all border border-border"
-            >
+          <div style={{ display: 'flex', gap: 12, paddingTop: 8 }}>
+            <button type="button" onClick={onClose} className="sc-cta-ghost" style={{ flex: 1 }}>
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting || quantity <= 0}
-              className="flex-1 px-6 py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-semibold rounded-apple transition-all"
+              className="sc-cta"
+              style={{ flex: 1 }}
             >
               {submitting ? 'Adjusting...' : 'Confirm'}
             </button>

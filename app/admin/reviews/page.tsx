@@ -17,8 +17,6 @@ import { ReviewFiltersBar } from '@/components/admin/reviews/ReviewFiltersBar';
 import { ReviewsTable } from '@/components/admin/reviews/ReviewsTable';
 import { ReviewDrawer } from '@/components/admin/reviews/ReviewDrawer';
 
-// Deployment date for the "technicians below 3.5" tooltip.
-// See docs_for_claude/reviews.md for the backfill follow-up.
 const REVIEWS_DEPLOYMENT_DATE = '2026-04-24';
 
 export default function AdminReviewsPage() {
@@ -27,7 +25,6 @@ export default function AdminReviewsPage() {
 
   const [tab, setTab] = useState<ReviewTab>('active');
   const [technicianId, setTechnicianId] = useState('');
-  // Remember the last rating selection so returning to Active restores it.
   const [activeTabRating, setActiveTabRating] = useState<number | null>(null);
 
   const [technicians, setTechnicians] = useState<{ id: string; name: string }[]>([]);
@@ -42,7 +39,6 @@ export default function AdminReviewsPage() {
 
   const [drawerReview, setDrawerReview] = useState<Review | null>(null);
 
-  // Rating filter only applies on the Active tab.
   const effectiveRating = tab === 'active' ? activeTabRating : null;
 
   const loadStats = useCallback(async () => {
@@ -125,10 +121,10 @@ export default function AdminReviewsPage() {
   );
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="sc" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div>
-        <h1 className="text-3xl font-bold">{r.title}</h1>
-        <p className="text-text-secondary mt-1">{r.subtitle}</p>
+        <h1 className="sc-h1" style={{ margin: 0 }}>{r.title}</h1>
+        <p className="sc-helper" style={{ marginTop: 4 }}>{r.subtitle}</p>
       </div>
 
       <ReviewStatsBar stats={stats} loading={statsLoading} lowRatingTooltip={lowRatingTooltip} />

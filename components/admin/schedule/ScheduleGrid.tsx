@@ -28,10 +28,22 @@ export default function ScheduleGrid({ technicians, weekDays, orders, labels, no
 
   if (technicians.length === 0) {
     return (
-      <div className="text-center py-16">
-        <p className="text-[#86868B] text-lg">{labels.noTechnicians}</p>
+      <div style={{ textAlign: 'center', padding: '64px 0' }}>
+        <p style={{ fontSize: 18, color: 'var(--soft)', margin: 0 }}>{labels.noTechnicians}</p>
         {noTechsLink && (
-          <a href="/admin/technicians" className="inline-block mt-3 text-sm font-medium text-[#0071E3] hover:underline">
+          <a
+            href="/admin/technicians"
+            style={{
+              display: 'inline-block',
+              marginTop: 12,
+              fontSize: 13,
+              fontWeight: 500,
+              color: 'var(--brand)',
+              textDecoration: 'none',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.textDecoration = 'underline'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.textDecoration = 'none'; }}
+          >
             {noTechsLink}
           </a>
         )}
@@ -40,21 +52,31 @@ export default function ScheduleGrid({ technicians, weekDays, orders, labels, no
   }
 
   return (
-    <div className="overflow-x-auto">
-      <div className="min-w-[960px] space-y-1">
-        <div className="grid grid-cols-[200px_repeat(7,1fr)] gap-px">
+    <div style={{ overflowX: 'auto' }}>
+      <div style={{ minWidth: 960, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '200px repeat(7, 1fr)', gap: 1 }}>
           <div />
-          {dayHeaders.map((dh, i) => (
-            <div
-              key={i}
-              className={`text-center py-2.5 rounded-[8px] transition-colors ${
-                dh.isToday ? 'bg-[#0071E3] text-white' : 'bg-[#F5F5F7] text-[#86868B]'
-              } ${focusedDayIdx === i ? 'ring-2 ring-[#0071E3] ring-offset-1' : ''}`}
-            >
-              <p className="text-xs font-medium uppercase">{dh.label}</p>
-              <p className={`text-lg font-bold ${dh.isToday ? 'text-white' : 'text-[#1D1D1F]'}`}>{dh.date}</p>
-            </div>
-          ))}
+          {dayHeaders.map((dh, i) => {
+            const focused = focusedDayIdx === i;
+            return (
+              <div
+                key={i}
+                style={{
+                  textAlign: 'center',
+                  padding: '10px 0',
+                  borderRadius: 'var(--radius-md)',
+                  background: dh.isToday ? 'var(--brand)' : 'var(--off-paper)',
+                  color: dh.isToday ? '#fff' : 'var(--soft)',
+                  outline: focused ? '2px solid var(--brand)' : 'none',
+                  outlineOffset: focused ? 1 : 0,
+                  transition: 'background 0.15s ease',
+                }}
+              >
+                <p style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase', margin: 0 }}>{dh.label}</p>
+                <p style={{ fontSize: 18, fontWeight: 700, margin: 0, color: dh.isToday ? '#fff' : 'var(--ink)' }}>{dh.date}</p>
+              </div>
+            );
+          })}
         </div>
 
         {technicians.map((tech) => {
@@ -77,8 +99,8 @@ export default function ScheduleGrid({ technicians, weekDays, orders, labels, no
         })}
 
         {orders.length === 0 && technicians.length > 0 && (
-          <div className="text-center py-8">
-            <p className="text-sm text-[#86868B]">{labels.noOrders}</p>
+          <div style={{ textAlign: 'center', padding: '32px 0' }}>
+            <p className="sc-helper" style={{ margin: 0 }}>{labels.noOrders}</p>
           </div>
         )}
       </div>

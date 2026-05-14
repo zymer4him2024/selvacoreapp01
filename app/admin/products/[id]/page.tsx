@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
-import { Product, MaintenanceTemplate, MaintenanceTemplateFilter } from '@/types';
+import { Product, MaintenanceTemplate } from '@/types';
 import {
   getProductById,
   updateProduct,
@@ -12,6 +12,7 @@ import {
   reorderProductImages
 } from '@/lib/services/productService';
 import ImageGalleryManager from '@/components/admin/ImageGalleryManager';
+import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -21,7 +22,8 @@ export default function EditProductPage() {
   const router = useRouter();
   const params = useParams();
   const productId = params.id as string;
-  
+  const { userData } = useAuth();
+
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -29,7 +31,14 @@ export default function EditProductPage() {
   const [deletingImage, setDeletingImage] = useState<string | null>(null);
 
   useEffect(() => {
+    if (userData && userData.role !== 'admin') {
+      router.replace('/admin/products');
+    }
+  }, [userData, router]);
+
+  useEffect(() => {
     loadProduct();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productId]);
 
   const loadProduct = async () => {
@@ -53,7 +62,7 @@ export default function EditProductPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!product) return;
 
     try {
@@ -73,13 +82,12 @@ export default function EditProductPage() {
     try {
       setUploadingImages(true);
       const uploadedUrls = await addProductImages(productId, files);
-      
-      // Update local state
+
       setProduct(prev => prev ? {
         ...prev,
         images: [...(prev.images || []), ...uploadedUrls]
       } : null);
-      
+
       toast.success(pe.imagesUploadedFormat.replace('{count}', String(files.length)));
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : pe.uploadImagesError;
@@ -94,13 +102,12 @@ export default function EditProductPage() {
     try {
       setDeletingImage(imageUrl);
       await removeProductImage(productId, imageUrl);
-      
-      // Update local state
+
       setProduct(prev => prev ? {
         ...prev,
         images: (prev.images || []).filter(url => url !== imageUrl)
       } : null);
-      
+
       toast.success(pe.imageDeleted);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : pe.deleteImageError;
@@ -113,28 +120,27 @@ export default function EditProductPage() {
 
   const handleImagesReorder = async (newImageOrder: string[]) => {
     try {
-      // Update local state immediately for smooth UX
       setProduct(prev => prev ? {
         ...prev,
         images: newImageOrder
       } : null);
-      
-      // Update in Firestore
+
       await reorderProductImages(productId, newImageOrder);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : pe.reorderImagesError;
       toast.error(message);
-      // Reload product to restore correct order
       loadProduct();
     }
   };
 
+  if (userData && userData.role !== 'admin') return null;
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">{pe.loading}</p>
+      <div className="sc" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="sc-spinner" style={{ margin: '0 auto' }} />
+          <p className="sc-helper" style={{ margin: 0 }}>{pe.loading}</p>
         </div>
       </div>
     );
@@ -143,33 +149,46 @@ export default function EditProductPage() {
   if (!product) return null;
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <div className="sc" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <button
             onClick={() => router.back()}
-            className="p-2 hover:bg-surface-elevated rounded-apple transition-colors"
+            style={{
+              padding: 8,
+              borderRadius: 'var(--radius-md)',
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--ink)',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background 0.15s ease',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div>
-            <h1 className="text-4xl font-bold tracking-tight">{pe.title}</h1>
-            <p className="text-text-secondary mt-1">{product.name.en}</p>
+            <h1 className="sc-h1" style={{ margin: 0 }}>{pe.title}</h1>
+            <p className="sc-helper" style={{ margin: '4px 0 0' }}>{product.name.en}</p>
           </div>
         </div>
 
-        <div className="flex gap-3">
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <button
             onClick={() => router.push('/admin/products')}
-            className="px-6 py-3 bg-surface hover:bg-surface-elevated rounded-apple font-medium transition-all border border-border"
+            className="sc-cta-ghost"
           >
             {t.common.cancel}
           </button>
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-hover disabled:opacity-50 text-white font-semibold rounded-apple transition-all hover:scale-105 shadow-apple"
+            className="sc-cta"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
           >
             <Save className="w-5 h-5" />
             {saving ? t.common.saving : pe.saveChanges}
@@ -177,13 +196,11 @@ export default function EditProductPage() {
         </div>
       </div>
 
-      {/* Product Info */}
-      <div className="apple-card">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Left Column */}
-          <div className="space-y-6">
+      <div className="sc-card-static">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 32 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <div>
-              <h3 className="font-semibold mb-2">{pe.productNameEn}</h3>
+              <label className="sc-label">{pe.productNameEn}</label>
               <input
                 type="text"
                 value={product.name.en}
@@ -191,69 +208,68 @@ export default function EditProductPage() {
                   ...product,
                   name: { ...product.name, en: e.target.value }
                 })}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-input"
               />
             </div>
 
             <div>
-              <h3 className="font-semibold mb-2">{pe.brand}</h3>
+              <label className="sc-label">{pe.brand}</label>
               <input
                 type="text"
                 value={product.brand}
                 onChange={(e) => setProduct({ ...product, brand: e.target.value })}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-input"
               />
             </div>
 
             <div>
-              <h3 className="font-semibold mb-2">{pe.category}</h3>
+              <label className="sc-label">{pe.category}</label>
               <input
                 type="text"
                 value={product.category}
                 onChange={(e) => setProduct({ ...product, category: e.target.value })}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-input"
               />
             </div>
           </div>
 
-          {/* Right Column */}
-          <div className="space-y-6">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <div>
-              <h3 className="font-semibold mb-2">{pe.basePrice}</h3>
+              <label className="sc-label">{pe.basePrice}</label>
               <input
                 type="number"
                 step="0.01"
                 value={product.basePrice || 0}
                 onChange={(e) => setProduct({ ...product, basePrice: parseFloat(e.target.value) || 0 })}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:outline-none transition-all"
+                className="sc-input"
               />
             </div>
 
-            <div className="flex gap-4">
-              <label className="flex items-center gap-3 cursor-pointer">
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
                 <input
                   type="checkbox"
                   checked={product.active}
                   onChange={(e) => setProduct({ ...product, active: e.target.checked })}
-                  className="w-5 h-5 rounded accent-primary"
+                  style={{ width: 20, height: 20, accentColor: 'var(--brand)' }}
                 />
-                <span className="font-medium">{pe.active}</span>
+                <span style={{ fontWeight: 500, color: 'var(--ink)' }}>{pe.active}</span>
               </label>
 
-              <label className="flex items-center gap-3 cursor-pointer">
+              <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
                 <input
                   type="checkbox"
                   checked={product.featured}
                   onChange={(e) => setProduct({ ...product, featured: e.target.checked })}
-                  className="w-5 h-5 rounded accent-warning"
+                  style={{ width: 20, height: 20, accentColor: 'var(--warn)' }}
                 />
-                <span className="font-medium">{pe.featured}</span>
+                <span style={{ fontWeight: 500, color: 'var(--ink)' }}>{pe.featured}</span>
               </label>
             </div>
 
             <div>
-              <h3 className="font-semibold mb-2">{pe.variations}</h3>
-              <p className="text-sm text-text-secondary">
+              <h3 style={{ fontWeight: 600, marginBottom: 8, color: 'var(--ink)' }}>{pe.variations}</h3>
+              <p className="sc-helper" style={{ margin: 0 }}>
                 {product.variations?.length || 0} {pe.variationsCountSuffix}
               </p>
             </div>
@@ -261,9 +277,8 @@ export default function EditProductPage() {
         </div>
       </div>
 
-      {/* Image Gallery Manager */}
-      <div className="apple-card">
-        <h2 className="text-2xl font-bold mb-6">{pe.productImages}</h2>
+      <div className="sc-card-static">
+        <h2 className="sc-h2" style={{ margin: 0, marginBottom: 24, fontSize: 24 }}>{pe.productImages}</h2>
         <ImageGalleryManager
           images={product.images || []}
           onImagesChange={handleImagesReorder}
@@ -276,7 +291,6 @@ export default function EditProductPage() {
         />
       </div>
 
-      {/* Maintenance Template */}
       <MaintenanceTemplateEditor
         template={product.maintenanceTemplate}
         onChange={(template) => setProduct({ ...product, maintenanceTemplate: template })}
@@ -303,25 +317,36 @@ function MaintenanceTemplateEditor({
     { label: labels.twelveMonths, days: 365 },
   ];
 
+  const intervalBtnStyle = (active: boolean): React.CSSProperties => ({
+    padding: '8px 12px',
+    borderRadius: 'var(--radius-md)',
+    fontSize: 14,
+    fontWeight: 500,
+    border: `1px solid ${active ? 'var(--brand)' : 'var(--hairline)'}`,
+    background: active ? 'var(--brand)' : 'var(--off-paper)',
+    color: active ? '#fff' : 'var(--soft)',
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  });
+
   return (
-    <div className="apple-card">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold">{labels.maintenanceTemplate}</h2>
-        <p className="text-sm text-text-secondary mt-1">{labels.maintenanceTemplateDesc}</p>
+    <div className="sc-card-static">
+      <div style={{ marginBottom: 24 }}>
+        <h2 className="sc-h2" style={{ margin: 0, fontSize: 24 }}>{labels.maintenanceTemplate}</h2>
+        <p className="sc-helper" style={{ margin: '4px 0 0' }}>{labels.maintenanceTemplateDesc}</p>
       </div>
 
-      <div className="space-y-6">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         <div>
-          <label className="block text-sm font-medium mb-3">{labels.ezerInterval}</label>
-          <div className="grid grid-cols-3 gap-2">
+          <label className="sc-label">{labels.ezerInterval}</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
             {INTERVAL_OPTIONS.map((opt) => (
-              <button key={opt.days} type="button"
+              <button
+                key={opt.days}
+                type="button"
                 onClick={() => onChange({ ...current, ezerIntervalDays: opt.days })}
-                className={`px-3 py-2 rounded-apple text-sm font-medium transition-all ${
-                  current.ezerIntervalDays === opt.days
-                    ? 'bg-primary text-white'
-                    : 'bg-surface-elevated text-text-secondary hover:text-text-primary'
-                }`}>
+                style={intervalBtnStyle(current.ezerIntervalDays === opt.days)}
+              >
                 {opt.label}
               </button>
             ))}
@@ -329,51 +354,90 @@ function MaintenanceTemplateEditor({
         </div>
 
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <label className="text-sm font-medium">{labels.filterSchedules}</label>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <label className="sc-label" style={{ marginBottom: 0 }}>{labels.filterSchedules}</label>
             {current.filters.length < 4 && (
-              <button type="button"
+              <button
+                type="button"
                 onClick={() => onChange({ ...current, filters: [...current.filters, { name: '', intervalDays: 180 }] })}
-                className="flex items-center gap-1 text-sm text-primary font-medium hover:text-primary/80 transition-all">
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: 'var(--brand)',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 0,
+                }}
+              >
                 <Plus className="w-4 h-4" /> {labels.addFilter}
               </button>
             )}
           </div>
           {current.filters.length === 0 ? (
-            <p className="text-sm text-text-tertiary text-center py-4">
+            <p className="sc-helper" style={{ textAlign: 'center', padding: '16px 0', margin: 0 }}>
               {labels.noFilterSchedulesFormat.replace('{action}', labels.addFilter)}
             </p>
           ) : (
-            <div className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {current.filters.map((filter, index) => (
-                <div key={index} className="p-4 bg-surface rounded-apple border border-border space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-text-secondary">{labels.filterName}</span>
-                    <button type="button"
+                <div
+                  key={index}
+                  style={{
+                    padding: 16,
+                    background: 'var(--off-paper)',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--hairline)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 12,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--soft)' }}>{labels.filterName}</span>
+                    <button
+                      type="button"
                       onClick={() => onChange({ ...current, filters: current.filters.filter((_, i) => i !== index) })}
-                      className="p-1 text-text-tertiary hover:text-error transition-all">
+                      style={{
+                        padding: 4,
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'var(--soft)',
+                        display: 'inline-flex',
+                        transition: 'color 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--soft)'; }}
+                    >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                  <input type="text" value={filter.name}
+                  <input
+                    type="text"
+                    value={filter.name}
                     onChange={(e) => onChange({
                       ...current,
                       filters: current.filters.map((f, i) => i === index ? { ...f, name: e.target.value } : f),
                     })}
                     placeholder={labels.filterNamePlaceholder}
-                    className="w-full px-4 py-2 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all text-sm" />
-                  <div className="grid grid-cols-3 gap-2">
+                    className="sc-input"
+                    style={{ fontSize: 14 }}
+                  />
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                     {INTERVAL_OPTIONS.map((opt) => (
-                      <button key={opt.days} type="button"
+                      <button
+                        key={opt.days}
+                        type="button"
                         onClick={() => onChange({
                           ...current,
                           filters: current.filters.map((f, i) => i === index ? { ...f, intervalDays: opt.days } : f),
                         })}
-                        className={`px-3 py-2 rounded-apple text-sm font-medium transition-all ${
-                          filter.intervalDays === opt.days
-                            ? 'bg-primary text-white'
-                            : 'bg-surface-elevated text-text-secondary hover:text-text-primary'
-                        }`}>
+                        style={intervalBtnStyle(filter.intervalDays === opt.days)}
+                      >
                         {opt.label}
                       </button>
                     ))}
@@ -387,4 +451,3 @@ function MaintenanceTemplateEditor({
     </div>
   );
 }
-

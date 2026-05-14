@@ -40,76 +40,146 @@ export function TechnicianProfileForms({ technician, isEditing, edited, setEdite
   const removeCert = (i: number) =>
     setEdited((p) => ({ ...p, certifications: p.certifications.filter((_, idx) => idx !== i) }));
 
-  const chipList = (items: string[], tone: 'primary' | 'warning') => {
-    const chipClass = tone === 'primary' ? 'bg-primary/10 text-primary' : 'bg-warning/10 text-warning';
-    const emptyLabel = tone === 'primary' ? td.noServiceAreas : td.noCertifications;
+  const chipStyle = (tone: 'brand' | 'warn'): React.CSSProperties => ({
+    padding: '4px 12px',
+    borderRadius: 'var(--radius-full)',
+    fontSize: 12,
+    fontWeight: 500,
+    color: tone === 'brand' ? 'var(--brand)' : 'var(--warn)',
+    background: tone === 'brand' ? 'var(--brand-tint)' : 'var(--warn-tint)',
+  });
+
+  const chipList = (items: string[], tone: 'brand' | 'warn') => {
+    const emptyLabel = tone === 'brand' ? td.noServiceAreas : td.noCertifications;
     return (
-      <div className="flex flex-wrap gap-2">
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         {items.length === 0 ? (
-          <p className="text-text-secondary">{emptyLabel}</p>
+          <p className="sc-helper" style={{ margin: 0 }}>{emptyLabel}</p>
         ) : (
           items.map((it, i) => (
-            <span key={i} className={`px-3 py-1 rounded-apple ${chipClass}`}>{it}</span>
+            <span key={i} style={chipStyle(tone)}>{it}</span>
           ))
         )}
       </div>
     );
   };
 
+  const editChipStyle = (tone: 'brand' | 'warn'): React.CSSProperties => ({
+    padding: '4px 12px',
+    borderRadius: 'var(--radius-full)',
+    fontSize: 12,
+    fontWeight: 500,
+    color: tone === 'brand' ? 'var(--brand)' : 'var(--warn)',
+    background: tone === 'brand' ? 'var(--brand-tint)' : 'var(--warn-tint)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+  });
+
   return (
     <>
-      <div className="apple-card">
-        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><MapPin className="w-5 h-5 text-primary" />{td.serviceAreas}</h3>
+      <div className="sc-card-static">
+        <h3 className="sc-h2" style={{ marginTop: 0, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <MapPin size={20} color="var(--brand)" />{td.serviceAreas}
+        </h3>
         {isEditing ? (
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <input type="text" placeholder={td.addServiceArea} value={newArea} onChange={(e) => setNewArea(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addArea()} className="flex-1 px-4 py-2 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none" />
-              <button onClick={addArea} className="apple-button-primary">{t.common.add}</button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                type="text"
+                placeholder={td.addServiceArea}
+                value={newArea}
+                onChange={(e) => setNewArea(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addArea()}
+                className="sc-input"
+                style={{ flex: 1 }}
+              />
+              <button onClick={addArea} className="sc-cta">{t.common.add}</button>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {edited.serviceAreas.map((a, i) => (
-                <div key={i} className="px-3 py-1 bg-primary/10 text-primary rounded-apple flex items-center gap-2">
+                <div key={i} style={editChipStyle('brand')}>
                   <span>{a}</span>
-                  <button onClick={() => removeArea(i)} className="hover:text-error"><X className="w-4 h-4" /></button>
+                  <button
+                    onClick={() => removeArea(i)}
+                    style={{ background: 'transparent', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer', display: 'flex' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = 'inherit'; }}
+                  >
+                    <X size={14} />
+                  </button>
                 </div>
               ))}
             </div>
           </div>
-        ) : chipList(technician.serviceAreas || [], 'primary')}
+        ) : chipList(technician.serviceAreas || [], 'brand')}
       </div>
 
-      <div className="apple-card">
-        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><Award className="w-5 h-5 text-warning" />{td.certifications}</h3>
+      <div className="sc-card-static">
+        <h3 className="sc-h2" style={{ marginTop: 0, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Award size={20} color="var(--warn)" />{td.certifications}
+        </h3>
         {isEditing ? (
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <input type="text" placeholder={td.addCertification} value={newCert} onChange={(e) => setNewCert(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addCert()} className="flex-1 px-4 py-2 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none" />
-              <button onClick={addCert} className="apple-button-primary">{t.common.add}</button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                type="text"
+                placeholder={td.addCertification}
+                value={newCert}
+                onChange={(e) => setNewCert(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addCert()}
+                className="sc-input"
+                style={{ flex: 1 }}
+              />
+              <button onClick={addCert} className="sc-cta">{t.common.add}</button>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {edited.certifications.map((c, i) => (
-                <div key={i} className="px-3 py-1 bg-warning/10 text-warning rounded-apple flex items-center gap-2">
+                <div key={i} style={editChipStyle('warn')}>
                   <span>{c}</span>
-                  <button onClick={() => removeCert(i)} className="hover:text-error"><X className="w-4 h-4" /></button>
+                  <button
+                    onClick={() => removeCert(i)}
+                    style={{ background: 'transparent', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer', display: 'flex' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = 'inherit'; }}
+                  >
+                    <X size={14} />
+                  </button>
                 </div>
               ))}
             </div>
           </div>
-        ) : chipList(technician.certifications || [], 'warning')}
+        ) : chipList(technician.certifications || [], 'warn')}
       </div>
 
-      <div className="apple-card">
-        <h3 className="text-xl font-semibold mb-4">{td.professionalBio}</h3>
+      <div className="sc-card-static">
+        <h3 className="sc-h2" style={{ marginTop: 0, marginBottom: 16 }}>{td.professionalBio}</h3>
         {isEditing ? (
-          <textarea value={edited.bio} onChange={(e) => setEdited((p) => ({ ...p, bio: e.target.value }))} placeholder={td.enterBio} rows={4} className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none" />
-        ) : (<p className="text-text-secondary">{technician.bio || td.noBio}</p>)}
+          <textarea
+            value={edited.bio}
+            onChange={(e) => setEdited((p) => ({ ...p, bio: e.target.value }))}
+            placeholder={td.enterBio}
+            rows={4}
+            className="sc-textarea"
+          />
+        ) : (
+          <p className="sc-helper" style={{ margin: 0 }}>{technician.bio || td.noBio}</p>
+        )}
       </div>
 
-      <div className="apple-card">
-        <h3 className="text-xl font-semibold mb-4">{td.adminNotes}</h3>
+      <div className="sc-card-static">
+        <h3 className="sc-h2" style={{ marginTop: 0, marginBottom: 16 }}>{td.adminNotes}</h3>
         {isEditing ? (
-          <textarea value={edited.adminNotes} onChange={(e) => setEdited((p) => ({ ...p, adminNotes: e.target.value }))} placeholder={td.enterNotes} rows={3} className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none" />
-        ) : (<p className="text-text-secondary">{technician.adminNotes || td.noNotes}</p>)}
+          <textarea
+            value={edited.adminNotes}
+            onChange={(e) => setEdited((p) => ({ ...p, adminNotes: e.target.value }))}
+            placeholder={td.enterNotes}
+            rows={3}
+            className="sc-textarea"
+          />
+        ) : (
+          <p className="sc-helper" style={{ margin: 0 }}>{technician.adminNotes || td.noNotes}</p>
+        )}
       </div>
     </>
   );

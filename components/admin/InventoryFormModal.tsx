@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import { InventoryItem, InventoryCategory } from '@/types/inventory';
+import { useTranslation } from '@/hooks/useTranslation';
+import { DEFAULT_CURRENCY } from '@/lib/utils/constants';
 
 const CATEGORIES: { value: InventoryCategory; label: string }[] = [
   { value: 'filter', label: 'Filter' },
@@ -33,6 +35,7 @@ export interface InventoryFormData {
 }
 
 export default function InventoryFormModal({ item, onSubmit, onClose }: InventoryFormModalProps) {
+  const { t } = useTranslation();
   const [form, setForm] = useState<InventoryFormData>({
     name: item?.name || '',
     sku: item?.sku || '',
@@ -41,7 +44,7 @@ export default function InventoryFormModal({ item, onSubmit, onClose }: Inventor
     quantity: item?.quantity || 0,
     minQuantity: item?.minQuantity || 5,
     unitCost: item?.unitCost || 0,
-    currency: item?.currency || 'BRL',
+    currency: item?.currency || DEFAULT_CURRENCY,
     supplier: item?.supplier || '',
     location: item?.location || '',
     notes: item?.notes || '',
@@ -65,46 +68,94 @@ export default function InventoryFormModal({ item, onSubmit, onClose }: Inventor
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-background rounded-apple shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-xl font-bold">{item ? 'Edit Item' : 'Add Item'}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-surface-elevated rounded-apple transition-colors">
-            <X className="w-5 h-5" />
+    <div
+      className="sc"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.5)',
+        backdropFilter: 'blur(4px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 50,
+        padding: 16,
+      }}
+      onClick={onClose}
+    >
+      <div
+        className="sc-card-static"
+        style={{
+          width: '100%',
+          maxWidth: 640,
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          padding: 0,
+          background: 'var(--paper)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: 24,
+            borderBottom: '1px solid var(--hairline)',
+          }}
+        >
+          <h2 className="sc-h2" style={{ margin: 0 }}>{item ? 'Edit Item' : 'Add Item'}</h2>
+          <button
+            onClick={onClose}
+            style={{
+              padding: 8,
+              background: 'transparent',
+              border: 'none',
+              borderRadius: 'var(--radius-md)',
+              color: 'var(--soft)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+          >
+            <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
             <div>
-              <label className="block text-sm font-medium mb-1">Name *</label>
+              <label className="sc-label">{t.components.inventoryForm.name} *</label>
               <input
                 type="text"
                 value={form.name}
                 onChange={(e) => update('name', e.target.value)}
                 required
-                className="w-full px-4 py-2.5 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-input"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">SKU *</label>
+              <label className="sc-label">SKU *</label>
               <input
                 type="text"
                 value={form.sku}
                 onChange={(e) => update('sku', e.target.value)}
                 required
-                className="w-full px-4 py-2.5 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-input"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
             <div>
-              <label className="block text-sm font-medium mb-1">Category</label>
+              <label className="sc-label">Category</label>
               <select
                 value={form.category}
                 onChange={(e) => update('category', e.target.value)}
-                className="w-full px-4 py-2.5 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-select"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c.value} value={c.value}>{c.label}</option>
@@ -112,64 +163,64 @@ export default function InventoryFormModal({ item, onSubmit, onClose }: Inventor
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Supplier</label>
+              <label className="sc-label">Supplier</label>
               <input
                 type="text"
                 value={form.supplier}
                 onChange={(e) => update('supplier', e.target.value)}
-                className="w-full px-4 py-2.5 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-input"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Description</label>
+            <label className="sc-label">Description</label>
             <textarea
               value={form.description}
               onChange={(e) => update('description', e.target.value)}
               rows={2}
-              className="w-full px-4 py-2.5 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all resize-none"
+              className="sc-textarea"
             />
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16 }}>
             <div>
-              <label className="block text-sm font-medium mb-1">Quantity</label>
+              <label className="sc-label">Quantity</label>
               <input
                 type="number"
                 min={0}
                 value={form.quantity}
                 onChange={(e) => update('quantity', parseInt(e.target.value) || 0)}
-                className="w-full px-4 py-2.5 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-input"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Min Qty</label>
+              <label className="sc-label">{t.components.inventoryForm.minQty}</label>
               <input
                 type="number"
                 min={0}
                 value={form.minQuantity}
                 onChange={(e) => update('minQuantity', parseInt(e.target.value) || 0)}
-                className="w-full px-4 py-2.5 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-input"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Unit Cost</label>
+              <label className="sc-label">{t.components.inventoryForm.unitCost}</label>
               <input
                 type="number"
                 min={0}
                 step={0.01}
                 value={form.unitCost}
                 onChange={(e) => update('unitCost', parseFloat(e.target.value) || 0)}
-                className="w-full px-4 py-2.5 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-input"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Currency</label>
+              <label className="sc-label">Currency</label>
               <select
                 value={form.currency}
                 onChange={(e) => update('currency', e.target.value)}
-                className="w-full px-4 py-2.5 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-select"
               >
                 <option value="BRL">BRL</option>
                 <option value="USD">USD</option>
@@ -180,38 +231,40 @@ export default function InventoryFormModal({ item, onSubmit, onClose }: Inventor
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Storage Location</label>
+            <label className="sc-label">{t.components.inventoryForm.storageLocation}</label>
             <input
               type="text"
               value={form.location}
               onChange={(e) => update('location', e.target.value)}
-              placeholder="e.g. Warehouse A - Shelf 3"
-              className="w-full px-4 py-2.5 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+              placeholder={t.components.inventoryForm.storagePlaceholder}
+              className="sc-input"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Notes</label>
+            <label className="sc-label">Notes</label>
             <textarea
               value={form.notes}
               onChange={(e) => update('notes', e.target.value)}
               rows={2}
-              className="w-full px-4 py-2.5 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all resize-none"
+              className="sc-textarea"
             />
           </div>
 
-          <div className="flex gap-3 pt-2">
+          <div style={{ display: 'flex', gap: 12, paddingTop: 8 }}>
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 text-text-secondary hover:text-text-primary font-medium rounded-apple transition-all border border-border"
+              className="sc-cta-ghost"
+              style={{ flex: 1 }}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting || !form.name.trim() || !form.sku.trim()}
-              className="flex-1 px-6 py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-semibold rounded-apple transition-all"
+              className="sc-cta"
+              style={{ flex: 1 }}
             >
               {submitting ? 'Saving...' : item ? 'Update Item' : 'Add Item'}
             </button>

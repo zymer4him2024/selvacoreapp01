@@ -2,21 +2,31 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Plus, Search, Edit, Trash2, Building2, Users, Package as PackageIcon } from 'lucide-react';
 import { SubContractor } from '@/types';
 import { getAllSubContractors, deleteSubContractor } from '@/lib/services/subContractorService';
 import { formatPhone } from '@/lib/utils/formatters';
 import toast from 'react-hot-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 
 export default function SubContractorsPage() {
   const { t } = useTranslation();
+  const { userData } = useAuth();
+  const router = useRouter();
   const { formatCurrency } = useLocaleFormatters();
   const sc = t.admin.subContractors;
   const [subContractors, setSubContractors] = useState<SubContractor[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    if (userData && userData.role !== 'admin') {
+      router.replace('/admin');
+    }
+  }, [userData, router]);
 
   useEffect(() => {
     loadSubContractors();
@@ -54,60 +64,72 @@ export default function SubContractorsPage() {
     item.address.city.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  if (userData && userData.role !== 'admin') return null;
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">{sc.loading}</p>
+      <div className="sc" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+          <div className="sc-spinner" />
+          <p className="sc-helper" style={{ margin: 0 }}>{sc.loading}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="sc" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <div>
-          <h1 className="text-4xl font-bold tracking-tight mb-2">{sc.title}</h1>
-          <p className="text-text-secondary">{sc.subtitle}</p>
+          <h1 className="sc-h1" style={{ margin: 0, marginBottom: 8 }}>{sc.title}</h1>
+          <p className="sc-helper" style={{ margin: 0 }}>{sc.subtitle}</p>
         </div>
         <Link
           href="/admin/sub-contractors/new"
-          className="flex items-center gap-2 px-6 py-3 bg-success hover:bg-success/90 text-white font-semibold rounded-apple transition-all hover:scale-105 shadow-apple"
+          className="sc-cta"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
         >
           <Plus className="w-5 h-5" />
           {sc.addSubContractor}
         </Link>
       </div>
 
-      {/* Search */}
-      <div className="apple-card">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
+      <div className="sc-card-static">
+        <div style={{ position: 'relative' }}>
+          <Search
+            className="w-5 h-5"
+            style={{
+              position: 'absolute',
+              left: 16,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--soft)',
+              pointerEvents: 'none',
+            }}
+          />
           <input
             type="text"
             placeholder={sc.searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
+            className="sc-input"
+            style={{ paddingLeft: 44 }}
           />
         </div>
       </div>
 
-      {/* Sub-Contractors Grid */}
       {filteredSubContractors.length === 0 ? (
-        <div className="apple-card text-center py-16">
-          <Building2 className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
-          <h3 className="text-xl font-semibold mb-2">{sc.noSubContractors}</h3>
-          <p className="text-text-secondary mb-6">
+        <div className="sc-card-static" style={{ textAlign: 'center', padding: '64px 24px' }}>
+          <Building2 className="w-16 h-16" style={{ margin: '0 auto 16px', color: 'var(--soft)' }} />
+          <h3 className="sc-h2" style={{ margin: 0, marginBottom: 8, fontSize: 20 }}>{sc.noSubContractors}</h3>
+          <p className="sc-helper" style={{ margin: 0, marginBottom: 24 }}>
             {searchTerm ? sc.tryDifferent : sc.getStarted}
           </p>
           {!searchTerm && (
             <Link
               href="/admin/sub-contractors/new"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-success hover:bg-success/90 text-white font-semibold rounded-apple transition-all"
+              className="sc-cta"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
             >
               <Plus className="w-5 h-5" />
               {sc.addFirst}
@@ -115,66 +137,126 @@ export default function SubContractorsPage() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div
+          style={{
+            display: 'grid',
+            gap: 24,
+            gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
+          }}
+        >
           {filteredSubContractors.map((item) => (
-            <div
-              key={item.id}
-              className="apple-card hover:scale-[1.01] transition-all"
-            >
-              <div className="flex items-start gap-4">
-                <div className="w-16 h-16 rounded-apple bg-success/10 flex items-center justify-center flex-shrink-0">
-                  <Building2 className="w-8 h-8 text-success" />
+            <div key={item.id} className="sc-card-static">
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+                <div
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--brand-tint)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Building2 className="w-8 h-8" style={{ color: 'var(--brand)' }} />
                 </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3 className="text-xl font-semibold mb-1">{item.name}</h3>
-                      <p className="text-sm text-text-secondary">{item.email}</p>
-                      <p className="text-sm text-text-tertiary mt-1">{formatPhone(item.phone)}</p>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <h3 className="sc-h2" style={{ margin: 0, marginBottom: 4, fontSize: 18 }}>{item.name}</h3>
+                      <p className="sc-helper" style={{ margin: 0 }}>{item.email}</p>
+                      <p className="sc-helper" style={{ margin: '4px 0 0' }}>{formatPhone(item.phone)}</p>
                     </div>
                     {!item.active && (
-                      <span className="px-3 py-1 bg-error/20 text-error text-xs font-medium rounded-full">
+                      <span
+                        style={{
+                          padding: '4px 12px',
+                          background: 'rgba(239,68,68,0.15)',
+                          color: '#ef4444',
+                          fontSize: 12,
+                          fontWeight: 500,
+                          borderRadius: 'var(--radius-full)',
+                          flexShrink: 0,
+                        }}
+                      >
                         {sc.inactive}
                       </span>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-4 mb-4 text-sm">
-                    <div className="flex items-center gap-2 text-text-secondary">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16, fontSize: 14, color: 'var(--soft)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <Users className="w-4 h-4" />
                       <span>{item.stats.totalInstallers} {sc.installers}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-text-secondary">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <PackageIcon className="w-4 h-4" />
                       <span>{item.stats.totalOrders} {sc.ordersLabel}</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-border">
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTop: '1px solid var(--hairline)' }}>
                     <div>
-                      <p className="text-xs text-text-tertiary">{sc.revenue}</p>
-                      <p className="text-lg font-bold text-success">
+                      <p className="sc-helper" style={{ margin: 0, fontSize: 12 }}>{sc.revenue}</p>
+                      <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--brand)' }}>
                         {formatCurrency(item.stats.revenue)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-text-tertiary">{sc.commission}</p>
-                      <p className="text-lg font-bold">{item.commission}%</p>
+                      <p className="sc-helper" style={{ margin: 0, fontSize: 12 }}>{sc.commission}</p>
+                      <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>{item.commission}%</p>
                     </div>
                   </div>
 
-                  <div className="flex gap-2 mt-4">
+                  <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
                     <Link
                       href={`/admin/sub-contractors/${item.id}`}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-surface-elevated hover:bg-surface-secondary rounded-apple text-sm font-medium transition-all"
+                      style={{
+                        flex: 1,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        padding: '8px 16px',
+                        background: 'var(--off-paper)',
+                        color: 'var(--ink)',
+                        borderRadius: 'var(--radius-md)',
+                        fontSize: 14,
+                        fontWeight: 500,
+                        textDecoration: 'none',
+                        transition: 'background 0.15s ease',
+                      }}
                     >
                       <Edit className="w-4 h-4" />
                       {t.common.edit}
                     </Link>
                     <button
                       onClick={() => handleDelete(item.id, item.name)}
-                      className="flex items-center justify-center gap-2 px-4 py-2 bg-surface-elevated hover:bg-error/20 hover:text-error rounded-apple text-sm font-medium transition-all"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        padding: '8px 16px',
+                        background: 'var(--off-paper)',
+                        color: 'var(--ink)',
+                        borderRadius: 'var(--radius-md)',
+                        fontSize: 14,
+                        fontWeight: 500,
+                        border: 'none',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(239,68,68,0.15)';
+                        e.currentTarget.style.color = '#ef4444';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'var(--off-paper)';
+                        e.currentTarget.style.color = 'var(--ink)';
+                      }}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -188,4 +270,3 @@ export default function SubContractorsPage() {
     </div>
   );
 }
-

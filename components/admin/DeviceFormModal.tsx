@@ -32,6 +32,18 @@ export interface DeviceFormData {
   filters: Array<{ name: string; intervalDays: number }>;
 }
 
+const intervalBtnStyle = (active: boolean): React.CSSProperties => ({
+  padding: '8px 12px',
+  borderRadius: 'var(--radius-md)',
+  fontSize: 13,
+  fontWeight: 500,
+  border: `1px solid ${active ? 'var(--brand)' : 'var(--hairline)'}`,
+  background: active ? 'var(--brand)' : 'var(--off-paper)',
+  color: active ? '#fff' : 'var(--soft)',
+  cursor: 'pointer',
+  transition: 'all 0.15s ease',
+});
+
 export default function DeviceFormModal({ device, onSubmit, onClose }: DeviceFormModalProps) {
   const { t } = useTranslation();
   const df = t.admin.deviceForm;
@@ -136,37 +148,74 @@ export default function DeviceFormModal({ device, onSubmit, onClose }: DeviceFor
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center p-4 overflow-y-auto">
-      <div className="bg-surface rounded-apple shadow-xl w-full max-w-2xl my-8 animate-fade-in">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-2xl font-bold">{isEdit ? df.editDevice : df.addNewDevice}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-surface-elevated rounded-apple transition-colors">
-            <X className="w-5 h-5" />
+    <div
+      className="sc"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.5)',
+        backdropFilter: 'blur(4px)',
+        zIndex: 50,
+        display: 'flex',
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+        padding: 16,
+        overflowY: 'auto',
+      }}
+    >
+      <div
+        className="sc-card-static"
+        style={{ width: '100%', maxWidth: 640, marginTop: 32, marginBottom: 32, padding: 0, background: 'var(--paper)' }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: 24,
+            borderBottom: '1px solid var(--hairline)',
+          }}
+        >
+          <h2 className="sc-h2" style={{ margin: 0 }}>{isEdit ? df.editDevice : df.addNewDevice}</h2>
+          <button
+            onClick={onClose}
+            style={{
+              padding: 8,
+              background: 'transparent',
+              border: 'none',
+              borderRadius: 'var(--radius-md)',
+              color: 'var(--soft)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+          >
+            <X size={20} />
           </button>
         </div>
 
-        <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
-          {/* QR Code */}
+        <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 24, maxHeight: '70vh', overflowY: 'auto' }}>
           <div>
-            <label className="block text-sm font-medium mb-2">{df.qrCode} *</label>
+            <label className="sc-label">{df.qrCode} *</label>
             <input
               type="text"
               value={form.qrCodeData}
               onChange={(e) => update('qrCodeData', e.target.value)}
               placeholder={df.qrPlaceholder}
-              className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+              className="sc-input"
             />
           </div>
 
-          {/* Product Template Selector (add mode only) */}
           {!isEdit && products.length > 0 && (
             <div>
-              <label className="block text-sm font-medium mb-2">{df.selectProduct}</label>
+              <label className="sc-label">{df.selectProduct}</label>
               <select
                 value={selectedProductId}
                 onChange={(e) => handleProductSelect(e.target.value)}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-select"
               >
                 <option value="">{df.noProductSelected}</option>
                 {products.map((p) => (
@@ -178,99 +227,80 @@ export default function DeviceFormModal({ device, onSubmit, onClose }: DeviceFor
             </div>
           )}
 
-          {/* Customer Info */}
           <div>
-            <h3 className="font-semibold mb-3">{df.customerInfo}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)', margin: '0 0 12px' }}>{df.customerInfo}</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
               <div>
-                <label className="block text-sm text-text-secondary mb-1">{df.name} *</label>
-                <input type="text" value={form.customerName} onChange={(e) => update('customerName', e.target.value)}
-                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all" />
+                <label className="sc-label">{df.name} *</label>
+                <input type="text" value={form.customerName} onChange={(e) => update('customerName', e.target.value)} className="sc-input" />
               </div>
               <div>
-                <label className="block text-sm text-text-secondary mb-1">{df.email} *</label>
-                <input type="email" value={form.customerEmail} onChange={(e) => update('customerEmail', e.target.value)}
-                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all" />
+                <label className="sc-label">{df.email} *</label>
+                <input type="email" value={form.customerEmail} onChange={(e) => update('customerEmail', e.target.value)} className="sc-input" />
               </div>
               <div>
-                <label className="block text-sm text-text-secondary mb-1">{df.phone} *</label>
-                <input type="text" value={form.customerPhone} onChange={(e) => update('customerPhone', e.target.value)}
-                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all" />
+                <label className="sc-label">{df.phone} *</label>
+                <input type="text" value={form.customerPhone} onChange={(e) => update('customerPhone', e.target.value)} className="sc-input" />
               </div>
               <div>
-                <label className="block text-sm text-text-secondary mb-1">{df.whatsapp}</label>
-                <input type="text" value={form.customerWhatsapp} onChange={(e) => update('customerWhatsapp', e.target.value)}
-                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all" />
+                <label className="sc-label">{df.whatsapp}</label>
+                <input type="text" value={form.customerWhatsapp} onChange={(e) => update('customerWhatsapp', e.target.value)} className="sc-input" />
               </div>
             </div>
           </div>
 
-          {/* Product Info */}
           <div>
-            <h3 className="font-semibold mb-3">{df.product}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)', margin: '0 0 12px' }}>{df.product}</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
               <div>
-                <label className="block text-sm text-text-secondary mb-1">{df.productName} *</label>
-                <input type="text" value={form.productName} onChange={(e) => update('productName', e.target.value)}
-                  placeholder={df.productNamePlaceholder}
-                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all" />
+                <label className="sc-label">{df.productName} *</label>
+                <input type="text" value={form.productName} onChange={(e) => update('productName', e.target.value)} placeholder={df.productNamePlaceholder} className="sc-input" />
               </div>
               <div>
-                <label className="block text-sm text-text-secondary mb-1">{df.variation}</label>
-                <input type="text" value={form.productVariation} onChange={(e) => update('productVariation', e.target.value)}
-                  placeholder={df.variationPlaceholder}
-                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all" />
+                <label className="sc-label">{df.variation}</label>
+                <input type="text" value={form.productVariation} onChange={(e) => update('productVariation', e.target.value)} placeholder={df.variationPlaceholder} className="sc-input" />
               </div>
             </div>
           </div>
 
-          {/* Address */}
           <div>
-            <h3 className="font-semibold mb-3">{df.installationAddress}</h3>
-            <div className="space-y-4">
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)', margin: '0 0 12px' }}>{df.installationAddress}</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label className="block text-sm text-text-secondary mb-1">{df.street} *</label>
-                <input type="text" value={form.street} onChange={(e) => update('street', e.target.value)}
-                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all" />
+                <label className="sc-label">{df.street} *</label>
+                <input type="text" value={form.street} onChange={(e) => update('street', e.target.value)} className="sc-input" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
                 <div>
-                  <label className="block text-sm text-text-secondary mb-1">{df.city} *</label>
-                  <input type="text" value={form.city} onChange={(e) => update('city', e.target.value)}
-                    className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all" />
+                  <label className="sc-label">{df.city} *</label>
+                  <input type="text" value={form.city} onChange={(e) => update('city', e.target.value)} className="sc-input" />
                 </div>
                 <div>
-                  <label className="block text-sm text-text-secondary mb-1">{df.state} *</label>
-                  <input type="text" value={form.state} onChange={(e) => update('state', e.target.value)}
-                    className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all" />
+                  <label className="sc-label">{df.state} *</label>
+                  <input type="text" value={form.state} onChange={(e) => update('state', e.target.value)} className="sc-input" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
                 <div>
-                  <label className="block text-sm text-text-secondary mb-1">{df.postalCode} *</label>
-                  <input type="text" value={form.postalCode} onChange={(e) => update('postalCode', e.target.value)}
-                    className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all" />
+                  <label className="sc-label">{df.postalCode} *</label>
+                  <input type="text" value={form.postalCode} onChange={(e) => update('postalCode', e.target.value)} className="sc-input" />
                 </div>
                 <div>
-                  <label className="block text-sm text-text-secondary mb-1">{df.country} *</label>
-                  <input type="text" value={form.country} onChange={(e) => update('country', e.target.value)}
-                    className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all" />
+                  <label className="sc-label">{df.country} *</label>
+                  <input type="text" value={form.country} onChange={(e) => update('country', e.target.value)} className="sc-input" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-text-secondary mb-1">{df.landmark}</label>
-                <input type="text" value={form.landmark} onChange={(e) => update('landmark', e.target.value)}
-                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all" />
+                <label className="sc-label">{df.landmark}</label>
+                <input type="text" value={form.landmark} onChange={(e) => update('landmark', e.target.value)} className="sc-input" />
               </div>
             </div>
           </div>
 
-          {/* Status (edit mode) */}
           {isEdit && (
             <div>
-              <label className="block text-sm font-medium mb-2">{df.status}</label>
-              <select value={form.status} onChange={(e) => update('status', e.target.value)}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all">
+              <label className="sc-label">{df.status}</label>
+              <select value={form.status} onChange={(e) => update('status', e.target.value)} className="sc-select">
                 <option value="active">{df.active}</option>
                 <option value="inactive">{df.inactive}</option>
                 <option value="decommissioned">{df.decommissioned}</option>
@@ -278,20 +308,18 @@ export default function DeviceFormModal({ device, onSubmit, onClose }: DeviceFor
             </div>
           )}
 
-          {/* Maintenance Schedules (add mode only) */}
           {!isEdit && (
             <>
               <div>
-                <h3 className="font-semibold mb-3">{df.ezerMaintenance}</h3>
-                <div className="grid grid-cols-3 gap-2">
+                <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)', margin: '0 0 12px' }}>{df.ezerMaintenance}</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                   {INTERVAL_OPTIONS.map((opt) => (
-                    <button key={opt.days} type="button"
+                    <button
+                      key={opt.days}
+                      type="button"
                       onClick={() => update('ezerIntervalDays', opt.days)}
-                      className={`px-3 py-2 rounded-apple text-sm font-medium transition-all ${
-                        form.ezerIntervalDays === opt.days
-                          ? 'bg-primary text-white'
-                          : 'bg-surface-elevated text-text-secondary hover:text-text-primary'
-                      }`}>
+                      style={intervalBtnStyle(form.ezerIntervalDays === opt.days)}
+                    >
                       {opt.label}
                     </button>
                   ))}
@@ -299,40 +327,79 @@ export default function DeviceFormModal({ device, onSubmit, onClose }: DeviceFor
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold">{df.filterReplacements}</h3>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>{df.filterReplacements}</h3>
                   {form.filters.length < 2 && (
-                    <button type="button" onClick={addFilter}
-                      className="flex items-center gap-1 text-sm text-primary font-medium hover:text-primary/80 transition-all">
-                      <Plus className="w-4 h-4" /> {df.addFilter}
+                    <button
+                      type="button"
+                      onClick={addFilter}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontSize: 13,
+                        color: 'var(--brand)',
+                        fontWeight: 600,
+                        background: 'transparent',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Plus size={16} /> {df.addFilter}
                     </button>
                   )}
                 </div>
-                <div className="space-y-4">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   {form.filters.map((filter, index) => (
-                    <div key={index} className="p-4 bg-surface-elevated rounded-apple space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-text-secondary">{df.filterLabel} {index + 1}</span>
+                    <div
+                      key={index}
+                      style={{
+                        padding: 16,
+                        background: 'var(--off-paper)',
+                        borderRadius: 'var(--radius-md)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 12,
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--soft)' }}>{df.filterLabel} {index + 1}</span>
                         {form.filters.length > 1 && (
-                          <button type="button" onClick={() => removeFilter(index)}
-                            className="p-1 text-text-tertiary hover:text-error transition-all">
-                            <Trash2 className="w-4 h-4" />
+                          <button
+                            type="button"
+                            onClick={() => removeFilter(index)}
+                            style={{
+                              padding: 4,
+                              background: 'transparent',
+                              border: 'none',
+                              color: 'var(--soft)',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--soft)'; }}
+                          >
+                            <Trash2 size={16} />
                           </button>
                         )}
                       </div>
-                      <input type="text" value={filter.name}
+                      <input
+                        type="text"
+                        value={filter.name}
                         onChange={(e) => updateFilter(index, 'name', e.target.value)}
                         placeholder={df.filterNamePlaceholder}
-                        className="w-full px-4 py-2 bg-background border border-border rounded-apple focus:border-primary focus:outline-none transition-all text-sm" />
-                      <div className="grid grid-cols-3 gap-2">
+                        className="sc-input"
+                      />
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                         {INTERVAL_OPTIONS.map((opt) => (
-                          <button key={opt.days} type="button"
+                          <button
+                            key={opt.days}
+                            type="button"
                             onClick={() => updateFilter(index, 'intervalDays', opt.days)}
-                            className={`px-3 py-2 rounded-apple text-sm font-medium transition-all ${
-                              filter.intervalDays === opt.days
-                                ? 'bg-primary text-white'
-                                : 'bg-background text-text-secondary hover:text-text-primary'
-                            }`}>
+                            style={intervalBtnStyle(filter.intervalDays === opt.days)}
+                          >
                             {opt.label}
                           </button>
                         ))}
@@ -345,14 +412,20 @@ export default function DeviceFormModal({ device, onSubmit, onClose }: DeviceFor
           )}
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-border">
-          <button onClick={onClose}
-            className="px-6 py-3 text-text-secondary hover:text-text-primary font-medium rounded-apple transition-all">
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: 12,
+            padding: 24,
+            borderTop: '1px solid var(--hairline)',
+          }}
+        >
+          <button onClick={onClose} className="sc-cta-ghost">
             {t.common.cancel}
           </button>
-          <button onClick={handleSubmit} disabled={!isValid || submitting}
-            className="px-6 py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-semibold rounded-apple transition-all">
+          <button onClick={handleSubmit} disabled={!isValid || submitting} className="sc-cta">
             {submitting ? t.common.saving : isEdit ? df.saveChanges : df.createDevice}
           </button>
         </div>

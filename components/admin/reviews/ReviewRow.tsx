@@ -10,45 +10,66 @@ interface Props {
   onClick: () => void;
 }
 
+const cellStyle: React.CSSProperties = {
+  padding: '12px 16px',
+  fontSize: 13,
+  color: 'var(--ink)',
+  verticalAlign: 'middle',
+};
+
 export function ReviewRow({ review, onClick }: Props) {
   const { t } = useTranslation();
   const r = t.admin.reviews;
   const status = review.hidden
-    ? { text: r.statusHidden, className: 'bg-error/15 text-error' }
+    ? { text: r.statusHidden, color: '#ef4444', bg: 'rgba(239,68,68,0.15)' }
     : review.flagged
-      ? { text: r.statusFlagged, className: 'bg-warning/15 text-warning' }
-      : { text: r.statusActive, className: 'bg-success/15 text-success' };
+      ? { text: r.statusFlagged, color: 'var(--warn)', bg: 'var(--warn-tint)' }
+      : { text: r.statusActive, color: 'var(--brand)', bg: 'var(--brand-tint)' };
 
   return (
     <tr
       onClick={onClick}
-      className="cursor-pointer hover:bg-surface-elevated transition-colors border-b border-border"
+      style={{ cursor: 'pointer', borderBottom: '1px solid var(--hairline)', transition: 'background 0.15s ease' }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
     >
-      <td className="px-4 py-3 text-sm">
-        <div className="flex items-center gap-1">
+      <td style={cellStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           {[1, 2, 3, 4, 5].map((n) => (
             <Star
               key={n}
-              className={`w-3.5 h-3.5 ${n <= review.rating ? 'text-warning fill-warning' : 'text-text-tertiary'}`}
+              size={14}
+              color={n <= review.rating ? 'var(--warn)' : 'var(--soft)'}
+              fill={n <= review.rating ? 'var(--warn)' : 'none'}
             />
           ))}
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-text-primary truncate max-w-[160px]">
-        {review.customerName || <span className="text-text-tertiary">{review.customerId}</span>}
+      <td style={{ ...cellStyle, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {review.customerName || <span style={{ color: 'var(--soft)' }}>{review.customerId}</span>}
       </td>
-      <td className="px-4 py-3 text-sm text-text-primary truncate max-w-[160px]">
-        {review.technicianName || <span className="text-text-tertiary">{review.technicianId}</span>}
+      <td style={{ ...cellStyle, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {review.technicianName || <span style={{ color: 'var(--soft)' }}>{review.technicianId}</span>}
       </td>
-      <td className="px-4 py-3 text-sm text-text-secondary max-w-[360px]">
-        <p className="truncate">{review.comment || '—'}</p>
+      <td style={{ ...cellStyle, color: 'var(--soft)', maxWidth: 360 }}>
+        <p style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{review.comment || '—'}</p>
       </td>
-      <td className="px-4 py-3 text-sm text-text-tertiary whitespace-nowrap">
+      <td style={{ ...cellStyle, color: 'var(--soft)', whiteSpace: 'nowrap' }}>
         {formatDateTime(review.createdAt)}
       </td>
-      <td className="px-4 py-3">
-        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${status.className}`}>
-          {review.hidden ? <EyeOff className="w-3 h-3" /> : review.flagged ? <Flag className="w-3 h-3" /> : null}
+      <td style={{ padding: '12px 16px' }}>
+        <span style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4,
+          padding: '2px 8px',
+          borderRadius: 'var(--radius-full)',
+          fontSize: 11,
+          fontWeight: 500,
+          color: status.color,
+          background: status.bg,
+        }}>
+          {review.hidden ? <EyeOff size={12} /> : review.flagged ? <Flag size={12} /> : null}
           {status.text}
         </span>
       </td>

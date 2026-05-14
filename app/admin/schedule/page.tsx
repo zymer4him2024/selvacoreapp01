@@ -42,20 +42,20 @@ export default function SchedulePage() {
 
   if (data.loading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-[#0071E3] border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-[#86868B]">{s.loading}</p>
+      <div className="sc" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '96px 0' }}>
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
+          <div className="sc-spinner" />
+          <p className="sc-helper">{s.loading}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="sc" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
       <div>
-        <h1 className="text-3xl font-bold text-[#1D1D1F]">{s.title}</h1>
-        <p className="text-[#86868B] mt-1">{s.subtitle}</p>
+        <h1 className="sc-h1" style={{ margin: 0 }}>{s.title}</h1>
+        <p className="sc-helper" style={{ marginTop: 4 }}>{s.subtitle}</p>
       </div>
 
       <WeekHeader
@@ -66,8 +66,8 @@ export default function SchedulePage() {
       />
 
       <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-        <div className="flex gap-4">
-          <div className="flex-1 min-w-0 schedule-print-area">
+        <div style={{ display: 'flex', gap: 16 }}>
+          <div style={{ flex: 1, minWidth: 0 }} className="schedule-print-area">
             <ScheduleGrid
               technicians={filteredTechs} weekDays={data.weekDays} orders={data.weekOrders}
               focusedDayIdx={focusedDayIdx}

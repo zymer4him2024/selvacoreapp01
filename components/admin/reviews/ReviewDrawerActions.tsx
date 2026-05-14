@@ -13,6 +13,22 @@ interface Props {
   onChanged: () => void;
 }
 
+const actionBtnStyle = (color: string, textColor: string, disabled: boolean): React.CSSProperties => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 4,
+  padding: '8px 12px',
+  background: color,
+  color: textColor,
+  fontSize: 13,
+  fontWeight: 500,
+  border: 'none',
+  borderRadius: 'var(--radius-md)',
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  opacity: disabled ? 0.5 : 1,
+  transition: 'background 0.15s ease',
+});
+
 export function ReviewDrawerActions({ review, onChanged }: Props) {
   const { userData } = useAuth();
   const { t } = useTranslation();
@@ -36,43 +52,48 @@ export function ReviewDrawerActions({ review, onChanged }: Props) {
 
   if (review.flagged || review.hidden) {
     return (
-      <div className="border-t border-border pt-4">
+      <div style={{ borderTop: '1px solid var(--hairline)', paddingTop: 16 }}>
         <button
           onClick={() => run(() => restoreReview(review.id, userData!.id), r.toastRestored)}
           disabled={busy}
-          className="flex items-center gap-1 px-3 py-2 bg-success/90 hover:bg-success text-white text-sm font-medium rounded-apple disabled:opacity-50"
+          style={actionBtnStyle('var(--brand)', '#fff', busy)}
+          onMouseEnter={(e) => { if (!busy) e.currentTarget.style.background = 'var(--brand-hover)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--brand)'; }}
         >
-          <Eye className="w-4 h-4" /> {r.actionRestore}
+          <Eye size={16} /> {r.actionRestore}
         </button>
       </div>
     );
   }
 
   return (
-    <div className="border-t border-border pt-4 space-y-3">
+    <div style={{ borderTop: '1px solid var(--hairline)', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
       <textarea
         value={flagReason}
         onChange={(e) => setFlagReason(e.target.value)}
         placeholder={r.flagReasonPlaceholder}
         rows={2}
-        className="w-full px-3 py-2 rounded-apple border border-border bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+        className="sc-textarea"
+        style={{ resize: 'none' }}
       />
-      <div className="flex gap-2">
+      <div style={{ display: 'flex', gap: 8 }}>
         <button
-          onClick={() =>
-            run(() => flagReview(review.id, flagReason.trim(), userData!.id), r.toastFlagged)
-          }
+          onClick={() => run(() => flagReview(review.id, flagReason.trim(), userData!.id), r.toastFlagged)}
           disabled={busy || !flagReason.trim()}
-          className="flex items-center gap-1 px-3 py-2 bg-warning/90 hover:bg-warning text-black text-sm font-medium rounded-apple disabled:opacity-50"
+          style={actionBtnStyle('var(--warn)', '#fff', busy || !flagReason.trim())}
+          onMouseEnter={(e) => { if (!busy && flagReason.trim()) e.currentTarget.style.background = '#d97706'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--warn)'; }}
         >
-          <Flag className="w-4 h-4" /> {r.actionFlag}
+          <Flag size={16} /> {r.actionFlag}
         </button>
         <button
           onClick={() => run(() => hideReview(review.id, true, userData!.id), r.toastHidden)}
           disabled={busy}
-          className="flex items-center gap-1 px-3 py-2 bg-error/90 hover:bg-error text-white text-sm font-medium rounded-apple disabled:opacity-50"
+          style={actionBtnStyle('#ef4444', '#fff', busy)}
+          onMouseEnter={(e) => { if (!busy) e.currentTarget.style.background = '#dc2626'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = '#ef4444'; }}
         >
-          <EyeOff className="w-4 h-4" /> {r.actionHide}
+          <EyeOff size={16} /> {r.actionHide}
         </button>
       </div>
     </div>

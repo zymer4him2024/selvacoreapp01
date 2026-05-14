@@ -58,8 +58,8 @@ export function TechnicianReviewsTab({ technicianId }: Props) {
   }, [load]);
 
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-text-secondary">{r.subtitle}</p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <p className="sc-helper" style={{ margin: 0 }}>{r.subtitle}</p>
       <ReviewsTable
         reviews={reviews}
         loading={loading}

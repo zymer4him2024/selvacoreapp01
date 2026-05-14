@@ -14,6 +14,14 @@ import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 
+type DueStatus = 'overdue' | 'soon' | 'ok';
+
+const STATUS_STYLES: Record<DueStatus, { color: string; bg: string; border: string }> = {
+  overdue: { color: '#ef4444', bg: 'rgba(239,68,68,0.15)', border: '#ef4444' },
+  soon: { color: 'var(--warn)', bg: 'var(--warn-tint)', border: 'var(--warn)' },
+  ok: { color: 'var(--brand)', bg: 'var(--brand-tint)', border: 'var(--hairline)' },
+};
+
 export default function DeviceDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -77,7 +85,7 @@ export default function DeviceDetailPage() {
     }
   };
 
-  const getDueStatus = (schedule: MaintenanceSchedule): 'overdue' | 'soon' | 'ok' => {
+  const getDueStatus = (schedule: MaintenanceSchedule): DueStatus => {
     const now = Date.now();
     const due = schedule.nextDueDate.toDate().getTime();
     const diff = due - now;
@@ -88,10 +96,10 @@ export default function DeviceDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">{md.loading}</p>
+      <div className="sc" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
+          <div className="sc-spinner" />
+          <p className="sc-helper">{md.loading}</p>
         </div>
       </div>
     );
@@ -99,79 +107,99 @@ export default function DeviceDetailPage() {
 
   if (!device) return null;
 
+  const checkPillStyle = (variant: 'brand' | 'warn'): React.CSSProperties => ({
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    padding: '4px 10px',
+    borderRadius: 'var(--radius-full)',
+    fontSize: 11,
+    fontWeight: 600,
+    background: variant === 'brand' ? 'var(--brand-tint)' : 'var(--warn-tint)',
+    color: variant === 'brand' ? 'var(--brand)' : 'var(--warn)',
+  });
+
+  const isActive = device.status === 'active';
+
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center gap-4">
+    <div className="sc" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <button
           onClick={() => router.push('/admin/maintenance')}
-          className="p-2 hover:bg-surface-elevated rounded-apple transition-colors"
+          className="sc-cta-ghost"
+          style={{ padding: 8, minWidth: 0 }}
         >
-          <ArrowLeft className="w-6 h-6" />
+          <ArrowLeft size={20} />
         </button>
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">{md.title}</h1>
-          <p className="text-text-secondary mt-1">
+          <h1 className="sc-h1">{md.title}</h1>
+          <p className="sc-helper" style={{ marginTop: 4 }}>
             {device.productSnapshot.name?.en || md.ezerDevice}
           </p>
         </div>
       </div>
 
-      {/* Device Info */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="apple-card">
-          <h3 className="text-lg font-semibold mb-4">{md.deviceInfo}</h3>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <QrCode className="w-5 h-5 text-primary" />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
+        <div className="sc-card-static">
+          <h3 className="sc-h2" style={{ marginBottom: 16 }}>{md.deviceInfo}</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <QrCode size={20} color="var(--brand)" />
               <div>
-                <p className="text-sm text-text-secondary">{md.qrCode}</p>
-                <p className="font-mono text-sm">{device.qrCodeData}</p>
+                <p className="sc-helper" style={{ fontSize: 12 }}>{md.qrCode}</p>
+                <p style={{ fontFamily: 'monospace', fontSize: 13, color: 'var(--ink)', margin: 0 }}>{device.qrCodeData}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Package className="w-5 h-5 text-primary" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Package size={20} color="var(--brand)" />
               <div>
-                <p className="text-sm text-text-secondary">{md.product}</p>
-                <p className="font-medium">
+                <p className="sc-helper" style={{ fontSize: 12 }}>{md.product}</p>
+                <p style={{ fontWeight: 600, color: 'var(--ink)', margin: 0 }}>
                   {device.productSnapshot.name?.en || md.productNa}
                   {device.productSnapshot.variation && ` — ${device.productSnapshot.variation}`}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Calendar className="w-5 h-5 text-primary" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Calendar size={20} color="var(--brand)" />
               <div>
-                <p className="text-sm text-text-secondary">{md.registered}</p>
-                <p className="font-medium">{formatDate(device.registeredAt, 'long')}</p>
+                <p className="sc-helper" style={{ fontSize: 12 }}>{md.registered}</p>
+                <p style={{ fontWeight: 600, color: 'var(--ink)', margin: 0 }}>{formatDate(device.registeredAt, 'long')}</p>
               </div>
             </div>
             <div>
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                device.status === 'active' ? 'bg-success/20 text-success' : 'bg-text-tertiary/20 text-text-tertiary'
-              }`}>
-                {device.status === 'active' ? mt.statusActive : mt.statusInactive}
+              <span
+                style={{
+                  padding: '4px 12px',
+                  borderRadius: 'var(--radius-full)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  background: isActive ? 'var(--brand-tint)' : 'var(--off-paper)',
+                  color: isActive ? 'var(--brand)' : 'var(--soft)',
+                }}
+              >
+                {isActive ? mt.statusActive : mt.statusInactive}
               </span>
             </div>
           </div>
         </div>
 
-        <div className="apple-card">
-          <h3 className="text-lg font-semibold mb-4">{md.customerLocation}</h3>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <User className="w-5 h-5 text-primary" />
+        <div className="sc-card-static">
+          <h3 className="sc-h2" style={{ marginBottom: 16 }}>{md.customerLocation}</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <User size={20} color="var(--brand)" />
               <div>
-                <p className="text-sm text-text-secondary">{md.customer}</p>
-                <p className="font-medium">{device.customerInfo.name}</p>
-                <p className="text-sm text-text-secondary">{device.customerInfo.email}</p>
+                <p className="sc-helper" style={{ fontSize: 12 }}>{md.customer}</p>
+                <p style={{ fontWeight: 600, color: 'var(--ink)', margin: 0 }}>{device.customerInfo.name}</p>
+                <p className="sc-helper" style={{ fontSize: 13, margin: 0 }}>{device.customerInfo.email}</p>
               </div>
             </div>
-            <div className="flex items-start gap-3">
-              <MapPin className="w-5 h-5 text-primary mt-0.5" />
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <MapPin size={20} color="var(--brand)" style={{ marginTop: 2 }} />
               <div>
-                <p className="text-sm text-text-secondary">{md.address}</p>
-                <p className="font-medium">
+                <p className="sc-helper" style={{ fontSize: 12 }}>{md.address}</p>
+                <p style={{ fontWeight: 600, color: 'var(--ink)', margin: 0 }}>
                   {device.installationAddress.street}<br />
                   {device.installationAddress.city}, {device.installationAddress.state}
                 </p>
@@ -179,11 +207,19 @@ export default function DeviceDetailPage() {
             </div>
           </div>
 
-          {/* Link to original order */}
-          <div className="mt-4 pt-4 border-t border-border">
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--hairline)' }}>
             <button
               onClick={() => router.push(`/admin/orders/${device.orderId}`)}
-              className="text-sm text-primary hover:underline"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: 0,
+                color: 'var(--brand)',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                textDecoration: 'underline',
+              }}
             >
               {md.viewOriginalOrder}
             </button>
@@ -191,86 +227,96 @@ export default function DeviceDetailPage() {
         </div>
       </div>
 
-      {/* Maintenance Schedules */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold">{md.maintenanceSchedules}</h2>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <h2 className="sc-h2">{md.maintenanceSchedules}</h2>
 
         {schedules.map((schedule) => {
           const status = getDueStatus(schedule);
-          const statusColor = status === 'overdue' ? 'border-error' : status === 'soon' ? 'border-warning' : 'border-border';
+          const stat = STATUS_STYLES[status];
 
           return (
-            <div key={schedule.id} className={`apple-card border-l-4 ${statusColor}`}>
-              <div className="flex items-start justify-between mb-4">
+            <div
+              key={schedule.id}
+              className="sc-card-static"
+              style={{ borderLeft: `4px solid ${stat.border}` }}
+            >
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
                 <div>
-                  <h3 className="font-semibold text-lg">
+                  <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--ink)', margin: '0 0 4px' }}>
                     {schedule.type === 'ezer_maintenance' ? md.ezerMaintenance : schedule.filterName || md.filterReplacement}
                   </h3>
-                  <p className="text-sm text-text-secondary">
+                  <p className="sc-helper" style={{ margin: 0 }}>
                     {md.everyDays.replace('{count}', String(schedule.intervalDays))}
                   </p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  status === 'overdue' ? 'bg-error/20 text-error' :
-                  status === 'soon' ? 'bg-warning/20 text-warning' :
-                  'bg-success/20 text-success'
-                }`}>
+                <span
+                  style={{
+                    padding: '4px 12px',
+                    borderRadius: 'var(--radius-full)',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    background: stat.bg,
+                    color: stat.color,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
                   {status === 'overdue' ? md.overdueBadge : status === 'soon' ? md.dueSoon : md.ok}
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 16 }}>
                 <div>
-                  <p className="text-text-tertiary">{md.nextDue}</p>
-                  <p className={`font-medium ${status === 'overdue' ? 'text-error' : ''}`}>
+                  <p className="sc-helper" style={{ fontSize: 12 }}>{md.nextDue}</p>
+                  <p style={{ fontWeight: 600, color: status === 'overdue' ? '#ef4444' : 'var(--ink)', margin: 0 }}>
                     {formatDate(schedule.nextDueDate, 'long')}
                   </p>
                 </div>
                 <div>
-                  <p className="text-text-tertiary">{md.lastCompleted}</p>
-                  <p className="font-medium">
+                  <p className="sc-helper" style={{ fontSize: 12 }}>{md.lastCompleted}</p>
+                  <p style={{ fontWeight: 600, color: 'var(--ink)', margin: 0 }}>
                     {schedule.lastCompletedAt ? formatDate(schedule.lastCompletedAt, 'long') : md.never}
                   </p>
                 </div>
               </div>
 
-              {/* Completion History */}
               {schedule.completionHistory.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-sm text-text-tertiary mb-2">{md.history.replace('{count}', String(schedule.completionHistory.length))}</p>
-                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                <div style={{ marginBottom: 16 }}>
+                  <p className="sc-helper" style={{ marginBottom: 8 }}>
+                    {md.history.replace('{count}', String(schedule.completionHistory.length))}
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 128, overflowY: 'auto' }}>
                     {schedule.completionHistory.slice().reverse().map((entry, i) => (
-                      <div key={i} className="flex items-center gap-2 text-sm text-text-secondary">
-                        <CheckCircle className="w-3.5 h-3.5 text-success flex-shrink-0" />
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--soft)' }}>
+                        <CheckCircle size={14} color="var(--brand)" style={{ flexShrink: 0 }} />
                         <span>{formatDate(entry.completedAt, 'short')}</span>
-                        {entry.notes && <span className="text-text-tertiary">— {entry.notes}</span>}
+                        {entry.notes && <span style={{ color: 'var(--soft)' }}>— {entry.notes}</span>}
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Mark Complete Action */}
-              <div className="pt-4 border-t border-border">
-                <div className="flex items-end gap-3">
-                  <div className="flex-1">
+              <div style={{ paddingTop: 16, borderTop: '1px solid var(--hairline)' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1, minWidth: 200 }}>
                     <input
                       type="text"
                       placeholder={md.notesOptional}
                       value={completionNotes[schedule.id] || ''}
                       onChange={(e) => setCompletionNotes((prev) => ({ ...prev, [schedule.id]: e.target.value }))}
-                      className="w-full px-4 py-2 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all text-sm"
+                      className="sc-input"
                     />
                   </div>
                   <button
                     onClick={() => handleCompleteMaintenance(schedule.id)}
                     disabled={completing === schedule.id}
-                    className="flex items-center gap-2 px-4 py-2 bg-success text-white font-medium rounded-apple hover:bg-success/90 disabled:opacity-50 transition-all text-sm"
+                    className="sc-cta"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
                   >
                     {completing === schedule.id ? (
-                      <Clock className="w-4 h-4 animate-spin" />
+                      <Clock size={16} style={{ animation: 'spin 1s linear infinite' }} />
                     ) : (
-                      <CheckCircle className="w-4 h-4" />
+                      <CheckCircle size={16} />
                     )}
                     {md.markComplete}
                   </button>
@@ -281,76 +327,83 @@ export default function DeviceDetailPage() {
         })}
       </div>
 
-      {/* Maintenance Visit History */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <ClipboardCheck className="w-6 h-6" />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <h2 className="sc-h2" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <ClipboardCheck size={22} />
           {md.visitsHeading}
         </h2>
 
         {visits.length === 0 ? (
-          <div className="apple-card text-center py-8">
-            <p className="text-text-secondary">{md.noVisits}</p>
+          <div className="sc-empty">
+            <p className="sc-helper">{md.noVisits}</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {visits.map((visit) => (
-              <div key={visit.id} className="apple-card">
-                <div className="flex items-start justify-between mb-3">
+              <div key={visit.id} className="sc-card-static">
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
                   <div>
-                    <p className="font-semibold">{visit.technicianName}</p>
-                    <p className="text-sm text-text-secondary">{formatDate(visit.createdAt, 'long')}</p>
+                    <p style={{ fontWeight: 600, color: 'var(--ink)', margin: 0 }}>{visit.technicianName}</p>
+                    <p className="sc-helper" style={{ margin: 0 }}>{formatDate(visit.createdAt, 'long')}</p>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2 mb-3">
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
                   {visit.checks.installationOk && (
-                    <span className="flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
-                      <Wrench className="w-3 h-3" /> {md.checkInstallationOk}
+                    <span style={checkPillStyle('brand')}>
+                      <Wrench size={12} /> {md.checkInstallationOk}
                     </span>
                   )}
                   {visit.checks.operationOk && (
-                    <span className="flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
-                      <CheckCircle className="w-3 h-3" /> {md.checkOperationOk}
+                    <span style={checkPillStyle('brand')}>
+                      <CheckCircle size={12} /> {md.checkOperationOk}
                     </span>
                   )}
                   {visit.checks.waterPressureOk && (
-                    <span className="flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
-                      <Gauge className="w-3 h-3" /> {md.checkWaterPressureOk}
+                    <span style={checkPillStyle('brand')}>
+                      <Gauge size={12} /> {md.checkWaterPressureOk}
                     </span>
                   )}
                   {visit.checks.sedimentFilterReplaced && (
-                    <span className="flex items-center gap-1 px-2.5 py-1 bg-warning/10 text-warning rounded-full text-xs font-medium">
-                      <Droplets className="w-3 h-3" /> {md.checkSedimentFilterReplaced}
+                    <span style={checkPillStyle('warn')}>
+                      <Droplets size={12} /> {md.checkSedimentFilterReplaced}
                     </span>
                   )}
                   {visit.checks.carbonFilterReplaced && (
-                    <span className="flex items-center gap-1 px-2.5 py-1 bg-warning/10 text-warning rounded-full text-xs font-medium">
-                      <FilterIcon className="w-3 h-3" /> {md.checkCarbonFilterReplaced}
+                    <span style={checkPillStyle('warn')}>
+                      <FilterIcon size={12} /> {md.checkCarbonFilterReplaced}
                     </span>
                   )}
                 </div>
                 {(visit.beforePhotoUrl || visit.afterPhotoUrl) && (
-                  <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8, marginBottom: 12 }}>
                     {visit.beforePhotoUrl && (
                       <div>
-                        <p className="text-xs text-text-tertiary mb-1">{md.photoBefore}</p>
+                        <p className="sc-helper" style={{ fontSize: 11, marginBottom: 4 }}>{md.photoBefore}</p>
                         <a href={visit.beforePhotoUrl} target="_blank" rel="noopener noreferrer">
-                          <img src={visit.beforePhotoUrl} alt={md.photoBefore} className="w-full h-32 object-cover rounded-apple border border-border" />
+                          <img
+                            src={visit.beforePhotoUrl}
+                            alt={md.photoBefore}
+                            style={{ width: '100%', height: 128, objectFit: 'cover', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)' }}
+                          />
                         </a>
                       </div>
                     )}
                     {visit.afterPhotoUrl && (
                       <div>
-                        <p className="text-xs text-text-tertiary mb-1">{md.photoAfter}</p>
+                        <p className="sc-helper" style={{ fontSize: 11, marginBottom: 4 }}>{md.photoAfter}</p>
                         <a href={visit.afterPhotoUrl} target="_blank" rel="noopener noreferrer">
-                          <img src={visit.afterPhotoUrl} alt={md.photoAfter} className="w-full h-32 object-cover rounded-apple border border-border" />
+                          <img
+                            src={visit.afterPhotoUrl}
+                            alt={md.photoAfter}
+                            style={{ width: '100%', height: 128, objectFit: 'cover', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)' }}
+                          />
                         </a>
                       </div>
                     )}
                   </div>
                 )}
                 {visit.notes && (
-                  <p className="text-sm text-text-secondary border-t border-border pt-2">{visit.notes}</p>
+                  <p className="sc-helper" style={{ borderTop: '1px solid var(--hairline)', paddingTop: 8, margin: 0 }}>{visit.notes}</p>
                 )}
               </div>
             ))}

@@ -1,19 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { createSubContractor } from '@/lib/services/subContractorService';
 import toast from 'react-hot-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
 
 export default function NewSubContractorPage() {
   const router = useRouter();
+  const { userData } = useAuth();
   const { t } = useTranslation();
   const scn = t.admin.subContractorNew;
   const [loading, setLoading] = useState(false);
 
-  // Form state
+  useEffect(() => {
+    if (userData && userData.role !== 'admin') {
+      router.replace('/admin');
+    }
+  }, [userData, router]);
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -22,8 +29,7 @@ export default function NewSubContractorPage() {
   const [taxId, setTaxId] = useState('');
   const [commission, setCommission] = useState('20');
   const [active, setActive] = useState(true);
-  
-  // Address
+
   const [street, setStreet] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
@@ -33,7 +39,6 @@ export default function NewSubContractorPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
     if (!name.trim() || !email.trim() || !phone.trim()) {
       toast.error(scn.validationRequired);
       return;
@@ -70,106 +75,119 @@ export default function NewSubContractorPage() {
     }
   };
 
+  if (userData && userData.role !== 'admin') return null;
+
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center gap-4">
+    <div className="sc" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <button
           onClick={() => router.back()}
-          className="p-2 hover:bg-surface-elevated rounded-apple transition-colors"
+          style={{
+            padding: 8,
+            borderRadius: 'var(--radius-md)',
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--ink)',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'background 0.15s ease',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">{scn.title}</h1>
-          <p className="text-text-secondary mt-1">{scn.subtitle}</p>
+          <h1 className="sc-h1" style={{ margin: 0 }}>{scn.title}</h1>
+          <p className="sc-helper" style={{ margin: '4px 0 0' }}>{scn.subtitle}</p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Information */}
-        <div className="apple-card">
-          <h2 className="text-2xl font-semibold mb-6">{scn.basicInfo}</h2>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div className="sc-card-static">
+          <h2 className="sc-h2" style={{ margin: 0, marginBottom: 24, fontSize: 24 }}>{scn.basicInfo}</h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24 }}>
             <div>
-              <label className="block text-sm font-medium mb-2">
-                {scn.businessName} <span className="text-error">*</span>
+              <label className="sc-label">
+                {scn.businessName} <span style={{ color: '#ef4444' }}>*</span>
               </label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={scn.businessNamePlaceholder}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-input"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">
-                {scn.email} <span className="text-error">*</span>
+              <label className="sc-label">
+                {scn.email} <span style={{ color: '#ef4444' }}>*</span>
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={scn.emailPlaceholder}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-input"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">
-                {scn.phone} <span className="text-error">*</span>
+              <label className="sc-label">
+                {scn.phone} <span style={{ color: '#ef4444' }}>*</span>
               </label>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder={scn.phonePlaceholder}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-input"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">{scn.whatsapp}</label>
+              <label className="sc-label">{scn.whatsapp}</label>
               <input
                 type="tel"
                 value={whatsapp}
                 onChange={(e) => setWhatsapp(e.target.value)}
                 placeholder={scn.phonePlaceholder}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-input"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">{scn.businessLicense}</label>
+              <label className="sc-label">{scn.businessLicense}</label>
               <input
                 type="text"
                 value={businessLicense}
                 onChange={(e) => setBusinessLicense(e.target.value)}
                 placeholder={scn.licensePlaceholder}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-input"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">{scn.taxId}</label>
+              <label className="sc-label">{scn.taxId}</label>
               <input
                 type="text"
                 value={taxId}
                 onChange={(e) => setTaxId(e.target.value)}
                 placeholder={scn.taxIdPlaceholder}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-input"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">
-                {scn.commissionRate} <span className="text-error">*</span>
+              <label className="sc-label">
+                {scn.commissionRate} <span style={{ color: '#ef4444' }}>*</span>
               </label>
               <input
                 type="number"
@@ -177,103 +195,102 @@ export default function NewSubContractorPage() {
                 value={commission}
                 onChange={(e) => setCommission(e.target.value)}
                 placeholder="20"
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-input"
                 required
               />
-              <p className="text-xs text-text-tertiary mt-1">
+              <p className="sc-helper" style={{ margin: '4px 0 0', fontSize: 12 }}>
                 {scn.commissionHelp}
               </p>
             </div>
 
             <div>
-              <label className="flex items-center gap-3 cursor-pointer mt-8">
+              <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', marginTop: 32 }}>
                 <input
                   type="checkbox"
                   checked={active}
                   onChange={(e) => setActive(e.target.checked)}
-                  className="w-5 h-5 rounded accent-primary"
+                  style={{ width: 20, height: 20, accentColor: 'var(--brand)' }}
                 />
-                <span className="text-sm font-medium">{scn.active}</span>
+                <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink)' }}>{scn.active}</span>
               </label>
             </div>
           </div>
         </div>
 
-        {/* Address Information */}
-        <div className="apple-card">
-          <h2 className="text-2xl font-semibold mb-6">{scn.addressInfo}</h2>
+        <div className="sc-card-static">
+          <h2 className="sc-h2" style={{ margin: 0, marginBottom: 24, fontSize: 24 }}>{scn.addressInfo}</h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-2">{scn.streetAddress}</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24 }}>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label className="sc-label">{scn.streetAddress}</label>
               <input
                 type="text"
                 value={street}
                 onChange={(e) => setStreet(e.target.value)}
                 placeholder={scn.streetPlaceholder}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-input"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">{scn.city}</label>
+              <label className="sc-label">{scn.city}</label>
               <input
                 type="text"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 placeholder={scn.city}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-input"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">{scn.state}</label>
+              <label className="sc-label">{scn.state}</label>
               <input
                 type="text"
                 value={state}
                 onChange={(e) => setState(e.target.value)}
                 placeholder={scn.state}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-input"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">{scn.postalCode}</label>
+              <label className="sc-label">{scn.postalCode}</label>
               <input
                 type="text"
                 value={postalCode}
                 onChange={(e) => setPostalCode(e.target.value)}
                 placeholder="12345"
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-input"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">{scn.country}</label>
+              <label className="sc-label">{scn.country}</label>
               <input
                 type="text"
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
                 placeholder={scn.country}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-input"
               />
             </div>
           </div>
         </div>
 
-        {/* Submit Buttons */}
-        <div className="flex gap-4">
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 px-8 py-4 bg-success hover:bg-success/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
+            className="sc-cta"
+            style={{ flex: 1, minWidth: 200 }}
           >
             {loading ? scn.creatingSubContractor : scn.createSubContractor}
           </button>
           <button
             type="button"
             onClick={() => router.back()}
-            className="px-8 py-4 bg-surface hover:bg-surface-elevated text-white font-semibold rounded-apple transition-all border border-border"
+            className="sc-cta-ghost"
           >
             {t.common.cancel}
           </button>
@@ -282,4 +299,3 @@ export default function NewSubContractorPage() {
     </div>
   );
 }
-

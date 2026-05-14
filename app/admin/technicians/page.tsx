@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  Users, UserCheck, UserX, UserMinus, Search, Filter,
+import {
+  Users, UserCheck, UserMinus, Search,
   TrendingUp, Award, DollarSign, Calendar
 } from 'lucide-react';
-import { 
+import {
   getAllTechnicians,
   getTechnicianStatsSummary,
   TechnicianWithStats
@@ -18,13 +18,47 @@ import {
 } from '@/lib/utils/formatters';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
+import { useAuth } from '@/contexts/AuthContext';
+import { DEFAULT_CURRENCY } from '@/lib/utils/constants';
 import toast from 'react-hot-toast';
 
 type TabType = 'all' | 'pending' | 'approved' | 'declined' | 'suspended';
 
+const STATUS_STYLES: Record<NonNullable<TechnicianStatus>, { color: string; bg: string }> = {
+  approved: { color: 'var(--brand)', bg: 'var(--brand-tint)' },
+  pending: { color: 'var(--warn)', bg: 'var(--warn-tint)' },
+  declined: { color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
+  suspended: { color: 'var(--soft)', bg: 'var(--off-paper)' },
+};
+
+const statTileStyle: React.CSSProperties = {
+  padding: 16,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
+};
+
+const tabBtnStyle = (active: boolean): React.CSSProperties => ({
+  padding: '12px 24px',
+  fontWeight: 600,
+  fontSize: 14,
+  background: 'transparent',
+  border: 'none',
+  borderBottom: `2px solid ${active ? 'var(--brand)' : 'transparent'}`,
+  color: active ? 'var(--brand)' : 'var(--soft)',
+  cursor: 'pointer',
+  whiteSpace: 'nowrap',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  transition: 'all 0.15s ease',
+});
+
 export default function TechniciansManagementPage() {
   const { t } = useTranslation();
   const { formatOptionalCurrency, formatOptionalDate } = useLocaleFormatters();
+  const { userData } = useAuth();
+  const isSubAdmin = userData?.role === 'sub-admin';
   const tc = t.admin.technicians;
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('all');
@@ -32,6 +66,7 @@ export default function TechniciansManagementPage() {
   const [filteredTechnicians, setFilteredTechnicians] = useState<TechnicianWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [stats, setStats] = useState({
     totalTechnicians: 0,
     pendingApplications: 0,
@@ -54,7 +89,7 @@ export default function TechniciansManagementPage() {
         getAllTechnicians(),
         getTechnicianStatsSummary(),
       ]);
-      
+
       setTechnicians(techList);
       setStats(statsSummary);
     } catch (error: unknown) {
@@ -68,12 +103,10 @@ export default function TechniciansManagementPage() {
   const filterTechnicians = () => {
     let filtered = [...technicians];
 
-    // Filter by tab
     if (activeTab !== 'all') {
       filtered = filtered.filter(tech => tech.technicianStatus === activeTab);
     }
 
-    // Filter by search term
     if (searchTerm) {
       const lowerSearch = searchTerm.toLowerCase();
       filtered = filtered.filter(tech =>
@@ -86,15 +119,17 @@ export default function TechniciansManagementPage() {
     setFilteredTechnicians(filtered);
   };
 
-  const getStatusColor = (status?: TechnicianStatus) => {
-    switch (status) {
-      case 'approved': return 'bg-success/10 text-success';
-      case 'pending': return 'bg-warning/10 text-warning';
-      case 'declined': return 'bg-error/10 text-error';
-      case 'suspended': return 'bg-text-tertiary/10 text-text-tertiary';
-      default: return 'bg-surface-elevated text-text-secondary';
+  const getStatusStyle = (status?: TechnicianStatus) => {
+    if (status && status in STATUS_STYLES) {
+      return STATUS_STYLES[status as NonNullable<TechnicianStatus>];
     }
+    return { color: 'var(--soft)', bg: 'var(--off-paper)' };
   };
+
+  const tabCounts = useMemo(() => ({
+    declined: technicians.filter((t) => t.technicianStatus === 'declined').length,
+    suspended: technicians.filter((t) => t.technicianStatus === 'suspended').length,
+  }), [technicians]);
 
   const getStatusLabel = (status?: TechnicianStatus) => {
     switch (status) {
@@ -108,223 +143,236 @@ export default function TechniciansManagementPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">{tc.loading}</p>
+      <div className="sc" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
+          <div className="sc-spinner" />
+          <p className="sc-helper">{tc.loading}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
+    <div className="sc" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
       <div>
-        <h1 className="text-4xl font-bold tracking-tight">{tc.title}</h1>
-        <p className="text-text-secondary mt-2">
-          {tc.subtitle}
+        <h1 className="sc-h1" style={{ margin: 0 }}>{tc.title}</h1>
+        <p className="sc-helper" style={{ marginTop: 8 }}>
+          {isSubAdmin ? tc.subtitleSubAdmin : tc.subtitle}
         </p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="apple-card">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-primary/10 rounded-apple flex items-center justify-center">
-              <Users className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{stats.totalTechnicians}</p>
-              <p className="text-sm text-text-secondary">{tc.total}</p>
-            </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+        <div className="sc-card-static" style={statTileStyle}>
+          <div style={{ width: 48, height: 48, background: 'var(--brand-tint)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Users size={24} color="var(--brand)" />
+          </div>
+          <div>
+            <p style={{ fontSize: 24, fontWeight: 700, margin: 0, color: 'var(--ink)' }}>{stats.totalTechnicians}</p>
+            <p className="sc-helper" style={{ margin: 0 }}>{tc.total}</p>
           </div>
         </div>
 
-        <div className="apple-card">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-warning/10 rounded-apple flex items-center justify-center">
-              <UserMinus className="w-6 h-6 text-warning" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{stats.pendingApplications}</p>
-              <p className="text-sm text-text-secondary">{tc.pending}</p>
-            </div>
+        <div className="sc-card-static" style={statTileStyle}>
+          <div style={{ width: 48, height: 48, background: 'var(--warn-tint)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <UserMinus size={24} color="var(--warn)" />
+          </div>
+          <div>
+            <p style={{ fontSize: 24, fontWeight: 700, margin: 0, color: 'var(--ink)' }}>{stats.pendingApplications}</p>
+            <p className="sc-helper" style={{ margin: 0 }}>{tc.pending}</p>
           </div>
         </div>
 
-        <div className="apple-card">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-success/10 rounded-apple flex items-center justify-center">
-              <UserCheck className="w-6 h-6 text-success" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{stats.approvedTechnicians}</p>
-              <p className="text-sm text-text-secondary">{tc.approved}</p>
-            </div>
+        <div className="sc-card-static" style={statTileStyle}>
+          <div style={{ width: 48, height: 48, background: 'var(--brand-tint)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <UserCheck size={24} color="var(--brand)" />
+          </div>
+          <div>
+            <p style={{ fontSize: 24, fontWeight: 700, margin: 0, color: 'var(--ink)' }}>{stats.approvedTechnicians}</p>
+            <p className="sc-helper" style={{ margin: 0 }}>{tc.approved}</p>
           </div>
         </div>
 
-        <div className="apple-card">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-primary/10 rounded-apple flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{stats.activeTechnicians}</p>
-              <p className="text-sm text-text-secondary">{tc.active}</p>
-            </div>
+        <div className="sc-card-static" style={statTileStyle}>
+          <div style={{ width: 48, height: 48, background: 'var(--brand-tint)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <TrendingUp size={24} color="var(--brand)" />
+          </div>
+          <div>
+            <p style={{ fontSize: 24, fontWeight: 700, margin: 0, color: 'var(--ink)' }}>{stats.activeTechnicians}</p>
+            <p className="sc-helper" style={{ margin: 0 }}>{tc.active}</p>
           </div>
         </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: 240 }}>
+          <Search size={20} color="var(--soft)" style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
           <input
             type="text"
             placeholder={tc.searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+            className="sc-input"
+            style={{ paddingLeft: 44 }}
           />
         </div>
-        <button
-          onClick={loadData}
-          className="px-6 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all"
-        >
-          {t.common.refresh}
-        </button>
+        <button onClick={loadData} className="sc-cta">{t.common.refresh}</button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-border overflow-x-auto">
+      <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--hairline)', overflowX: 'auto' }}>
         {[
           { id: 'all', label: tc.all, count: technicians.length },
           { id: 'pending', label: tc.pending, count: stats.pendingApplications },
           { id: 'approved', label: tc.approved, count: stats.approvedTechnicians },
-          { id: 'declined', label: tc.declined, count: technicians.filter(tech => tech.technicianStatus === 'declined').length },
-          { id: 'suspended', label: tc.suspended, count: technicians.filter(tech => tech.technicianStatus === 'suspended').length },
+          { id: 'declined', label: tc.declined, count: tabCounts.declined },
+          { id: 'suspended', label: tc.suspended, count: tabCounts.suspended },
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as TabType)}
-            className={`px-6 py-3 font-semibold border-b-2 transition-all whitespace-nowrap ${
-              activeTab === tab.id
-                ? 'border-primary text-primary'
-                : 'border-transparent text-text-secondary hover:text-text-primary'
-            }`}
+            style={tabBtnStyle(activeTab === tab.id)}
           >
             {tab.label}
-            <span className="ml-2 px-2 py-0.5 bg-surface-elevated text-xs rounded-full">
+            <span style={{
+              padding: '2px 8px',
+              background: 'var(--off-paper)',
+              fontSize: 11,
+              borderRadius: 'var(--radius-full)',
+              color: 'var(--soft)',
+            }}>
               {tab.count}
             </span>
           </button>
         ))}
       </div>
 
-      {/* Technicians List */}
       {filteredTechnicians.length === 0 ? (
-        <div className="apple-card text-center py-12">
-          <Users className="w-16 h-16 text-text-tertiary mx-auto mb-4" />
-          <h3 className="text-xl font-semibold mb-2">{tc.noTechnicians}</h3>
-          <p className="text-text-secondary">
-            {searchTerm
-              ? tc.tryAdjusting
-              : tc.noMatch}
+        <div className="sc-card-static" style={{ textAlign: 'center', padding: 48 }}>
+          <Users size={64} color="var(--soft)" style={{ margin: '0 auto 16px' }} />
+          <h3 className="sc-h2" style={{ marginBottom: 8 }}>{tc.noTechnicians}</h3>
+          <p className="sc-helper" style={{ margin: 0 }}>
+            {searchTerm ? tc.tryAdjusting : tc.noMatch}
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {filteredTechnicians.map((technician) => (
-            <div
-              key={technician.id}
-              className="apple-card hover:shadow-apple-lg transition-all cursor-pointer"
-              onClick={() => router.push(`/admin/technicians/${technician.id}`)}
-            >
-              <div className="flex flex-col md:flex-row gap-4">
-                {/* Profile Photo */}
-                <div className="w-20 h-20 bg-surface-elevated rounded-apple overflow-hidden flex-shrink-0">
-                  {technician.photoURL ? (
-                    <img
-                      src={technician.photoURL}
-                      alt={technician.displayName}
-                      className="w-full h-full object-cover object-center"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-primary/10">
-                      <Users className="w-10 h-10 text-primary" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-semibold text-lg">{formatOptionalString(technician.displayName)}</h3>
-                      <p className="text-sm text-text-secondary">{formatOptionalString(technician.email)}</p>
-                    </div>
-                    <div className={`px-3 py-1 rounded-apple text-sm font-semibold ${getStatusColor(technician.technicianStatus)}`}>
-                      {getStatusLabel(technician.technicianStatus)}
-                    </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {filteredTechnicians.map((technician) => {
+            const statusStyle = getStatusStyle(technician.technicianStatus);
+            return (
+              <div
+                key={technician.id}
+                className="sc-card"
+                onClick={() => router.push(`/admin/technicians/${technician.id}`)}
+                style={{ cursor: 'pointer' }}
+              >
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                  <div style={{
+                    width: 80, height: 80,
+                    background: 'var(--off-paper)',
+                    borderRadius: 'var(--radius-md)',
+                    overflow: 'hidden',
+                    flexShrink: 0,
+                  }}>
+                    {technician.photoURL && !imageErrors.has(technician.id) ? (
+                      <img
+                        src={technician.photoURL}
+                        alt={technician.displayName}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
+                        onError={() =>
+                          setImageErrors((prev) => new Set(prev).add(technician.id))
+                        }
+                      />
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--brand-tint)' }}>
+                        <Users size={40} color="var(--brand)" />
+                      </div>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="w-4 h-4 text-text-tertiary" />
-                      <span className="text-text-secondary">
-                        {tc.applied} {formatOptionalDate(technician.applicationDate, 'short')}
-                      </span>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                      <div style={{ minWidth: 0 }}>
+                        <h3 style={{ fontSize: 18, fontWeight: 600, margin: 0, color: 'var(--ink)' }}>{formatOptionalString(technician.displayName)}</h3>
+                        <p className="sc-helper" style={{ margin: 0 }}>{formatOptionalString(technician.email)}</p>
+                      </div>
+                      <div style={{
+                        padding: '4px 12px',
+                        borderRadius: 'var(--radius-full)',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: statusStyle.color,
+                        background: statusStyle.bg,
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {getStatusLabel(technician.technicianStatus)}
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-2 text-sm">
-                      <Award className="w-4 h-4 text-warning" />
-                      <span className="text-text-secondary">
-                        {formatOptionalNumber(technician.completedJobs)} {tc.jobs} • {technician.averageRating ? `${technician.averageRating.toFixed(1)}★` : tc.naLabel}
-                      </span>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                        <Calendar size={16} color="var(--soft)" />
+                        <span style={{ color: 'var(--soft)' }}>
+                          {tc.applied} {formatOptionalDate(technician.applicationDate, 'short')}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                        <Award size={16} color="var(--warn)" />
+                        <span style={{ color: 'var(--soft)' }}>
+                          {formatOptionalNumber(technician.completedJobs)} {tc.jobs} • {technician.averageRating ? `${technician.averageRating.toFixed(1)}★` : tc.naLabel}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                        <DollarSign size={16} color="var(--brand)" />
+                        <span style={{ color: 'var(--soft)' }}>
+                          {formatOptionalCurrency(technician.totalEarnings, DEFAULT_CURRENCY)}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                        <TrendingUp size={16} color="var(--brand)" />
+                        <span style={{ color: 'var(--soft)' }}>
+                          {technician.active ? tc.activeLabel : tc.inactiveLabel}
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-2 text-sm">
-                      <DollarSign className="w-4 h-4 text-success" />
-                      <span className="text-text-secondary">
-                        {formatOptionalCurrency(technician.totalEarnings, 'BRL')}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-sm">
-                      <TrendingUp className="w-4 h-4 text-primary" />
-                      <span className="text-text-secondary">
-                        {technician.active ? tc.activeLabel : tc.inactiveLabel}
-                      </span>
-                    </div>
+                    {technician.serviceAreas && technician.serviceAreas.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {technician.serviceAreas.slice(0, 3).map((area, index) => (
+                          <span
+                            key={index}
+                            style={{
+                              padding: '4px 8px',
+                              background: 'var(--off-paper)',
+                              fontSize: 12,
+                              borderRadius: 'var(--radius-sm)',
+                              color: 'var(--soft)',
+                            }}
+                          >
+                            {area}
+                          </span>
+                        ))}
+                        {technician.serviceAreas.length > 3 && (
+                          <span style={{
+                            padding: '4px 8px',
+                            background: 'var(--off-paper)',
+                            fontSize: 12,
+                            borderRadius: 'var(--radius-sm)',
+                            color: 'var(--soft)',
+                          }}>
+                            +{technician.serviceAreas.length - 3} {tc.moreSuffix}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
-
-                  {technician.serviceAreas && technician.serviceAreas.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {technician.serviceAreas.slice(0, 3).map((area, index) => (
-                        <span
-                          key={index}
-                          className="px-2 py-1 bg-surface-elevated text-xs rounded-apple"
-                        >
-                          {area}
-                        </span>
-                      ))}
-                      {technician.serviceAreas.length > 3 && (
-                        <span className="px-2 py-1 bg-surface-elevated text-xs rounded-apple">
-                          +{technician.serviceAreas.length - 3} {tc.moreSuffix}
-                        </span>
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
-

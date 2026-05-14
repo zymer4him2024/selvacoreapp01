@@ -19,6 +19,19 @@ interface Props {
   onRatingChange: (rating: number | null) => void;
 }
 
+const tabBtnStyle = (active: boolean): React.CSSProperties => ({
+  padding: '8px 16px',
+  borderRadius: 'var(--radius-sm)',
+  fontSize: 13,
+  fontWeight: 500,
+  border: 'none',
+  background: active ? 'var(--paper)' : 'transparent',
+  color: active ? 'var(--ink)' : 'var(--soft)',
+  boxShadow: active ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
+  cursor: 'pointer',
+  transition: 'all 0.15s ease',
+});
+
 export function ReviewFiltersBar(props: Props) {
   const { tab, technicianId, rating, technicianOptions, onTabChange, onTechnicianChange, onRatingChange } = props;
   const { t } = useTranslation();
@@ -31,29 +44,33 @@ export function ReviewFiltersBar(props: Props) {
   ];
 
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-      <div className="flex gap-1 bg-surface-elevated rounded-apple p-1 w-fit">
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+      <div style={{
+        display: 'flex',
+        gap: 4,
+        background: 'var(--off-paper)',
+        borderRadius: 'var(--radius-md)',
+        padding: 4,
+        width: 'fit-content',
+      }}>
         {tabs.map((tb) => (
           <button
             key={tb.key}
             onClick={() => onTabChange(tb.key)}
-            className={`px-4 py-2 rounded-apple text-sm font-medium transition-colors ${
-              tab === tb.key
-                ? 'bg-surface shadow-sm text-text-primary'
-                : 'text-text-secondary hover:text-text-primary'
-            }`}
+            style={tabBtnStyle(tab === tb.key)}
           >
             {tb.label}
           </button>
         ))}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
         <select
           value={technicianId}
           onChange={(e) => onTechnicianChange(e.target.value)}
-          className="px-3 py-2 rounded-apple border border-border bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+          className="sc-select"
           aria-label={r.filterTechnicianLabel}
+          style={{ minWidth: 200 }}
         >
           <option value="">{r.filterAllTechnicians}</option>
           {technicianOptions.map((o) => (
@@ -63,13 +80,12 @@ export function ReviewFiltersBar(props: Props) {
           ))}
         </select>
 
-        {/* Rating chip — only visible on Active tab. Hidden (not greyed) on other tabs. */}
         {tab === 'active' && (
-          <div className="flex items-center gap-1">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <select
               value={rating ?? ''}
               onChange={(e) => onRatingChange(e.target.value ? Number(e.target.value) : null)}
-              className="px-3 py-2 rounded-apple border border-border bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="sc-select"
               aria-label={r.filterRatingLabel}
             >
               <option value="">{r.filterAllRatings}</option>
@@ -82,10 +98,22 @@ export function ReviewFiltersBar(props: Props) {
             {rating !== null && (
               <button
                 onClick={() => onRatingChange(null)}
-                className="p-1.5 text-text-tertiary hover:text-text-primary rounded-apple"
                 aria-label={r.filterClearRating}
+                style={{
+                  padding: 6,
+                  background: 'transparent',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  color: 'var(--soft)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; e.currentTarget.style.color = 'var(--ink)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--soft)'; }}
               >
-                <X className="w-4 h-4" />
+                <X size={16} />
               </button>
             )}
           </div>

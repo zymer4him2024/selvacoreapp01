@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Plus, Search, Edit, Trash2, Eye, Package, X, Clock, Tag } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Package, X, Clock, Tag } from 'lucide-react';
 import { Product } from '@/types';
 import { getProductsPaginated, deleteProduct, updateProduct } from '@/lib/services/productService';
 import { SUPPORTED_LANGUAGES } from '@/lib/utils/constants';
@@ -13,6 +13,13 @@ import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import { useAuth } from '@/contexts/AuthContext';
 
 const PAGE_SIZE = 20;
+
+const detailTileStyle: React.CSSProperties = {
+  padding: 12,
+  background: 'var(--off-paper)',
+  borderRadius: 'var(--radius-md)',
+  border: '1px solid var(--hairline)',
+};
 
 export default function ProductsPage() {
   const { t } = useTranslation();
@@ -30,6 +37,7 @@ export default function ProductsPage() {
 
   useEffect(() => {
     loadProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadProducts = async (reset: boolean = true) => {
@@ -66,7 +74,7 @@ export default function ProductsPage() {
     }
   };
 
-  const handleToggleActive = async (id: string, currentActive: boolean, name: string) => {
+  const handleToggleActive = async (id: string, currentActive: boolean) => {
     try {
       await updateProduct(id, { active: !currentActive });
       toast.success(!currentActive ? p.productActivated : p.productDeactivated);
@@ -85,29 +93,27 @@ export default function ProductsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">{p.loading}</p>
+      <div className="sc" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="sc-spinner" style={{ margin: '0 auto' }} />
+          <p className="sc-helper" style={{ margin: 0 }}>{p.loading}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="sc" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <div>
-          <h1 className="text-4xl font-bold tracking-tight mb-2">{p.title}</h1>
-          <p className="text-text-secondary">
-            {isSubAdmin ? p.subtitleSubAdmin : p.subtitle}
-          </p>
+          <h1 className="sc-h1" style={{ margin: 0, marginBottom: 8 }}>{p.title}</h1>
+          <p className="sc-helper" style={{ margin: 0 }}>{isSubAdmin ? p.subtitleSubAdmin : p.subtitle}</p>
         </div>
         {!isSubAdmin && (
           <Link
             href="/admin/products/new"
-            className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all hover:scale-105 shadow-apple"
+            className="sc-cta"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
           >
             <Plus className="w-5 h-5" />
             {p.addProduct}
@@ -115,32 +121,42 @@ export default function ProductsPage() {
         )}
       </div>
 
-      {/* Search */}
-      <div className="apple-card">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
+      <div className="sc-card-static">
+        <div style={{ position: 'relative' }}>
+          <Search
+            className="w-5 h-5"
+            style={{
+              position: 'absolute',
+              left: 16,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--soft)',
+              pointerEvents: 'none',
+            }}
+          />
           <input
             type="text"
             placeholder={p.searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all text-text-primary placeholder:text-text-tertiary"
+            className="sc-input"
+            style={{ paddingLeft: 44, width: '100%' }}
           />
         </div>
       </div>
 
-      {/* Products Grid */}
       {filteredProducts.length === 0 ? (
-        <div className="apple-card text-center py-16">
-          <Package className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
-          <h3 className="text-xl font-semibold mb-2">{p.noProducts}</h3>
-          <p className="text-text-secondary mb-6">
+        <div className="sc-card-static" style={{ textAlign: 'center', padding: '64px 24px' }}>
+          <Package className="w-16 h-16" style={{ margin: '0 auto 16px', color: 'var(--soft)' }} />
+          <h3 style={{ fontSize: 20, fontWeight: 600, marginBottom: 8, color: 'var(--ink)' }}>{p.noProducts}</h3>
+          <p className="sc-helper" style={{ marginBottom: 24 }}>
             {searchTerm ? p.tryDifferent : (isSubAdmin ? '' : p.getStarted)}
           </p>
           {!searchTerm && !isSubAdmin && (
             <Link
               href="/admin/products/new"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all"
+              className="sc-cta"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
             >
               <Plus className="w-5 h-5" />
               {p.addFirst}
@@ -148,94 +164,200 @@ export default function ProductsPage() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 24 }}>
           {filteredProducts.map((product) => (
             <div
               key={product.id}
-              className="apple-card group hover:scale-[1.02] transition-all cursor-pointer"
+              className="sc-card"
               onClick={() => setSelectedProduct(product)}
+              style={{ cursor: 'pointer' }}
             >
-              {/* Product Image */}
-              <div className="relative h-48 bg-surface-elevated rounded-apple mb-4 overflow-hidden">
+              <div
+                style={{
+                  position: 'relative',
+                  height: 192,
+                  background: 'var(--off-paper)',
+                  borderRadius: 'var(--radius-md)',
+                  marginBottom: 16,
+                  overflow: 'hidden',
+                }}
+              >
                 {product.images && product.images.length > 0 ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img
                     src={product.images[0]}
                     alt={product.name.en}
-                    className="w-full h-full object-cover object-center"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Package className="w-16 h-16 text-text-tertiary" />
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Package className="w-16 h-16" style={{ color: 'var(--soft)' }} />
                   </div>
                 )}
                 {product.featured && (
-                  <div className="absolute top-2 right-2 px-3 py-1 bg-warning text-black text-xs font-semibold rounded-full">
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      padding: '4px 12px',
+                      background: 'var(--warn)',
+                      color: '#000',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      borderRadius: 'var(--radius-full)',
+                    }}
+                  >
                     {p.featured}
                   </div>
                 )}
                 {!product.active && (
-                  <div className="absolute top-2 left-2 px-3 py-1 bg-error text-white text-xs font-semibold rounded-full">
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 8,
+                      left: 8,
+                      padding: '4px 12px',
+                      background: '#ef4444',
+                      color: '#fff',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      borderRadius: 'var(--radius-full)',
+                    }}
+                  >
                     {p.inactive}
                   </div>
                 )}
               </div>
 
-              {/* Product Info */}
-              <div className="space-y-3">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div>
-                  <h3 className="font-semibold text-lg mb-1 line-clamp-1">
+                  <h3
+                    style={{
+                      fontWeight: 600,
+                      fontSize: 18,
+                      marginBottom: 4,
+                      color: 'var(--ink)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 1,
+                      WebkitBoxOrient: 'vertical',
+                    }}
+                  >
                     {product.name.en}
                   </h3>
-                  <p className="text-sm text-text-secondary line-clamp-2">
+                  <p
+                    style={{
+                      fontSize: 14,
+                      color: 'var(--soft)',
+                      margin: 0,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                    }}
+                  >
                     {product.description.en}
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-text-tertiary">{product.brand}</span>
-                  <span className="px-2 py-1 bg-surface-elevated rounded text-xs">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 14 }}>
+                  <span style={{ color: 'var(--soft)' }}>{product.brand}</span>
+                  <span
+                    style={{
+                      padding: '4px 8px',
+                      background: 'var(--off-paper)',
+                      borderRadius: 'var(--radius-sm)',
+                      fontSize: 12,
+                      color: 'var(--ink)',
+                    }}
+                  >
                     {product.category}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-2xl font-bold text-primary">
-                      {formatCurrency(product.basePrice, product.currency)}
+                <div>
+                  <p style={{ fontSize: 24, fontWeight: 700, color: 'var(--brand)', margin: 0 }}>
+                    {formatCurrency(product.basePrice, product.currency)}
+                  </p>
+                  {product.variations && product.variations.length > 0 && (
+                    <p style={{ fontSize: 12, color: 'var(--soft)', margin: '4px 0 0' }}>
+                      {product.variations.length} {p.variations}
                     </p>
-                    {product.variations && product.variations.length > 0 && (
-                      <p className="text-xs text-text-tertiary">
-                        {product.variations.length} {p.variations}
-                      </p>
-                    )}
-                  </div>
+                  )}
                 </div>
 
-                {/* Actions (admin only) */}
                 {!isSubAdmin && (
-                  <div className="flex gap-2 pt-3 border-t border-border">
+                  <div style={{ display: 'flex', gap: 8, paddingTop: 12, borderTop: '1px solid var(--hairline)' }}>
                     <Link
                       href={`/admin/products/${product.id}`}
                       onClick={(e) => e.stopPropagation()}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-surface-elevated hover:bg-surface-secondary rounded-apple text-sm font-medium transition-all"
+                      style={{
+                        flex: 1,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        padding: '8px 16px',
+                        background: 'var(--off-paper)',
+                        borderRadius: 'var(--radius-md)',
+                        fontSize: 14,
+                        fontWeight: 500,
+                        color: 'var(--ink)',
+                        textDecoration: 'none',
+                        border: '1px solid var(--hairline)',
+                        transition: 'background 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--off-paper)'; }}
                     >
                       <Edit className="w-4 h-4" />
                       {p.editButton}
                     </Link>
                     <button
-                      onClick={(e) => { e.stopPropagation(); handleToggleActive(product.id, product.active, product.name.en); }}
-                      className={`flex items-center justify-center gap-2 px-4 py-2 rounded-apple text-sm font-medium transition-all ${
-                        product.active
-                          ? 'bg-warning/20 hover:bg-warning/30 text-warning'
-                          : 'bg-success/20 hover:bg-success/30 text-success'
-                      }`}
+                      onClick={(e) => { e.stopPropagation(); handleToggleActive(product.id, product.active); }}
                       title={product.active ? p.deactivateTitle : p.activateTitle}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '8px 16px',
+                        borderRadius: 'var(--radius-md)',
+                        fontSize: 14,
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        border: 'none',
+                        background: product.active ? 'var(--warn-tint)' : 'var(--brand-tint)',
+                        color: product.active ? 'var(--warn)' : 'var(--brand)',
+                        transition: 'opacity 0.15s ease',
+                      }}
                     >
                       {product.active ? p.hide : p.show}
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(product.id, product.name.en); }}
-                      className="flex items-center justify-center gap-2 px-4 py-2 bg-surface-elevated hover:bg-error/20 hover:text-error rounded-apple text-sm font-medium transition-all"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '8px 12px',
+                        background: 'var(--off-paper)',
+                        borderRadius: 'var(--radius-md)',
+                        border: '1px solid var(--hairline)',
+                        color: 'var(--soft)',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(239,68,68,0.15)';
+                        e.currentTarget.style.color = '#ef4444';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'var(--off-paper)';
+                        e.currentTarget.style.color = 'var(--soft)';
+                      }}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -247,165 +369,274 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* Load More */}
       {hasMore && (
-        <div className="text-center">
+        <div style={{ textAlign: 'center' }}>
           <button
             onClick={() => loadProducts(false)}
             disabled={loadingMore}
-            className="px-8 py-3 bg-surface-elevated hover:bg-surface-secondary text-text-primary font-medium rounded-apple transition-all disabled:opacity-50"
+            className="sc-cta-ghost"
+            style={{ opacity: loadingMore ? 0.5 : 1 }}
           >
             {loadingMore ? t.common.loading : t.common.loadMore}
           </button>
         </div>
       )}
 
-      {/* Summary */}
       {filteredProducts.length > 0 && (
-        <div className="text-center text-sm text-text-tertiary">
+        <div style={{ textAlign: 'center', fontSize: 14, color: 'var(--soft)' }}>
           {p.showing} {filteredProducts.length} {p.products}{hasMore ? ` ${p.moreAvailable}` : ''}
         </div>
       )}
 
-      {/* Product Detail Modal */}
       {selectedProduct && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedProduct(null)}>
-          <div className="bg-surface w-full max-w-3xl max-h-[90vh] rounded-apple shadow-apple-lg overflow-hidden animate-fade-in" onClick={(e) => e.stopPropagation()}>
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-border">
-              <h2 className="text-2xl font-bold line-clamp-1">{selectedProduct.name.en}</h2>
-              <button onClick={() => setSelectedProduct(null)} className="p-2 hover:bg-surface-elevated rounded-apple transition-all">
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 50,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
+          onClick={() => setSelectedProduct(null)}
+        >
+          <div
+            className="sc"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'var(--paper)',
+              width: '100%',
+              maxWidth: 768,
+              maxHeight: '90vh',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--hairline)',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: 24,
+                borderBottom: '1px solid var(--hairline)',
+                flexShrink: 0,
+              }}
+            >
+              <h2 className="sc-h2" style={{ margin: 0, fontSize: 24, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {selectedProduct.name.en}
+              </h2>
+              <button
+                onClick={() => setSelectedProduct(null)}
+                style={{
+                  padding: 8,
+                  background: 'transparent',
+                  border: 'none',
+                  borderRadius: 'var(--radius-md)',
+                  cursor: 'pointer',
+                  color: 'var(--ink)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background 0.15s ease',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="overflow-y-auto max-h-[calc(90vh-80px)] p-6 space-y-6">
-              {/* Images */}
+            <div style={{ overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
               {selectedProduct.images && selectedProduct.images.length > 0 && (
-                <div className="flex gap-3 overflow-x-auto pb-2">
+                <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8 }}>
                   {selectedProduct.images.map((img, idx) => (
-                    <img key={idx} src={img} alt={`${selectedProduct.name.en} ${idx + 1}`} className="h-48 w-auto rounded-apple object-cover border border-border flex-shrink-0" />
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      key={idx}
+                      src={img}
+                      alt={`${selectedProduct.name.en} ${idx + 1}`}
+                      style={{
+                        height: 192,
+                        width: 'auto',
+                        borderRadius: 'var(--radius-md)',
+                        objectFit: 'cover',
+                        border: '1px solid var(--hairline)',
+                        flexShrink: 0,
+                      }}
+                    />
                   ))}
                 </div>
               )}
 
-              {/* Status Badges */}
-              <div className="flex gap-2">
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${selectedProduct.active ? 'bg-success/20 text-success' : 'bg-error/20 text-error'}`}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <span
+                  style={{
+                    padding: '4px 12px',
+                    borderRadius: 'var(--radius-full)',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    background: selectedProduct.active ? 'var(--brand-tint)' : 'rgba(239,68,68,0.15)',
+                    color: selectedProduct.active ? 'var(--brand)' : '#ef4444',
+                  }}
+                >
                   {selectedProduct.active ? p.active : p.inactive}
                 </span>
                 {selectedProduct.featured && (
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-warning/20 text-warning">{p.featured}</span>
+                  <span
+                    style={{
+                      padding: '4px 12px',
+                      borderRadius: 'var(--radius-full)',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      background: 'var(--warn-tint)',
+                      color: 'var(--warn)',
+                    }}
+                  >
+                    {p.featured}
+                  </span>
                 )}
               </div>
 
-              {/* Name in All Languages */}
               <div>
-                <h3 className="text-sm font-semibold text-text-secondary mb-2">{p.modalProductName}</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--soft)', marginBottom: 8 }}>{p.modalProductName}</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 8 }}>
                   {SUPPORTED_LANGUAGES.map((lang) => (
-                    <div key={lang.code} className="p-3 bg-surface-elevated rounded-apple">
-                      <span className="text-xs text-text-tertiary">{lang.flag} {lang.name}</span>
-                      <p className="text-sm font-medium mt-1">{selectedProduct.name[lang.code] || '—'}</p>
+                    <div key={lang.code} style={detailTileStyle}>
+                      <span style={{ fontSize: 12, color: 'var(--soft)' }}>{lang.flag} {lang.name}</span>
+                      <p style={{ fontSize: 14, fontWeight: 500, marginTop: 4, color: 'var(--ink)' }}>{selectedProduct.name[lang.code] || '—'}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Description in All Languages */}
               <div>
-                <h3 className="text-sm font-semibold text-text-secondary mb-2">{p.modalDescription}</h3>
-                <div className="space-y-2">
+                <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--soft)', marginBottom: 8 }}>{p.modalDescription}</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {SUPPORTED_LANGUAGES.map((lang) => (
-                    <div key={lang.code} className="p-3 bg-surface-elevated rounded-apple">
-                      <span className="text-xs text-text-tertiary">{lang.flag} {lang.name}</span>
-                      <p className="text-sm mt-1">{selectedProduct.description[lang.code] || '—'}</p>
+                    <div key={lang.code} style={detailTileStyle}>
+                      <span style={{ fontSize: 12, color: 'var(--soft)' }}>{lang.flag} {lang.name}</span>
+                      <p style={{ fontSize: 14, marginTop: 4, color: 'var(--ink)' }}>{selectedProduct.description[lang.code] || '—'}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Details Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                <div className="p-3 bg-surface-elevated rounded-apple">
-                  <p className="text-xs text-text-tertiary">{p.modalCategory}</p>
-                  <p className="font-medium mt-1">{selectedProduct.category}</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16 }}>
+                <div style={detailTileStyle}>
+                  <p style={{ fontSize: 12, color: 'var(--soft)', margin: 0 }}>{p.modalCategory}</p>
+                  <p style={{ fontWeight: 500, margin: '4px 0 0', color: 'var(--ink)' }}>{selectedProduct.category}</p>
                 </div>
-                <div className="p-3 bg-surface-elevated rounded-apple">
-                  <p className="text-xs text-text-tertiary">{p.modalBrand}</p>
-                  <p className="font-medium mt-1">{selectedProduct.brand}</p>
+                <div style={detailTileStyle}>
+                  <p style={{ fontSize: 12, color: 'var(--soft)', margin: 0 }}>{p.modalBrand}</p>
+                  <p style={{ fontWeight: 500, margin: '4px 0 0', color: 'var(--ink)' }}>{selectedProduct.brand}</p>
                 </div>
-                <div className="p-3 bg-surface-elevated rounded-apple">
-                  <p className="text-xs text-text-tertiary">{p.modalBasePrice}</p>
-                  <p className="font-medium mt-1 text-primary">{formatCurrency(selectedProduct.basePrice, selectedProduct.currency)}</p>
+                <div style={detailTileStyle}>
+                  <p style={{ fontSize: 12, color: 'var(--soft)', margin: 0 }}>{p.modalBasePrice}</p>
+                  <p style={{ fontWeight: 500, margin: '4px 0 0', color: 'var(--brand)' }}>
+                    {formatCurrency(selectedProduct.basePrice, selectedProduct.currency)}
+                  </p>
                 </div>
-                <div className="p-3 bg-surface-elevated rounded-apple">
-                  <p className="text-xs text-text-tertiary">{p.modalCurrency}</p>
-                  <p className="font-medium mt-1">{selectedProduct.currency}</p>
+                <div style={detailTileStyle}>
+                  <p style={{ fontSize: 12, color: 'var(--soft)', margin: 0 }}>{p.modalCurrency}</p>
+                  <p style={{ fontWeight: 500, margin: '4px 0 0', color: 'var(--ink)' }}>{selectedProduct.currency}</p>
                 </div>
-                <div className="p-3 bg-surface-elevated rounded-apple">
-                  <p className="text-xs text-text-tertiary flex items-center gap-1"><Clock className="w-3 h-3" /> {p.modalInstallationTime}</p>
-                  <p className="font-medium mt-1">{selectedProduct.installationTime}h</p>
+                <div style={detailTileStyle}>
+                  <p style={{ fontSize: 12, color: 'var(--soft)', display: 'inline-flex', alignItems: 'center', gap: 4, margin: 0 }}>
+                    <Clock className="w-3 h-3" /> {p.modalInstallationTime}
+                  </p>
+                  <p style={{ fontWeight: 500, margin: '4px 0 0', color: 'var(--ink)' }}>{selectedProduct.installationTime}h</p>
                 </div>
               </div>
 
-              {/* Tags */}
               {selectedProduct.tags && selectedProduct.tags.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-text-secondary mb-2 flex items-center gap-1"><Tag className="w-4 h-4" /> {p.modalTags}</h3>
-                  <div className="flex flex-wrap gap-2">
+                  <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--soft)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Tag className="w-4 h-4" /> {p.modalTags}
+                  </h3>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {selectedProduct.tags.map((tag) => (
-                      <span key={tag} className="px-3 py-1 bg-surface-elevated rounded-full text-xs font-medium">{tag}</span>
+                      <span
+                        key={tag}
+                        style={{
+                          padding: '4px 12px',
+                          background: 'var(--off-paper)',
+                          border: '1px solid var(--hairline)',
+                          borderRadius: 'var(--radius-full)',
+                          fontSize: 12,
+                          fontWeight: 500,
+                          color: 'var(--ink)',
+                        }}
+                      >
+                        {tag}
+                      </span>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Specifications */}
               {selectedProduct.specifications && Object.keys(selectedProduct.specifications).length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-text-secondary mb-2">{p.modalSpecifications}</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--soft)', marginBottom: 8 }}>{p.modalSpecifications}</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 8 }}>
                     {Object.entries(selectedProduct.specifications).map(([key, value]) => (
-                      <div key={key} className="flex justify-between p-3 bg-surface-elevated rounded-apple">
-                        <span className="text-sm text-text-secondary">{key}</span>
-                        <span className="text-sm font-medium">{value}</span>
+                      <div key={key} style={{ ...detailTileStyle, display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 14, color: 'var(--soft)' }}>{key}</span>
+                        <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink)' }}>{value}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Variations */}
               {selectedProduct.variations && selectedProduct.variations.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-text-secondary mb-2">{p.modalVariations} ({selectedProduct.variations.length})</h3>
-                  <div className="space-y-2">
+                  <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--soft)', marginBottom: 8 }}>
+                    {p.modalVariations} ({selectedProduct.variations.length})
+                  </h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {selectedProduct.variations.map((v) => (
-                      <div key={v.id} className="p-3 bg-surface-elevated rounded-apple flex items-center justify-between">
+                      <div
+                        key={v.id}
+                        style={{ ...detailTileStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                      >
                         <div>
-                          <p className="font-medium text-sm">{v.name}</p>
-                          <p className="text-xs text-text-tertiary">{p.skuLabel}: {v.sku} | {p.stockLabel}: {v.stock}</p>
+                          <p style={{ fontWeight: 500, fontSize: 14, margin: 0, color: 'var(--ink)' }}>{v.name}</p>
+                          <p style={{ fontSize: 12, color: 'var(--soft)', margin: '4px 0 0' }}>
+                            {p.skuLabel}: {v.sku} | {p.stockLabel}: {v.stock}
+                          </p>
                         </div>
-                        <p className="font-semibold text-primary">{formatCurrency(v.price, selectedProduct.currency)}</p>
+                        <p style={{ fontWeight: 600, color: 'var(--brand)', margin: 0 }}>
+                          {formatCurrency(v.price, selectedProduct.currency)}
+                        </p>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Maintenance Template */}
               {selectedProduct.maintenanceTemplate && (
                 <div>
-                  <h3 className="text-sm font-semibold text-text-secondary mb-2">{p.modalMaintenanceTemplate}</h3>
-                  <div className="p-3 bg-surface-elevated rounded-apple space-y-2">
-                    <p className="text-sm">{p.modalEzerInterval}: <span className="font-medium">{selectedProduct.maintenanceTemplate.ezerIntervalDays} {p.daysSuffix}</span></p>
+                  <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--soft)', marginBottom: 8 }}>{p.modalMaintenanceTemplate}</h3>
+                  <div style={{ ...detailTileStyle, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <p style={{ fontSize: 14, margin: 0, color: 'var(--ink)' }}>
+                      {p.modalEzerInterval}:{' '}
+                      <span style={{ fontWeight: 500 }}>
+                        {selectedProduct.maintenanceTemplate.ezerIntervalDays} {p.daysSuffix}
+                      </span>
+                    </p>
                     {selectedProduct.maintenanceTemplate.filters.length > 0 && (
                       <div>
-                        <p className="text-xs text-text-tertiary mb-1">{p.modalFilters}:</p>
+                        <p style={{ fontSize: 12, color: 'var(--soft)', margin: '0 0 4px' }}>{p.modalFilters}:</p>
                         {selectedProduct.maintenanceTemplate.filters.map((f, idx) => (
-                          <p key={idx} className="text-sm ml-2">{f.name}: {p.everyDaysFormat.replace('{days}', String(f.intervalDays))}</p>
+                          <p key={idx} style={{ fontSize: 14, marginLeft: 8, margin: 0, color: 'var(--ink)' }}>
+                            {f.name}: {p.everyDaysFormat.replace('{days}', String(f.intervalDays))}
+                          </p>
                         ))}
                       </div>
                     )}
@@ -413,25 +644,47 @@ export default function ProductsPage() {
                 </div>
               )}
 
-              {/* Action Buttons (admin only) */}
               {!isSubAdmin && (
-                <div className="flex gap-3 pt-4 border-t border-border">
+                <div style={{ display: 'flex', gap: 12, paddingTop: 16, borderTop: '1px solid var(--hairline)' }}>
                   <Link
                     href={`/admin/products/${selectedProduct.id}`}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all"
+                    className="sc-cta"
+                    style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, textDecoration: 'none' }}
                   >
                     <Edit className="w-4 h-4" />
                     {p.editProductCta}
                   </Link>
                   <button
-                    onClick={() => { handleToggleActive(selectedProduct.id, selectedProduct.active, selectedProduct.name.en); setSelectedProduct(null); }}
-                    className={`px-4 py-3 rounded-apple font-semibold transition-all ${selectedProduct.active ? 'bg-warning/20 hover:bg-warning/30 text-warning' : 'bg-success/20 hover:bg-success/30 text-success'}`}
+                    onClick={() => {
+                      handleToggleActive(selectedProduct.id, selectedProduct.active);
+                      setSelectedProduct(null);
+                    }}
+                    style={{
+                      padding: '12px 16px',
+                      borderRadius: 'var(--radius-md)',
+                      fontWeight: 600,
+                      background: selectedProduct.active ? 'var(--warn-tint)' : 'var(--brand-tint)',
+                      color: selectedProduct.active ? 'var(--warn)' : 'var(--brand)',
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
                   >
                     {selectedProduct.active ? p.hide : p.show}
                   </button>
                   <button
-                    onClick={() => { handleDelete(selectedProduct.id, selectedProduct.name.en); setSelectedProduct(null); }}
-                    className="px-4 py-3 bg-error/20 hover:bg-error/30 text-error rounded-apple font-semibold transition-all"
+                    onClick={() => {
+                      handleDelete(selectedProduct.id, selectedProduct.name.en);
+                      setSelectedProduct(null);
+                    }}
+                    style={{
+                      padding: '12px 16px',
+                      background: 'rgba(239,68,68,0.15)',
+                      color: '#ef4444',
+                      borderRadius: 'var(--radius-md)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                    }}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -444,4 +697,3 @@ export default function ProductsPage() {
     </div>
   );
 }
-

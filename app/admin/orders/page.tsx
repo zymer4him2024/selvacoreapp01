@@ -14,6 +14,17 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const PAGE_SIZE = 20;
 
+const STATUS_STYLES: Record<string, { color: string; bg: string }> = {
+  pending: { color: 'var(--warn)', bg: 'var(--warn-tint)' },
+  accepted: { color: 'var(--brand)', bg: 'var(--brand-tint)' },
+  in_progress: { color: 'var(--brand)', bg: 'var(--brand-tint)' },
+  completed: { color: 'var(--brand)', bg: 'var(--brand-tint)' },
+  cancelled: { color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
+  refunded: { color: 'var(--soft)', bg: 'var(--off-paper)' },
+};
+
+const getStatusStyle = (status: string) => STATUS_STYLES[status] ?? STATUS_STYLES.pending;
+
 export default function OrdersPage() {
   const { t } = useTranslation();
   const { formatCurrency, formatDate } = useLocaleFormatters();
@@ -52,23 +63,11 @@ export default function OrdersPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, o.loadOrdersError]);
 
   useEffect(() => {
     loadOrders(true);
   }, [loadOrders]);
-
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: 'bg-warning/20 text-warning',
-      accepted: 'bg-primary/20 text-primary',
-      in_progress: 'bg-secondary/20 text-secondary',
-      completed: 'bg-success/20 text-success',
-      cancelled: 'bg-error/20 text-error',
-      refunded: 'bg-text-tertiary/20 text-text-tertiary',
-    };
-    return colors[status] || colors.pending;
-  };
 
   const handleDeleteOrder = async (orderId: string) => {
     if (!confirm(o.confirmDelete)) return;
@@ -96,41 +95,50 @@ export default function OrdersPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">{o.loading}</p>
+      <div className="sc" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="sc-spinner" style={{ margin: '0 auto' }} />
+          <p className="sc-helper" style={{ margin: 0 }}>{o.loading}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
+    <div className="sc" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
       <div>
-        <h1 className="text-4xl font-bold tracking-tight mb-2">{o.title}</h1>
-        <p className="text-text-secondary">{o.subtitle}</p>
+        <h1 className="sc-h1" style={{ margin: 0, marginBottom: 8 }}>{o.title}</h1>
+        <p className="sc-helper" style={{ margin: 0 }}>{o.subtitle}</p>
       </div>
 
-      {/* Filters */}
-      <div className="apple-card">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
+      <div className="sc-card-static">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
+          <div style={{ position: 'relative' }}>
+            <Search
+              className="w-5 h-5"
+              style={{
+                position: 'absolute',
+                left: 16,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: 'var(--soft)',
+                pointerEvents: 'none',
+              }}
+            />
             <input
               type="text"
               placeholder={o.searchPlaceholder}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+              className="sc-input"
+              style={{ paddingLeft: 44, width: '100%' }}
             />
           </div>
 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+            className="sc-select"
           >
             <option value="all">{o.allStatuses}</option>
             <option value="pending">{o.pending}</option>
@@ -142,144 +150,199 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {/* Orders List */}
       {filteredOrders.length === 0 ? (
-        <div className="apple-card text-center py-16">
-          <PackageIcon className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
-          <h3 className="text-xl font-semibold mb-2">{o.noOrders}</h3>
-          <p className="text-text-secondary">
-            {searchTerm || statusFilter !== 'all'
-              ? o.tryAdjusting
-              : o.ordersWillAppear}
+        <div className="sc-card-static" style={{ textAlign: 'center', padding: '64px 24px' }}>
+          <PackageIcon className="w-16 h-16" style={{ margin: '0 auto 16px', color: 'var(--soft)' }} />
+          <h3 style={{ fontSize: 20, fontWeight: 600, marginBottom: 8, color: 'var(--ink)' }}>{o.noOrders}</h3>
+          <p className="sc-helper" style={{ margin: 0 }}>
+            {searchTerm || statusFilter !== 'all' ? o.tryAdjusting : o.ordersWillAppear}
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {filteredOrders.map((order) => (
-            <div key={order.id} className="apple-card hover:scale-[1.005] transition-all">
-              <div className="flex items-start justify-between">
-                {/* Order Info */}
-                <div className="flex-1">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold">{order.orderNumber}</h3>
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                            order.status
-                          )}`}
-                        >
-                          {getOrderStatusLabel(order.status, 'admin', t)}
-                        </span>
-                      </div>
-                      <p className="text-sm text-text-secondary">
-                        {order.productSnapshot?.name?.en || t.admin.orderDetail.na} - {order.serviceSnapshot?.name?.en || t.admin.orderDetail.na}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-primary">
-                        {order.payment?.amount ? formatCurrency(order.payment.amount, order.payment.currency) : t.admin.orderDetail.na}
-                      </p>
-                      <p className="text-xs text-text-tertiary mt-1">
-                        {order.payment?.status || t.admin.orderDetail.na}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                    <div className="flex items-center gap-2 text-text-secondary">
-                      <User className="w-4 h-4" />
-                      <span>{formatOptionalString(order.customerInfo?.name)}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-text-secondary">
-                      <Calendar className="w-4 h-4" />
-                      <span>{order.installationDate ? formatDate(order.installationDate, 'short') : t.admin.orderDetail.na}</span>
-                      {order.timeSlot && (
-                        <span className="text-xs bg-surface-elevated px-2 py-0.5 rounded">
-                          {order.timeSlot}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-text-tertiary">
-                      {o.created} {order.createdAt ? formatDate(order.createdAt, 'short') : t.admin.orderDetail.na}
-                    </div>
-                  </div>
-
-                  {order.technicianInfo && (
-                    <div className="mt-3 pt-3 border-t border-border">
-                      <p className="text-xs text-text-tertiary mb-1">{o.technician}</p>
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                          <span className="text-sm font-semibold text-primary">
-                            {order.technicianInfo.name?.charAt(0) || 'T'}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {filteredOrders.map((order) => {
+            const statusStyle = getStatusStyle(order.status);
+            return (
+              <div key={order.id} className="sc-card">
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1, minWidth: 280 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 12, flexWrap: 'wrap' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
+                          <h3 style={{ fontSize: 18, fontWeight: 600, margin: 0, color: 'var(--ink)' }}>{order.orderNumber}</h3>
+                          <span
+                            style={{
+                              padding: '4px 12px',
+                              borderRadius: 'var(--radius-full)',
+                              fontSize: 12,
+                              fontWeight: 500,
+                              color: statusStyle.color,
+                              background: statusStyle.bg,
+                            }}
+                          >
+                            {getOrderStatusLabel(order.status, 'admin', t)}
                           </span>
                         </div>
-                        <span className="text-sm">{formatOptionalString(order.technicianInfo.name)}</span>
+                        <p style={{ fontSize: 14, color: 'var(--soft)', margin: 0 }}>
+                          {order.productSnapshot?.name?.en || t.admin.orderDetail.na} - {order.serviceSnapshot?.name?.en || t.admin.orderDetail.na}
+                        </p>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <p style={{ fontSize: 24, fontWeight: 700, color: 'var(--brand)', margin: 0 }}>
+                          {order.payment?.amount ? formatCurrency(order.payment.amount, order.payment.currency) : t.admin.orderDetail.na}
+                        </p>
+                        <p style={{ fontSize: 12, color: 'var(--soft)', margin: '4px 0 0' }}>
+                          {order.payment?.status || t.admin.orderDetail.na}
+                        </p>
                       </div>
                     </div>
-                  )}
-                </div>
 
-                {/* Actions */}
-                <div className="ml-4 flex flex-col gap-2">
-                  <Link
-                    href={`/admin/orders/${order.id}`}
-                    className="p-2 bg-surface-elevated hover:bg-surface-secondary rounded-apple transition-all"
-                  >
-                    <Eye className="w-5 h-5" />
-                  </Link>
-                  {!isSubAdmin && (
-                    <button
-                      onClick={() => handleDeleteOrder(order.id)}
-                      disabled={deletingId === order.id}
-                      className="p-2 bg-surface-elevated hover:bg-error/20 text-text-secondary hover:text-error rounded-apple transition-all disabled:opacity-50"
-                      aria-label={o.deleteOrderAria}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, fontSize: 14 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--soft)' }}>
+                        <User className="w-4 h-4" />
+                        <span>{formatOptionalString(order.customerInfo?.name)}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--soft)' }}>
+                        <Calendar className="w-4 h-4" />
+                        <span>{order.installationDate ? formatDate(order.installationDate, 'short') : t.admin.orderDetail.na}</span>
+                        {order.timeSlot && (
+                          <span
+                            style={{
+                              fontSize: 12,
+                              background: 'var(--off-paper)',
+                              border: '1px solid var(--hairline)',
+                              padding: '2px 8px',
+                              borderRadius: 'var(--radius-sm)',
+                            }}
+                          >
+                            {order.timeSlot}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ color: 'var(--soft)' }}>
+                        {o.created} {order.createdAt ? formatDate(order.createdAt, 'short') : t.admin.orderDetail.na}
+                      </div>
+                    </div>
+
+                    {order.technicianInfo && (
+                      <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--hairline)' }}>
+                        <p style={{ fontSize: 12, color: 'var(--soft)', margin: '0 0 4px' }}>{o.technician}</p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div
+                            style={{
+                              width: 32,
+                              height: 32,
+                              borderRadius: 'var(--radius-full)',
+                              background: 'var(--brand-tint)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--brand)' }}>
+                              {order.technicianInfo.name?.charAt(0) || 'T'}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: 14, color: 'var(--ink)' }}>{formatOptionalString(order.technicianInfo.name)}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <Link
+                      href={`/admin/orders/${order.id}`}
+                      style={{
+                        padding: 8,
+                        background: 'var(--off-paper)',
+                        border: '1px solid var(--hairline)',
+                        borderRadius: 'var(--radius-md)',
+                        color: 'var(--ink)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textDecoration: 'none',
+                        transition: 'background 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--off-paper)'; }}
                     >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  )}
+                      <Eye className="w-5 h-5" />
+                    </Link>
+                    {!isSubAdmin && (
+                      <button
+                        onClick={() => handleDeleteOrder(order.id)}
+                        disabled={deletingId === order.id}
+                        aria-label={o.deleteOrderAria}
+                        style={{
+                          padding: 8,
+                          background: 'var(--off-paper)',
+                          border: '1px solid var(--hairline)',
+                          borderRadius: 'var(--radius-md)',
+                          color: 'var(--soft)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: deletingId === order.id ? 'not-allowed' : 'pointer',
+                          opacity: deletingId === order.id ? 0.5 : 1,
+                          transition: 'all 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (deletingId !== order.id) {
+                            e.currentTarget.style.background = 'rgba(239,68,68,0.15)';
+                            e.currentTarget.style.color = '#ef4444';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'var(--off-paper)';
+                          e.currentTarget.style.color = 'var(--soft)';
+                        }}
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {/* Load More */}
       {hasMore && (
-        <div className="text-center">
+        <div style={{ textAlign: 'center' }}>
           <button
             onClick={() => loadOrders(false)}
             disabled={loadingMore}
-            className="px-8 py-3 bg-surface-elevated hover:bg-surface-secondary text-text-primary font-medium rounded-apple transition-all disabled:opacity-50"
+            className="sc-cta-ghost"
+            style={{ opacity: loadingMore ? 0.5 : 1 }}
           >
             {loadingMore ? t.common.loading : t.common.loadMore}
           </button>
         </div>
       )}
 
-      {/* Summary */}
       {filteredOrders.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="apple-card text-center">
-            <p className="text-text-tertiary text-sm">{o.loaded}</p>
-            <p className="text-2xl font-bold mt-1">{filteredOrders.length}</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
+          <div className="sc-card-static" style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: 14, color: 'var(--soft)', margin: 0 }}>{o.loaded}</p>
+            <p style={{ fontSize: 24, fontWeight: 700, marginTop: 4, color: 'var(--ink)' }}>{filteredOrders.length}</p>
           </div>
-          <div className="apple-card text-center">
-            <p className="text-text-tertiary text-sm">{o.pending}</p>
-            <p className="text-2xl font-bold mt-1 text-warning">
+          <div className="sc-card-static" style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: 14, color: 'var(--soft)', margin: 0 }}>{o.pending}</p>
+            <p style={{ fontSize: 24, fontWeight: 700, marginTop: 4, color: 'var(--warn)' }}>
               {filteredOrders.filter((ord) => ord.status === 'pending').length}
             </p>
           </div>
-          <div className="apple-card text-center">
-            <p className="text-text-tertiary text-sm">{o.inProgress}</p>
-            <p className="text-2xl font-bold mt-1 text-secondary">
+          <div className="sc-card-static" style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: 14, color: 'var(--soft)', margin: 0 }}>{o.inProgress}</p>
+            <p style={{ fontSize: 24, fontWeight: 700, marginTop: 4, color: 'var(--brand)' }}>
               {filteredOrders.filter((ord) => ord.status === 'in_progress').length}
             </p>
           </div>
-          <div className="apple-card text-center">
-            <p className="text-text-tertiary text-sm">{o.completed}</p>
-            <p className="text-2xl font-bold mt-1 text-success">
+          <div className="sc-card-static" style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: 14, color: 'var(--soft)', margin: 0 }}>{o.completed}</p>
+            <p style={{ fontSize: 24, fontWeight: 700, marginTop: 4, color: 'var(--brand)' }}>
               {filteredOrders.filter((ord) => ord.status === 'completed').length}
             </p>
           </div>
@@ -288,4 +351,3 @@ export default function OrdersPage() {
     </div>
   );
 }
-

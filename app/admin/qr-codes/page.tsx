@@ -90,7 +90,7 @@ function QRPreview({ value, size = 160 }: { value: string; size?: number }) {
     });
   }, [value, size]);
 
-  return <canvas ref={canvasRef} className="rounded-apple bg-white" />;
+  return <canvas ref={canvasRef} style={{ borderRadius: 'var(--radius-md)', background: '#fff' }} />;
 }
 
 async function generatePNG(value: string): Promise<string> {
@@ -278,7 +278,6 @@ export default function QRCodeManagementPage() {
 
   const handleShareSMS = (qr: QRCode) => {
     const body = encodeURIComponent(buildShareBody(qr));
-    // iOS uses &, Android uses ?; most modern handlers accept either.
     window.location.href = `sms:?&body=${body}`;
   };
 
@@ -289,19 +288,45 @@ export default function QRCodeManagementPage() {
 
   if (userData && userData.role !== 'admin') return null;
 
+  const actionBtn = (variant: 'neutral' | 'brand' | 'danger' = 'neutral'): React.CSSProperties => {
+    const base: React.CSSProperties = {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 4,
+      padding: '6px 12px',
+      fontSize: 12,
+      borderRadius: 'var(--radius-md)',
+      border: 'none',
+      cursor: 'pointer',
+      transition: 'all 0.15s ease',
+    };
+    if (variant === 'brand') return { ...base, background: 'var(--brand-tint)', color: 'var(--brand)' };
+    if (variant === 'danger') return { ...base, background: 'rgba(239,68,68,0.1)', color: '#ef4444' };
+    return { ...base, background: 'var(--off-paper)', color: 'var(--ink)' };
+  };
+
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="sc" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <div>
           <Link
             href="/admin/settings"
-            className="inline-flex items-center gap-2 text-sm text-text-secondary hover:text-primary mb-2"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              fontSize: 14,
+              color: 'var(--soft)',
+              textDecoration: 'none',
+              marginBottom: 8,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--brand)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--soft)'; }}
           >
             <ArrowLeft className="w-4 h-4" /> {qrt.backToSettings}
           </Link>
-          <h1 className="text-4xl font-bold tracking-tight">{qrt.title}</h1>
-          <p className="text-text-secondary mt-2">{qrt.subtitle}</p>
+          <h1 className="sc-h1" style={{ margin: 0 }}>{qrt.title}</h1>
+          <p className="sc-helper" style={{ margin: '8px 0 0' }}>{qrt.subtitle}</p>
         </div>
         <button
           onClick={() => {
@@ -313,31 +338,38 @@ export default function QRCodeManagementPage() {
               setShowForm(true);
             }
           }}
-          className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all shadow-apple"
+          className="sc-cta"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
         >
           {showForm ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
           {showForm ? qrt.cancelButton : qrt.newQrCode}
         </button>
       </div>
 
-      {/* URL Reference */}
-      <div className="apple-card space-y-4">
+      <div className="sc-card-static" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
-          <h2 className="text-xl font-semibold">{qrt.referenceTitle}</h2>
-          <p className="text-sm text-text-secondary mt-1">{qrt.referenceSubtitle}</p>
+          <h2 className="sc-h2" style={{ margin: 0, fontSize: 20 }}>{qrt.referenceTitle}</h2>
+          <p className="sc-helper" style={{ margin: '4px 0 0' }}>{qrt.referenceSubtitle}</p>
         </div>
-        <div className="space-y-2">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {PURPOSE_OPTIONS.filter((opt) => opt.value !== 'custom').map((opt) => {
             const url = getSuggestedURL(opt.value, origin);
             if (!url) return null;
             return (
               <div
                 key={opt.value}
-                className="flex items-center gap-3 p-3 bg-surface-elevated rounded-apple"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: 12,
+                  background: 'var(--off-paper)',
+                  borderRadius: 'var(--radius-md)',
+                }}
               >
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium">{opt.label}</div>
-                  <code className="text-xs text-text-secondary font-mono break-all">{url}</code>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink)' }}>{opt.label}</div>
+                  <code style={{ fontSize: 12, color: 'var(--soft)', fontFamily: 'monospace', wordBreak: 'break-all' }}>{url}</code>
                 </div>
                 <button
                   type="button"
@@ -350,7 +382,7 @@ export default function QRCodeManagementPage() {
                     }
                   }}
                   title={qrt.copyTooltip}
-                  className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 text-xs bg-primary/10 hover:bg-primary/20 text-primary rounded-apple transition-all"
+                  style={{ ...actionBtn('brand'), flexShrink: 0 }}
                 >
                   <Copy className="w-3.5 h-3.5" /> {qrt.copyButton}
                 </button>
@@ -360,27 +392,26 @@ export default function QRCodeManagementPage() {
         </div>
       </div>
 
-      {/* Create / Edit form */}
       {showForm && (
-        <div className="apple-card space-y-6">
-          <h2 className="text-2xl font-semibold">
+        <div className="sc-card-static" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <h2 className="sc-h2" style={{ margin: 0, fontSize: 24 }}>
             {editingId ? qrt.editTitle : qrt.createTitle}
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div style={{ display: 'grid', gap: 24, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
             <div>
-              <label className="block text-sm font-medium mb-2">{qrt.labelField}</label>
+              <label className="sc-label">{qrt.labelField}</label>
               <input
                 type="text"
                 value={form.label}
                 onChange={(e) => setForm({ ...form, label: e.target.value })}
                 placeholder={qrt.labelPlaceholder}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-input"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">{qrt.purposeField}</label>
+              <label className="sc-label">{qrt.purposeField}</label>
               <select
                 value={form.purpose}
                 onChange={(e) => {
@@ -395,7 +426,7 @@ export default function QRCodeManagementPage() {
                     return next;
                   });
                 }}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                className="sc-select"
               >
                 {PURPOSE_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -405,77 +436,84 @@ export default function QRCodeManagementPage() {
               </select>
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-2">
-                {qrt.contentField}
-              </label>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label className="sc-label">{qrt.contentField}</label>
               <input
                 type="text"
                 value={form.content}
                 onChange={(e) => setForm({ ...form, content: e.target.value })}
                 placeholder={suggestedURL || qrt.contentPlaceholder}
                 readOnly={form.purpose === 'maintenance_card'}
-                className={`w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all ${
-                  form.purpose === 'maintenance_card' ? 'font-mono text-sm opacity-80 cursor-not-allowed' : ''
-                }`}
+                className="sc-input"
+                style={
+                  form.purpose === 'maintenance_card'
+                    ? { fontFamily: 'monospace', fontSize: 13, opacity: 0.8, cursor: 'not-allowed' }
+                    : undefined
+                }
               />
               {suggestedURL && form.content !== suggestedURL && (
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-xs text-text-tertiary">
-                    {qrt.suggestedUrlLabel}: <code className="font-mono">{suggestedURL}</code>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 12, color: 'var(--soft)' }}>
+                    {qrt.suggestedUrlLabel}: <code style={{ fontFamily: 'monospace' }}>{suggestedURL}</code>
                   </span>
                   <button
                     type="button"
                     onClick={() => setForm({ ...form, content: suggestedURL })}
-                    className="text-xs px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded transition-all"
+                    style={{
+                      fontSize: 12,
+                      padding: '4px 8px',
+                      background: 'var(--brand-tint)',
+                      color: 'var(--brand)',
+                      border: 'none',
+                      borderRadius: 'var(--radius-sm)',
+                      cursor: 'pointer',
+                      transition: 'background 0.15s ease',
+                    }}
                   >
                     {qrt.useSuggestedUrl}
                   </button>
                 </div>
               )}
-              {form.purpose === 'maintenance_card' ? (
-                <p className="text-xs text-text-tertiary mt-1">{qrt.contentHelpMaintenance}</p>
-              ) : (
-                <p className="text-xs text-text-tertiary mt-1">{qrt.contentHelp}</p>
-              )}
+              <p className="sc-helper" style={{ margin: '4px 0 0', fontSize: 12 }}>
+                {form.purpose === 'maintenance_card' ? qrt.contentHelpMaintenance : qrt.contentHelp}
+              </p>
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-2">
-                {qrt.descriptionField}
-              </label>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label className="sc-label">{qrt.descriptionField}</label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 rows={2}
                 placeholder={qrt.descriptionPlaceholder}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all resize-none"
+                className="sc-textarea"
+                style={{ resize: 'none' }}
               />
             </div>
           </div>
 
-          {/* Live preview */}
           {form.content && (
-            <div className="flex items-center gap-6 p-4 bg-surface-elevated rounded-apple">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 24, padding: 16, background: 'var(--off-paper)', borderRadius: 'var(--radius-md)' }}>
               <QRPreview value={form.content} />
-              <div className="text-sm text-text-secondary">
-                <p className="font-medium text-text-primary mb-1">{qrt.previewLabel}</p>
-                <p className="break-all">{form.content}</p>
+              <div style={{ fontSize: 14, color: 'var(--soft)', minWidth: 0 }}>
+                <p style={{ fontWeight: 500, color: 'var(--ink)', margin: 0, marginBottom: 4 }}>{qrt.previewLabel}</p>
+                <p style={{ margin: 0, wordBreak: 'break-all' }}>{form.content}</p>
               </div>
             </div>
           )}
 
-          <div className="flex gap-3 justify-end">
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
             <button
               onClick={resetForm}
-              className="px-6 py-3 border border-border text-text-secondary hover:text-text-primary rounded-apple transition-all"
+              className="sc-cta-ghost"
             >
               {qrt.cancelButton}
             </button>
             <button
               onClick={handleSubmit}
               disabled={saving}
-              className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-hover disabled:opacity-50 text-white font-semibold rounded-apple transition-all"
+              className="sc-cta"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
             >
               <Check className="w-5 h-5" />
               {saving
@@ -486,103 +524,112 @@ export default function QRCodeManagementPage() {
         </div>
       )}
 
-      {/* List */}
       {loading ? (
-        <div className="flex items-center justify-center min-h-[40vh]">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '40vh' }}>
+          <div className="sc-spinner" />
         </div>
       ) : codes.length === 0 ? (
-        <div className="apple-card text-center py-12">
-          <QrCode className="w-16 h-16 text-text-tertiary mx-auto mb-4" />
-          <h3 className="text-xl font-semibold mb-2">{qrt.noCodesTitle}</h3>
-          <p className="text-text-secondary">{qrt.noCodesDescription}</p>
+        <div className="sc-card-static" style={{ textAlign: 'center', padding: '48px 24px' }}>
+          <QrCode className="w-16 h-16" style={{ margin: '0 auto 16px', color: 'var(--soft)' }} />
+          <h3 className="sc-h2" style={{ margin: 0, marginBottom: 8, fontSize: 20 }}>{qrt.noCodesTitle}</h3>
+          <p className="sc-helper" style={{ margin: 0 }}>{qrt.noCodesDescription}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))' }}>
           {codes.map((qr) => (
-            <div key={qr.id} className="apple-card">
-              <div className="flex gap-4">
-                <div className="flex-shrink-0 p-3 bg-white rounded-apple border border-border">
+            <div key={qr.id} className="sc-card-static">
+              <div style={{ display: 'flex', gap: 16 }}>
+                <div
+                  style={{
+                    flexShrink: 0,
+                    padding: 12,
+                    background: '#fff',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--hairline)',
+                  }}
+                >
                   <QRPreview value={qr.content} size={128} />
                 </div>
-                <div className="flex-1 min-w-0 space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <h3 className="font-semibold text-lg truncate">{qr.label}</h3>
-                      <p className="text-xs text-text-tertiary uppercase tracking-wide">
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <h3 style={{ margin: 0, fontWeight: 600, fontSize: 18, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{qr.label}</h3>
+                      <p style={{ margin: 0, fontSize: 12, color: 'var(--soft)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         {PURPOSE_OPTIONS.find((p) => p.value === qr.purpose)?.label ||
                           qr.purpose}
                       </p>
                     </div>
                     <button
                       onClick={() => handleToggleActive(qr)}
-                      className={`px-2 py-1 text-xs rounded-apple font-semibold ${
-                        qr.active
-                          ? 'bg-success/10 text-success'
-                          : 'bg-surface-elevated text-text-tertiary'
-                      }`}
+                      style={{
+                        padding: '4px 8px',
+                        fontSize: 12,
+                        borderRadius: 'var(--radius-sm)',
+                        fontWeight: 600,
+                        border: 'none',
+                        cursor: 'pointer',
+                        background: qr.active ? 'var(--brand-tint)' : 'var(--off-paper)',
+                        color: qr.active ? 'var(--brand)' : 'var(--soft)',
+                      }}
                     >
                       {qr.active ? qrt.activeBadge : qrt.inactiveBadge}
                     </button>
                   </div>
 
-                  <p className="text-sm text-text-secondary break-all line-clamp-2">
+                  <p
+                    style={{
+                      fontSize: 13,
+                      color: 'var(--soft)',
+                      wordBreak: 'break-all',
+                      margin: 0,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}
+                  >
                     {qr.content}
                   </p>
                   {qr.description && (
-                    <p className="text-xs text-text-tertiary line-clamp-2">
+                    <p
+                      style={{
+                        fontSize: 12,
+                        color: 'var(--soft)',
+                        margin: 0,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                    >
                       {qr.description}
                     </p>
                   )}
 
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    <button
-                      onClick={() => handleCopy(qr)}
-                      title={qrt.copyTitle}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs bg-surface-elevated hover:bg-border rounded-apple transition-all"
-                    >
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingTop: 8 }}>
+                    <button onClick={() => handleCopy(qr)} title={qrt.copyTitle} style={actionBtn('neutral')}>
                       <Copy className="w-3.5 h-3.5" /> {qrt.copyButton}
                     </button>
-                    <button
-                      onClick={() => handleDownload(qr)}
-                      title={qrt.downloadTitle}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs bg-surface-elevated hover:bg-border rounded-apple transition-all"
-                    >
+                    <button onClick={() => handleDownload(qr)} title={qrt.downloadTitle} style={actionBtn('neutral')}>
                       <Download className="w-3.5 h-3.5" /> {qrt.pngButton}
                     </button>
-                    <button
-                      onClick={() => handleShareEmail(qr)}
-                      title={qrt.shareEmailTitle}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary/10 hover:bg-primary/20 text-primary rounded-apple transition-all"
-                    >
+                    <button onClick={() => handleShareEmail(qr)} title={qrt.shareEmailTitle} style={actionBtn('brand')}>
                       <Mail className="w-3.5 h-3.5" /> {qrt.emailButton}
                     </button>
-                    <button
-                      onClick={() => handleShareSMS(qr)}
-                      title={qrt.shareSmsTitle}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary/10 hover:bg-primary/20 text-primary rounded-apple transition-all"
-                    >
+                    <button onClick={() => handleShareSMS(qr)} title={qrt.shareSmsTitle} style={actionBtn('brand')}>
                       <MessageSquare className="w-3.5 h-3.5" /> {qrt.smsButton}
                     </button>
-                    <button
-                      onClick={() => handleShareWhatsApp(qr)}
-                      title={qrt.shareWhatsappTitle}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs bg-success/10 hover:bg-success/20 text-success rounded-apple transition-all"
-                    >
+                    <button onClick={() => handleShareWhatsApp(qr)} title={qrt.shareWhatsappTitle} style={actionBtn('brand')}>
                       {qrt.whatsappButton}
                     </button>
                     <button
                       onClick={() => handleStartEdit(qr)}
                       title={qrt.editTooltip}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs bg-surface-elevated hover:bg-border rounded-apple transition-all ml-auto"
+                      style={{ ...actionBtn('neutral'), marginLeft: 'auto' }}
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
-                    <button
-                      onClick={() => handleDelete(qr)}
-                      title={qrt.deleteTitle}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs bg-error/10 hover:bg-error/20 text-error rounded-apple transition-all"
-                    >
+                    <button onClick={() => handleDelete(qr)} title={qrt.deleteTitle} style={actionBtn('danger')}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>

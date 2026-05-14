@@ -6,8 +6,6 @@ import {
   LayoutDashboard,
   Package,
   Wrench,
-  Building2,
-  ShieldCheck,
   ShoppingCart,
   Receipt,
   BarChart3,
@@ -24,6 +22,7 @@ import {
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 import NotificationBell from '@/components/common/NotificationBell';
 import toast from 'react-hot-toast';
 
@@ -33,32 +32,44 @@ interface NavItem {
   key: string;
   href: string;
   icon: LucideIcon;
+  // If set, sub-admin sees this item only when visibility[featureKey].subAdmin === true.
+  // If `adminOnly` is true, sub-admin never sees it.
+  featureKey?: string;
+  adminOnly?: boolean;
 }
 
 const navigationItems: NavItem[] = [
-  { key: 'dashboard', href: '/admin', icon: LayoutDashboard },
-  { key: 'products', href: '/admin/products', icon: Package },
-  { key: 'services', href: '/admin/services', icon: Wrench },
-  { key: 'technicians', href: '/admin/technicians', icon: Users },
-  { key: 'subContractors', href: '/admin/sub-contractors', icon: Building2 },
-  { key: 'subAdmins', href: '/admin/sub-admins', icon: ShieldCheck },
-  { key: 'orders', href: '/admin/orders', icon: ShoppingCart },
-  { key: 'schedule', href: '/admin/schedule', icon: CalendarDays },
-  { key: 'inventory', href: '/admin/inventory', icon: Boxes },
-  { key: 'maintenance', href: '/admin/maintenance', icon: CalendarClock },
-  { key: 'reviews', href: '/admin/reviews', icon: Star },
-  { key: 'transactions', href: '/admin/transactions', icon: Receipt },
-  { key: 'analytics', href: '/admin/analytics', icon: BarChart3 },
-  { key: 'settings', href: '/admin/settings', icon: Settings },
+  { key: 'dashboard',    href: '/admin',              icon: LayoutDashboard },
+  { key: 'products',     href: '/admin/products',     icon: Package,        featureKey: 'featureProducts' },
+  { key: 'services',     href: '/admin/services',     icon: Wrench,         featureKey: 'featureServices' },
+  { key: 'users',        href: '/admin/users',        icon: Users,          featureKey: 'featureUsers' },
+  { key: 'technicians',  href: '/admin/technicians',  icon: Users,          featureKey: 'featureUsers' },
+  { key: 'orders',       href: '/admin/orders',       icon: ShoppingCart,   featureKey: 'featureOrders' },
+  { key: 'schedule',     href: '/admin/schedule',     icon: CalendarDays,   featureKey: 'featureOrders' },
+  { key: 'inventory',    href: '/admin/inventory',    icon: Boxes,          adminOnly: true },
+  { key: 'maintenance',  href: '/admin/maintenance',  icon: CalendarClock,  featureKey: 'featureMaintenance' },
+  { key: 'reviews',      href: '/admin/reviews',      icon: Star,           featureKey: 'featureReviews' },
+  { key: 'transactions', href: '/admin/transactions', icon: Receipt,        adminOnly: true },
+  { key: 'analytics',    href: '/admin/analytics',    icon: BarChart3,      adminOnly: true },
+  { key: 'settings',     href: '/admin/settings',     icon: Settings },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { userData, signOut } = useAuth();
   const { t } = useTranslation();
+  const { visibility } = useRolePermissions();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const s = t.admin.sidebar;
+  const isSubAdmin = userData?.role === 'sub-admin';
+
+  const visibleItems = navigationItems.filter((item) => {
+    if (!isSubAdmin) return true;
+    if (item.adminOnly) return false;
+    if (item.featureKey) return visibility[item.featureKey]?.subAdmin !== false;
+    return true;
+  });
 
   const handleSignOut = async () => {
     try {
@@ -72,52 +83,102 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile menu button */}
       <button
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-apple bg-surface border border-border hover:bg-surface-elevated transition-all"
+        aria-label={isMobileMenuOpen ? s.closeMenu : s.openMenu}
+        aria-expanded={isMobileMenuOpen}
+        className="lg:hidden"
+        style={{
+          position: 'fixed',
+          top: 16,
+          left: 16,
+          zIndex: 50,
+          padding: 8,
+          borderRadius: 'var(--radius-md)',
+          background: 'var(--paper)',
+          border: '1px solid var(--hairline)',
+          color: 'var(--ink)',
+          cursor: 'pointer',
+          transition: 'background 0.15s ease',
+        }}
       >
-        {isMobileMenuOpen ? (
-          <X className="w-6 h-6" />
-        ) : (
-          <Menu className="w-6 h-6" />
-        )}
+        {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
-      {/* Overlay for mobile */}
       {isMobileMenuOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-30"
+          className="lg:hidden"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 30,
+          }}
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
       <aside
-        className={`
-          fixed top-0 left-0 h-screen w-64 bg-surface border-r border-border
-          flex flex-col z-40 transition-transform duration-300
-          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        `}
+        className={`${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          height: '100vh',
+          width: 256,
+          background: 'var(--paper)',
+          borderRight: '1px solid var(--hairline)',
+          display: 'flex',
+          flexDirection: 'column',
+          zIndex: 40,
+          transition: 'transform 0.3s ease',
+        }}
       >
-        {/* Logo */}
-        <div className="p-6 border-b border-border">
-          <Link href="/admin" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-apple bg-gradient-to-br from-primary to-secondary flex items-center justify-center group-hover:scale-110 transition-transform">
-              <span className="text-xl font-bold">S</span>
+        <div style={{ padding: 24, borderBottom: '1px solid var(--hairline)' }}>
+          <Link href="/admin" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
+            <div style={{
+              width: 40,
+              height: 40,
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--brand)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontSize: 20,
+              fontWeight: 700,
+            }}>
+              S
             </div>
             <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                Selvacore
-              </h1>
-              <p className="text-xs text-text-tertiary">{s.adminPanel}</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink)', margin: 0 }}>
+                  Selvacore
+                </h1>
+                {isSubAdmin && (
+                  <span style={{
+                    padding: '2px 8px',
+                    fontSize: 10,
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    borderRadius: 'var(--radius-full)',
+                    background: 'var(--brand-tint)',
+                    color: 'var(--brand)',
+                  }}>
+                    {s.subAdminBadge}
+                  </span>
+                )}
+              </div>
+              <p style={{ fontSize: 12, color: 'var(--soft)', margin: 0, marginTop: 2 }}>
+                {isSubAdmin ? s.subAdminPanel : s.adminPanel}
+              </p>
             </div>
           </Link>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navigationItems.map((item) => {
+        <nav style={{ flex: 1, padding: 16, display: 'flex', flexDirection: 'column', gap: 4, overflowY: 'auto' }}>
+          {visibleItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
             const label = s[item.key as keyof typeof s] || item.key;
@@ -127,35 +188,71 @@ export default function Sidebar() {
                 key={item.key}
                 href={item.href}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`
-                  flex items-center gap-3 px-4 py-3 rounded-apple transition-all
-                  ${
-                    isActive
-                      ? 'bg-primary text-white shadow-apple'
-                      : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated'
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '12px 16px',
+                  borderRadius: 'var(--radius-md)',
+                  textDecoration: 'none',
+                  fontWeight: 500,
+                  fontSize: 14,
+                  background: isActive ? 'var(--brand-tint)' : 'transparent',
+                  color: isActive ? 'var(--brand)' : 'var(--soft)',
+                  borderLeft: isActive ? '3px solid var(--brand)' : '3px solid transparent',
+                  paddingLeft: isActive ? 13 : 16,
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'var(--hover-bg)';
+                    e.currentTarget.style.color = 'var(--ink)';
                   }
-                `}
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = 'var(--soft)';
+                  }
+                }}
               >
-                <Icon className="w-5 h-5" />
-                <span className="font-medium">{label}</span>
+                <Icon size={20} />
+                <span>{label}</span>
               </Link>
             );
           })}
         </nav>
 
-        {/* User section */}
-        <div className="p-4 border-t border-border">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-apple bg-surface-elevated mb-2">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-              <span className="text-sm font-semibold">
-                {userData?.displayName?.charAt(0) || 'A'}
-              </span>
+        <div style={{ padding: 16, borderTop: '1px solid var(--hairline)' }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            padding: '12px 16px',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--off-paper)',
+            marginBottom: 8,
+          }}>
+            <div style={{
+              width: 40,
+              height: 40,
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--brand)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontSize: 14,
+              fontWeight: 600,
+              flexShrink: 0,
+            }}>
+              {userData?.displayName?.charAt(0) || s.userFallback.charAt(0)}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">
-                {userData?.displayName || 'Admin'}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {userData?.displayName || s.userFallback}
               </p>
-              <p className="text-xs text-text-tertiary truncate">
+              <p style={{ fontSize: 11, color: 'var(--soft)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {userData?.email}
               </p>
             </div>
@@ -164,14 +261,35 @@ export default function Sidebar() {
 
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-apple text-text-secondary hover:text-error hover:bg-surface-elevated transition-all"
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '12px 16px',
+              borderRadius: 'var(--radius-md)',
+              color: 'var(--soft)',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 500,
+              fontSize: 14,
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--hover-bg)';
+              e.currentTarget.style.color = '#ef4444';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = 'var(--soft)';
+            }}
           >
-            <LogOut className="w-5 h-5" />
-            <span className="font-medium">{s.signOut}</span>
+            <LogOut size={20} />
+            <span>{s.signOut}</span>
           </button>
         </div>
       </aside>
     </>
   );
 }
-

@@ -36,16 +36,52 @@ export default function TechnicianRow({
   const workload = workloadLabel.replace('{jobs}', String(orders.length)).replace('{hrs}', String(hrs));
 
   return (
-    <div className="grid grid-cols-[200px_repeat(7,1fr)] gap-px">
-      <div className="sticky left-0 z-[2] flex items-center gap-2.5 px-3 py-3 bg-white rounded-[12px] border border-[#E5E5EA] shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#0071E3] to-[#34C759] flex items-center justify-center flex-shrink-0">
-          <span className="text-xs font-semibold text-white">
+    <div style={{ display: 'grid', gridTemplateColumns: '200px repeat(7, 1fr)', gap: 1 }}>
+      <div style={{
+        position: 'sticky',
+        left: 0,
+        zIndex: 2,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '12px',
+        background: 'var(--paper)',
+        borderRadius: 'var(--radius-md)',
+        border: '1px solid var(--hairline)',
+        boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+      }}>
+        <div style={{
+          width: 32,
+          height: 32,
+          borderRadius: 'var(--radius-full)',
+          background: 'var(--brand)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>
             {technician.displayName?.charAt(0) || '?'}
           </span>
         </div>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-[#1D1D1F] truncate">{technician.displayName}</p>
-          <p className="text-[10px] text-[#86868B] truncate">{workload}</p>
+        <div style={{ minWidth: 0 }}>
+          <p style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: 'var(--ink)',
+            margin: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>{technician.displayName}</p>
+          <p style={{
+            fontSize: 10,
+            color: 'var(--soft)',
+            margin: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>{workload}</p>
         </div>
       </div>
 

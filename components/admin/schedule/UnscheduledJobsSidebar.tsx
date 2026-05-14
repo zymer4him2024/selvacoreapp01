@@ -28,7 +28,26 @@ export default function UnscheduledJobsSidebar({ orders, labels, isDraggingOver 
     return (
       <button
         onClick={() => setCollapsed(false)}
-        className="fixed right-0 top-1/2 -translate-y-1/2 z-20 bg-[#FF9500] text-white px-2 py-4 rounded-l-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] text-xs font-semibold [writing-mode:vertical-lr]"
+        style={{
+          position: 'fixed',
+          right: 0,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          zIndex: 20,
+          background: 'var(--warn)',
+          color: '#fff',
+          padding: '16px 8px',
+          borderTopLeftRadius: 12,
+          borderBottomLeftRadius: 12,
+          borderTopRightRadius: 0,
+          borderBottomRightRadius: 0,
+          border: 'none',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          fontSize: 12,
+          fontWeight: 600,
+          writingMode: 'vertical-lr',
+          cursor: 'pointer',
+        }}
       >
         {labels.expandPanel} ({orders.length})
       </button>
@@ -38,34 +57,56 @@ export default function UnscheduledJobsSidebar({ orders, labels, isDraggingOver 
   return (
     <div
       ref={setNodeRef}
-      className={`w-[260px] flex-shrink-0 rounded-[12px] border transition-colors p-3 space-y-2 ${
-        highlight
-          ? 'border-[#FF9500] bg-[#FF9500]/[0.06]'
-          : 'border-[#E5E5EA] bg-white'
-      }`}
+      style={{
+        width: 260,
+        flexShrink: 0,
+        borderRadius: 'var(--radius-md)',
+        border: highlight ? '1px solid var(--warn)' : '1px solid var(--hairline)',
+        background: highlight ? 'rgba(245,158,11,0.06)' : 'var(--paper)',
+        padding: 12,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        transition: 'all 0.15s ease',
+      }}
     >
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[#1D1D1F]">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>
           {labels.unscheduledOrders} ({orders.length})
         </h3>
         <button
           onClick={() => setCollapsed(true)}
-          className="text-xs text-[#86868B] hover:text-[#1D1D1F] transition-colors"
+          style={{
+            fontSize: 11,
+            color: 'var(--soft)',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 0,
+            transition: 'color 0.15s ease',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--ink)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--soft)'; }}
         >
           {labels.collapsePanel}
         </button>
       </div>
 
       {highlight && (
-        <div className="border-2 border-dashed border-[#FF9500] rounded-[8px] py-3 text-center">
-          <p className="text-xs text-[#FF9500] font-medium">{labels.dropToUnschedule}</p>
+        <div style={{
+          border: '2px dashed var(--warn)',
+          borderRadius: 'var(--radius-sm)',
+          padding: '12px 0',
+          textAlign: 'center',
+        }}>
+          <p style={{ fontSize: 11, color: 'var(--warn)', fontWeight: 500, margin: 0 }}>{labels.dropToUnschedule}</p>
         </div>
       )}
 
       {orders.length === 0 ? (
-        <p className="text-xs text-[#86868B] text-center py-4">{labels.noUnscheduled}</p>
+        <p style={{ fontSize: 11, color: 'var(--soft)', textAlign: 'center', padding: '16px 0', margin: 0 }}>{labels.noUnscheduled}</p>
       ) : (
-        <div className="space-y-1.5 max-h-[60vh] overflow-y-auto">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: '60vh', overflowY: 'auto' }}>
           {orders.map((order) => (
             <DraggableJobCard key={order.id} order={order} timeTbdLabel={labels.timeTbd} />
           ))}

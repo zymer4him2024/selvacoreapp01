@@ -19,7 +19,6 @@ function SelectRoleContent() {
   const { t } = useTranslation();
 
   useEffect(() => {
-    // Get language from URL or localStorage
     const langFromUrl = searchParams.get('lang') as Language;
     const langFromStorage = localStorage.getItem('selectedLanguage') as Language;
     setSelectedLanguage(langFromUrl || langFromStorage || 'en');
@@ -27,16 +26,14 @@ function SelectRoleContent() {
 
   const handleContinue = async () => {
     if (!selectedRole || !user) {
-      toast.error('Please select a role');
+      toast.error(t.selectRole.selectRole);
       return;
     }
 
     try {
       setLoading(true);
 
-      // For technician role, redirect to application page without creating user doc yet
       if (selectedRole === 'technician') {
-        // Create a minimal user document that will be updated with application details
         await setDoc(doc(db, 'users', user.uid), {
           role: selectedRole,
           email: user.email,
@@ -45,20 +42,18 @@ function SelectRoleContent() {
           photoURL: user.photoURL,
           emailVerified: user.emailVerified,
           preferredLanguage: selectedLanguage,
-          active: false, // Will be activated when admin approves
+          active: false,
           roleSelected: true,
-          technicianStatus: 'draft', // Draft status until they complete application
+          technicianStatus: 'draft',
           createdAt: Timestamp.now(),
           updatedAt: Timestamp.now(),
           lastLoginAt: Timestamp.now(),
         });
-        
-        // Redirect to application form
+
         router.push('/technician/apply');
         return;
       }
 
-      // For other roles, create full user document
       await setDoc(doc(db, 'users', user.uid), {
         role: selectedRole,
         email: user.email,
@@ -74,12 +69,11 @@ function SelectRoleContent() {
         lastLoginAt: Timestamp.now(),
       });
 
-      toast.success('Welcome to Selvacore!');
+      toast.success(t.selectRole.welcomeToast);
 
-      // Redirect based on role
       const roleDashboards: Record<UserRole, string> = {
         admin: '/admin',
-        'sub-admin': '/sub-admin',
+        'sub-admin': '/admin',
         technician: '/technician',
         customer: '/customer/register',
       };
@@ -109,80 +103,57 @@ function SelectRoleContent() {
   ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-2xl space-y-8 animate-fade-in">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            {t.selectRole.title}
-          </h1>
-          <p className="text-lg text-text-secondary">
-            {t.selectRole.subtitle}
-          </p>
+    <div className="sc" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div style={{ width: '100%', maxWidth: 672, display: 'flex', flexDirection: 'column', gap: 32 }}>
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <h1 className="sc-h1" style={{ margin: 0 }}>{t.selectRole.title}</h1>
+          <p className="sc-helper" style={{ margin: 0, fontSize: 16 }}>{t.selectRole.subtitle}</p>
         </div>
 
-        {/* Role Selection */}
-        <div className="apple-card">
-          <div className="space-y-3">
-            {roles.map((role) => (
-              <button
-                key={role.value}
-                onClick={() => setSelectedRole(role.value)}
-                className={`
-                  w-full p-6 rounded-apple transition-all duration-200 text-left
-                  ${
-                    selectedRole === role.value
-                      ? 'bg-primary text-white shadow-apple-focus scale-[1.02]'
-                      : 'bg-surface hover:bg-surface-elevated border border-border hover:border-border-light'
-                  }
-                `}
-              >
-                <div className="flex items-center gap-4">
-                  <span className="text-4xl">{role.icon}</span>
-                  <div className="flex-1">
-                    <div className="font-semibold text-lg">{role.label}</div>
-                    <div
-                      className={`text-sm mt-1 ${
-                        selectedRole === role.value
-                          ? 'text-white/80'
-                          : 'text-text-tertiary'
-                      }`}
-                    >
-                      {role.description}
+        <div className="sc-card-static">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {roles.map((role) => {
+              const isSelected = selectedRole === role.value;
+              return (
+                <button
+                  key={role.value}
+                  onClick={() => setSelectedRole(role.value)}
+                  style={{
+                    width: '100%',
+                    padding: 24,
+                    borderRadius: 'var(--radius-md)',
+                    transition: 'all 0.15s ease',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    background: isSelected ? 'var(--brand-tint)' : 'var(--off-paper)',
+                    border: isSelected ? '2px solid var(--brand)' : '1px solid var(--hairline)',
+                    color: 'var(--ink)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <span style={{ fontSize: 36 }}>{role.icon}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, fontSize: 18, color: 'var(--ink)' }}>{role.label}</div>
+                      <div style={{ fontSize: 13, marginTop: 4, color: 'var(--soft)' }}>
+                        {role.description}
+                      </div>
                     </div>
+                    {isSelected && (
+                      <svg width={24} height={24} fill="none" stroke="var(--brand)" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
                   </div>
-                  {selectedRole === role.value && (
-                    <svg
-                      className="w-6 h-6"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  )}
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Continue Button */}
           <button
             onClick={handleContinue}
             disabled={!selectedRole || loading}
-            className={`
-              w-full mt-6 px-8 py-4 font-semibold rounded-apple transition-all shadow-apple
-              ${
-                selectedRole && !loading
-                  ? 'bg-primary hover:bg-primary-hover text-white hover:scale-[1.02]'
-                  : 'bg-surface-secondary text-text-tertiary cursor-not-allowed'
-              }
-            `}
+            className="sc-cta"
+            style={{ width: '100%', marginTop: 24, padding: '14px 24px', fontSize: 15 }}
           >
             {loading ? t.common.loading : t.selectRole.continue}
           </button>
@@ -195,11 +166,8 @@ function SelectRoleContent() {
 export default function SelectRolePage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading...</p>
-        </div>
+      <div className="sc" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="sc-spinner" />
       </div>
     }>
       <SelectRoleContent />

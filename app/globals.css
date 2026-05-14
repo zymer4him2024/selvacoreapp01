@@ -2,7 +2,434 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Apple-style global styles */
+/* ============================================================
+   Selvacore design tokens (theme-aware).
+   Light values are the default; dark values flip via data-theme="dark"
+   set on <html> by the no-flash inline script in app/layout.tsx.
+   All three portals (customer, technician, admin) plus login + select-role
+   are fully migrated to this token system.
+   ============================================================ */
+
+:root,
+:root[data-theme='light'] {
+  --brand: #10b981;
+  --brand-hover: #059669;
+  --brand-tint: #ecfdf5;
+
+  --ink: #111111;
+  --soft: #6b7280;
+  --paper: #ffffff;
+  --off-paper: #f9fafb;
+
+  --warn: #f59e0b;
+  --warn-tint: rgba(245, 158, 11, 0.1);
+
+  --hairline: rgba(107, 114, 128, 0.1);
+  --hover-bg: rgba(107, 114, 128, 0.05);
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-full: 9999px;
+
+  --nav-bg: rgba(255, 255, 255, 0.85);
+}
+
+:root[data-theme='dark'] {
+  --brand: #10b981;
+  --brand-hover: #34d399;
+  --brand-tint: rgba(16, 185, 129, 0.18);
+
+  --ink: #f5f5f5;
+  --soft: #9ca3af;
+  --paper: #0b0f0d;
+  --off-paper: #111714;
+
+  --warn: #f59e0b;
+  --warn-tint: rgba(245, 158, 11, 0.18);
+
+  --hairline: rgba(255, 255, 255, 0.08);
+  --hover-bg: rgba(255, 255, 255, 0.04);
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
+
+  --nav-bg: rgba(11, 15, 13, 0.85);
+}
+
+/* ============================================================
+   Selvacore .sc-* utility classes (customer portal).
+   These consume the tokens above and respond automatically to
+   light/dark via data-theme on <html>. Wrap a page in <div className="sc">.
+   ============================================================ */
+
+.sc {
+  min-height: 100vh;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-inter), system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.sc * { box-sizing: border-box; }
+
+.sc-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--nav-bg);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--hairline);
+}
+.sc-nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.sc-logo { height: 36px; width: auto; }
+.sc-nav-right { display: flex; align-items: center; gap: 4px; }
+.sc-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--ink);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  transition: background 120ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sc-nav-link:hover { background: var(--hover-bg); }
+.sc-nav-link .sc-nav-text { display: none; }
+@media (min-width: 640px) { .sc-nav-link .sc-nav-text { display: inline; } }
+
+/* Technician portal responsive nav */
+.sc .sc-nav-desktop { display: none; }
+.sc .sc-nav-mobile { display: block; }
+@media (min-width: 768px) {
+  .sc .sc-nav-desktop { display: flex; }
+  .sc .sc-nav-mobile { display: none; }
+  .sc .sc-tech-main { padding-bottom: 32px !important; }
+}
+
+.sc-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 24px 64px;
+}
+
+.sc-eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--soft);
+  margin-bottom: 8px;
+}
+.sc-h1 {
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 0 0 8px;
+  text-wrap: pretty;
+}
+.sc-h2 {
+  font-size: 22px;
+  line-height: 1.3;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+.sc-lede {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--soft);
+  margin: 0;
+}
+
+.sc-filters {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin: 32px 0;
+}
+@media (min-width: 768px) {
+  .sc-filters { grid-template-columns: 2fr 1fr; }
+}
+
+.sc-input,
+.sc-select,
+.sc-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  transition: border-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sc-textarea { resize: vertical; min-height: 96px; }
+.sc-input:focus,
+.sc-select:focus,
+.sc-textarea:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-tint);
+}
+.sc-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.sc-helper {
+  font-size: 12px;
+  color: var(--soft);
+  margin-top: 4px;
+}
+
+.sc-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+@media (min-width: 1024px) {
+  .sc-grid { grid-template-columns: 2fr 1fr; }
+}
+
+.sc-products {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 640px) {
+  .sc-products { grid-template-columns: repeat(2, 1fr); }
+}
+
+.sc-card {
+  background: var(--paper);
+  border-left: 3px solid var(--brand);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+}
+.sc-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
+}
+.sc-card-static {
+  background: var(--paper);
+  border-left: 3px solid var(--brand);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+}
+
+.sc-card-image {
+  aspect-ratio: 4 / 3;
+  background: var(--off-paper);
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+  overflow: hidden;
+  position: relative;
+}
+.sc-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.sc-card-image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--soft);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sc-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--warn);
+  background: var(--warn-tint);
+  border-radius: var(--radius-full);
+}
+.sc-badge-inline {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--warn);
+  background: var(--warn-tint);
+  border-radius: var(--radius-full);
+}
+
+.sc-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin: 0 0 4px;
+}
+.sc-card-desc {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--soft);
+  margin: 0 0 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.sc-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--soft);
+  margin-bottom: 12px;
+}
+.sc-chip {
+  font-family: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  padding: 2px 8px;
+  background: var(--off-paper);
+  color: var(--ink);
+  border-radius: var(--radius-sm);
+}
+
+.sc-price-row {
+  padding-top: 12px;
+  border-top: 1px solid var(--hairline);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.sc-price-label {
+  font-size: 12px;
+  color: var(--soft);
+  margin: 0 0 2px;
+}
+.sc-price {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--brand);
+}
+.sc-options {
+  font-size: 12px;
+  color: var(--soft);
+}
+
+.sc-cta {
+  margin-top: auto;
+  padding: 10px 14px;
+  background: var(--brand);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  border-radius: var(--radius-md);
+  transition: background 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  cursor: pointer;
+}
+.sc-cta:hover { background: var(--brand-hover); }
+.sc-card:hover .sc-cta { background: var(--brand-hover); }
+.sc-cta:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.sc-cta-ghost {
+  padding: 10px 14px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--hairline);
+  cursor: pointer;
+  transition: background 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sc-cta-ghost:hover { background: var(--hover-bg); }
+
+.sc-empty {
+  background: var(--paper);
+  border-left: 3px solid var(--brand);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  padding: 48px 20px;
+  text-align: center;
+}
+
+.sc-spinner-wrap {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sc-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--hairline);
+  border-top-color: var(--brand);
+  border-radius: 9999px;
+  animation: sc-spin 800ms linear infinite;
+}
+@keyframes sc-spin { to { transform: rotate(360deg); } }
+
+.sc-summary {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hairline);
+  text-align: center;
+  font-size: 12px;
+  color: var(--soft);
+}
+
+.sc-row { display: flex; align-items: center; gap: 12px; }
+.sc-row-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sc-stack { display: flex; flex-direction: column; gap: 12px; }
+.sc-stack-lg { display: flex; flex-direction: column; gap: 24px; }
+.sc-section { margin-bottom: 32px; }
+.sc-hairline { border-bottom: 1px solid var(--hairline); padding-bottom: 16px; margin-bottom: 16px; }
+
+/* Apple-style global styles (legacy — still in use by admin/technician portals) */
 :root {
   --background: #000000;
   --foreground: #ffffff;
@@ -60,17 +487,6 @@ textarea {
   transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-/* Apple-style tap feedback for technician/customer themes */
-.technician-theme button:active:not(:disabled),
-.customer-theme button:active:not(:disabled) {
-  transform: scale(0.97);
-}
-
-.technician-theme .apple-card:active,
-.customer-theme .apple-card:active {
-  transform: scale(0.98);
-}
-
 /* Apple-style button */
 button {
   cursor: pointer;
@@ -113,329 +529,6 @@ a {
 
 a:hover {
   opacity: 0.8;
-}
-
-/* Apple-style card */
-.apple-card {
-  background: #1c1c1e;
-  border-radius: 12px;
-  border: 1px solid #38383a;
-  padding: 20px;
-  transition: all 0.2s ease;
-}
-
-.apple-card:hover {
-  border-color: #48484a;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.24);
-}
-
-/* Apple-style glass effect */
-.apple-glass {
-  background: rgba(28, 28, 30, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* Light Pastel Green theme for Customer and Technician pages */
-.customer-theme,
-.technician-theme {
-  /* Background colors - light pastel green tones */
-  --background: #f0fdf9; /* Very light mint green background */
-  --surface: #ffffff; /* Pure white for cards */
-  --surface-elevated: #f8fffe; /* Slightly tinted white for elevated surfaces */
-  --surface-secondary: #e8faf5; /* Light pastel green for secondary surfaces */
-  
-  /* Primary colors - pastel green */
-  --tw-color-primary: #72edb6;
-  --tw-color-primary-hover: #55d287;
-  --tw-color-primary-light: #9ef4d0;
-  --tw-color-primary-dark: #3dc896;
-  
-  /* Text colors - dark for light background */
-  --text-primary: #1a1a1a; /* Almost black for main text */
-  --text-secondary: #4a5568; /* Gray for secondary text */
-  --text-tertiary: #718096; /* Lighter gray for tertiary text */
-  
-  /* Border colors - soft pastel green */
-  --border: #d1f5e8; /* Very light pastel green border */
-  --border-light: #e0f9f0; /* Even lighter border */
-}
-
-/* Override background colors */
-.customer-theme,
-.customer-theme body,
-.technician-theme,
-.technician-theme body {
-  background-color: var(--background) !important;
-  color: var(--text-primary) !important;
-}
-
-.customer-theme .bg-background,
-.technician-theme .bg-background {
-  background-color: var(--background) !important;
-}
-
-.customer-theme .bg-surface,
-.technician-theme .bg-surface {
-  background-color: var(--surface) !important;
-}
-
-.customer-theme .bg-surface-elevated,
-.technician-theme .bg-surface-elevated {
-  background-color: var(--surface-elevated) !important;
-}
-
-.customer-theme .bg-surface-secondary,
-.technician-theme .bg-surface-secondary {
-  background-color: var(--surface-secondary) !important;
-}
-
-/* Override text colors */
-.customer-theme .text-text-primary,
-.technician-theme .text-text-primary {
-  color: var(--text-primary) !important;
-}
-
-.customer-theme .text-text-secondary,
-.technician-theme .text-text-secondary {
-  color: var(--text-secondary) !important;
-}
-
-.customer-theme .text-text-tertiary,
-.technician-theme .text-text-tertiary {
-  color: var(--text-tertiary) !important;
-}
-
-/* Override border colors */
-.customer-theme .border-border,
-.technician-theme .border-border {
-  border-color: var(--border) !important;
-}
-
-.customer-theme .border-border-light,
-.technician-theme .border-border-light {
-  border-color: var(--border-light) !important;
-}
-
-/* Override primary color utilities */
-.customer-theme .bg-primary,
-.technician-theme .bg-primary {
-  background-color: #72edb6 !important;
-}
-
-.customer-theme .bg-primary-hover:hover,
-.technician-theme .bg-primary-hover:hover {
-  background-color: #55d287 !important;
-}
-
-.customer-theme .text-primary,
-.technician-theme .text-primary {
-  color: #72edb6 !important;
-}
-
-.customer-theme .border-primary,
-.technician-theme .border-primary {
-  border-color: #72edb6 !important;
-}
-
-.customer-theme .hover\:border-primary:hover,
-.technician-theme .hover\:border-primary:hover {
-  border-color: #72edb6 !important;
-}
-
-.customer-theme .focus\:border-primary:focus,
-.technician-theme .focus\:border-primary:focus {
-  border-color: #72edb6 !important;
-}
-
-/* Opacity variants for light theme */
-.customer-theme .bg-primary\/5,
-.technician-theme .bg-primary\/5 {
-  background-color: rgba(114, 237, 182, 0.1) !important;
-}
-
-.customer-theme .bg-primary\/10,
-.technician-theme .bg-primary\/10 {
-  background-color: rgba(114, 237, 182, 0.15) !important;
-}
-
-.customer-theme .bg-primary\/20,
-.technician-theme .bg-primary\/20 {
-  background-color: rgba(114, 237, 182, 0.25) !important;
-}
-
-.customer-theme .border-primary\/20,
-.technician-theme .border-primary\/20 {
-  border-color: rgba(114, 237, 182, 0.3) !important;
-}
-
-.customer-theme .border-primary\/30,
-.technician-theme .border-primary\/30 {
-  border-color: rgba(114, 237, 182, 0.4) !important;
-}
-
-/* Cards - white with light borders */
-.customer-theme .apple-card,
-.technician-theme .apple-card {
-  background: var(--surface) !important;
-  border-color: var(--border) !important;
-  box-shadow: 0 2px 8px rgba(114, 237, 182, 0.1) !important;
-}
-
-.customer-theme .apple-card:hover,
-.technician-theme .apple-card:hover {
-  border-color: #72edb6 !important;
-  box-shadow: 0 4px 16px rgba(114, 237, 182, 0.15) !important;
-}
-
-/* Input fields - white with light borders */
-.customer-theme input,
-.customer-theme textarea,
-.customer-theme select,
-.technician-theme input,
-.technician-theme textarea,
-.technician-theme select {
-  background-color: var(--surface) !important;
-  border-color: var(--border) !important;
-  color: var(--text-primary) !important;
-}
-
-.customer-theme input:focus,
-.customer-theme textarea:focus,
-.customer-theme select:focus,
-.technician-theme input:focus,
-.technician-theme textarea:focus,
-.technician-theme select:focus {
-  border-color: #72edb6 !important;
-  box-shadow: 0 0 0 3px rgba(114, 237, 182, 0.1) !important;
-}
-
-/* Autofill styles for light theme */
-.customer-theme input:-webkit-autofill,
-.customer-theme input:-webkit-autofill:hover,
-.customer-theme input:-webkit-autofill:focus,
-.customer-theme textarea:-webkit-autofill,
-.customer-theme textarea:-webkit-autofill:hover,
-.customer-theme textarea:-webkit-autofill:focus,
-.customer-theme select:-webkit-autofill,
-.customer-theme select:-webkit-autofill:hover,
-.customer-theme select:-webkit-autofill:focus,
-.technician-theme input:-webkit-autofill,
-.technician-theme input:-webkit-autofill:hover,
-.technician-theme input:-webkit-autofill:focus,
-.technician-theme textarea:-webkit-autofill,
-.technician-theme textarea:-webkit-autofill:hover,
-.technician-theme textarea:-webkit-autofill:focus,
-.technician-theme select:-webkit-autofill,
-.technician-theme select:-webkit-autofill:hover,
-.technician-theme select:-webkit-autofill:focus {
-  -webkit-text-fill-color: var(--text-primary) !important;
-  -webkit-box-shadow: 0 0 0px 1000px var(--surface) inset !important;
-}
-
-/* Navigation and sticky elements */
-.customer-theme nav,
-.technician-theme nav {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  border-color: var(--border) !important;
-}
-
-/* Scrollbar for light theme */
-.customer-theme ::-webkit-scrollbar-track,
-.technician-theme ::-webkit-scrollbar-track {
-  background: var(--surface-secondary) !important;
-}
-
-.customer-theme ::-webkit-scrollbar-thumb,
-.technician-theme ::-webkit-scrollbar-thumb {
-  background: var(--border) !important;
-}
-
-.customer-theme ::-webkit-scrollbar-thumb:hover,
-.technician-theme ::-webkit-scrollbar-thumb:hover {
-  background: #72edb6 !important;
-}
-
-/* Focus ring */
-.customer-theme *:focus-visible,
-.technician-theme *:focus-visible {
-  box-shadow: 0 0 0 4px rgba(114, 237, 182, 0.2) !important;
-  outline: none !important;
-}
-
-/* Links */
-.customer-theme a,
-.technician-theme a {
-  color: #72edb6 !important;
-}
-
-.customer-theme a:hover,
-.technician-theme a:hover {
-  color: #55d287 !important;
-}
-
-/* Gradient text */
-.customer-theme .from-primary,
-.technician-theme .from-primary {
-  --tw-gradient-from: #72edb6;
-}
-
-.customer-theme .to-primary,
-.technician-theme .to-primary {
-  --tw-gradient-to: #72edb6;
-}
-
-/* Button text on primary background - should be dark for readability */
-.customer-theme .bg-primary .text-white,
-.customer-theme .bg-primary button,
-.customer-theme .bg-primary span,
-.technician-theme .bg-primary .text-white,
-.technician-theme .bg-primary button,
-.technician-theme .bg-primary span {
-  color: #1a1a1a !important;
-}
-
-/* Enhanced hover states */
-.customer-theme .hover\:bg-primary:hover,
-.technician-theme .hover\:bg-primary:hover {
-  background-color: #55d287 !important;
-}
-
-.customer-theme .hover\:bg-surface-elevated:hover,
-.technician-theme .hover\:bg-surface-elevated:hover {
-  background-color: var(--surface-elevated) !important;
-}
-
-/* Product card text - darker green for better visibility */
-.customer-theme .apple-card .text-text-secondary,
-.customer-theme .apple-card p.text-text-secondary,
-.customer-theme .apple-card span.text-text-secondary {
-  color: #2d5a45 !important; /* Dark green for better readability */
-}
-
-.customer-theme .apple-card .text-text-tertiary,
-.customer-theme .apple-card p.text-text-tertiary,
-.customer-theme .apple-card span.text-text-tertiary {
-  color: #3d7a5f !important; /* Medium-dark green */
-}
-
-.customer-theme .apple-card h3,
-.customer-theme .apple-card .font-semibold {
-  color: #1a4a35 !important; /* Very dark green for headings */
-}
-
-/* Product card body text */
-.customer-theme .apple-card p:not(.text-primary):not(.text-2xl) {
-  color: #2d5a45 !important;
-}
-
-/* Product card price - keep it vibrant but readable */
-.customer-theme .apple-card .text-primary.text-2xl {
-  color: #0fa968 !important; /* Bright medium green for prices */
 }
 
 /* Print styles for schedule page */

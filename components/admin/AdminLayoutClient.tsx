@@ -9,11 +9,11 @@ export default function AdminLayoutClient({
   children: React.ReactNode;
 }) {
   return (
-    <ProtectedRoute allowedRoles={['admin']}>
-      <div className="flex min-h-screen bg-background">
+    <ProtectedRoute allowedRoles={['admin', 'sub-admin']}>
+      <div className="sc" style={{ display: 'flex', minHeight: '100vh' }}>
         <Sidebar />
-        <main className="flex-1 lg:ml-64 p-8">
-          <div className="max-w-7xl mx-auto">
+        <main className="lg:ml-64" style={{ flex: 1, padding: 32 }}>
+          <div style={{ maxWidth: 1280, margin: '0 auto' }}>
             {children}
           </div>
         </main>

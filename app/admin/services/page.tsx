@@ -7,11 +7,14 @@ import { Service } from '@/types';
 import { getAllServices, deleteService } from '@/lib/services/serviceService';
 import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 export default function ServicesPage() {
   const { t } = useTranslation();
   const { formatCurrency } = useLocaleFormatters();
+  const { userData } = useAuth();
+  const isSubAdmin = userData?.role === 'sub-admin';
   const sv = t.admin.services;
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,58 +57,70 @@ export default function ServicesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">{sv.loading}</p>
+      <div className="sc" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+          <div className="sc-spinner" />
+          <p className="sc-helper" style={{ margin: 0 }}>{sv.loading}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="sc" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <div>
-          <h1 className="text-4xl font-bold tracking-tight mb-2">{sv.title}</h1>
-          <p className="text-text-secondary">{sv.subtitle}</p>
+          <h1 className="sc-h1" style={{ margin: 0, marginBottom: 8 }}>{sv.title}</h1>
+          <p className="sc-helper" style={{ margin: 0 }}>{isSubAdmin ? sv.subtitleSubAdmin : sv.subtitle}</p>
         </div>
-        <Link
-          href="/admin/services/new"
-          className="flex items-center gap-2 px-6 py-3 bg-secondary hover:bg-secondary/90 text-white font-semibold rounded-apple transition-all hover:scale-105 shadow-apple"
-        >
-          <Plus className="w-5 h-5" />
-          {sv.addService}
-        </Link>
+        {!isSubAdmin && (
+          <Link
+            href="/admin/services/new"
+            className="sc-cta"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
+          >
+            <Plus className="w-5 h-5" />
+            {sv.addService}
+          </Link>
+        )}
       </div>
 
-      {/* Search */}
-      <div className="apple-card">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
+      <div className="sc-card-static">
+        <div style={{ position: 'relative' }}>
+          <Search
+            className="w-5 h-5"
+            style={{
+              position: 'absolute',
+              left: 16,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--soft)',
+              pointerEvents: 'none',
+            }}
+          />
           <input
             type="text"
             placeholder={sv.searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all text-text-primary placeholder:text-text-tertiary"
+            className="sc-input"
+            style={{ paddingLeft: 44 }}
           />
         </div>
       </div>
 
-      {/* Services List */}
       {filteredServices.length === 0 ? (
-        <div className="apple-card text-center py-16">
-          <Wrench className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
-          <h3 className="text-xl font-semibold mb-2">{sv.noServices}</h3>
-          <p className="text-text-secondary mb-6">
-            {searchTerm ? sv.tryDifferent : sv.getStarted}
+        <div className="sc-card-static" style={{ textAlign: 'center', padding: '64px 24px' }}>
+          <Wrench className="w-16 h-16" style={{ margin: '0 auto 16px', color: 'var(--soft)' }} />
+          <h3 className="sc-h2" style={{ margin: 0, marginBottom: 8, fontSize: 20 }}>{sv.noServices}</h3>
+          <p className="sc-helper" style={{ margin: 0, marginBottom: 24 }}>
+            {searchTerm ? sv.tryDifferent : (isSubAdmin ? '' : sv.getStarted)}
           </p>
-          {!searchTerm && (
+          {!searchTerm && !isSubAdmin && (
             <Link
               href="/admin/services/new"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-secondary hover:bg-secondary/90 text-white font-semibold rounded-apple transition-all"
+              className="sc-cta"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
             >
               <Plus className="w-5 h-5" />
               {sv.addFirst}
@@ -113,65 +128,92 @@ export default function ServicesPage() {
           )}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {filteredServices.map((service) => (
-            <div
-              key={service.id}
-              className="apple-card hover:scale-[1.01] transition-all cursor-pointer"
-            >
-              <div className="flex items-start justify-between">
-                {/* Service Info */}
-                <div className="flex-1">
-                  <div className="flex items-start gap-4">
-                    <div className="w-16 h-16 rounded-apple bg-secondary/10 flex items-center justify-center flex-shrink-0">
-                      <Wrench className="w-8 h-8 text-secondary" />
+            <div key={service.id} className="sc-card-static">
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+                    <div
+                      style={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: 'var(--radius-md)',
+                        background: 'var(--brand-tint)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Wrench className="w-8 h-8" style={{ color: 'var(--brand)' }} />
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h3 className="text-xl font-semibold mb-1">{service.name.en}</h3>
-                          <p className="text-sm text-text-secondary line-clamp-2">
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>
+                        <div style={{ minWidth: 0 }}>
+                          <h3 className="sc-h2" style={{ margin: 0, marginBottom: 4, fontSize: 18 }}>{service.name.en}</h3>
+                          <p className="sc-helper" style={{ margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                             {service.description.en}
                           </p>
                         </div>
                         {!service.active && (
-                          <span className="px-3 py-1 bg-error/20 text-error text-xs font-medium rounded-full">
+                          <span
+                            style={{
+                              padding: '4px 12px',
+                              background: 'rgba(239,68,68,0.15)',
+                              color: '#ef4444',
+                              fontSize: 12,
+                              fontWeight: 500,
+                              borderRadius: 'var(--radius-full)',
+                              flexShrink: 0,
+                            }}
+                          >
                             {sv.inactive}
                           </span>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-6 mt-4">
-                        <div>
-                          <p className="text-2xl font-bold text-secondary">
-                            {formatCurrency(service.price, service.currency)}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 text-text-secondary">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginTop: 16, flexWrap: 'wrap' }}>
+                        <p style={{ margin: 0, fontSize: 24, fontWeight: 700, color: 'var(--brand)' }}>
+                          {formatCurrency(service.price, service.currency)}
+                        </p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--soft)' }}>
                           <Clock className="w-4 h-4" />
-                          <span className="text-sm">{service.duration}h</span>
+                          <span style={{ fontSize: 14 }}>{service.duration}h</span>
                         </div>
-                        <div>
-                          <span className="px-3 py-1 bg-surface-elevated rounded text-sm">
-                            {service.category}
-                          </span>
-                        </div>
+                        <span
+                          style={{
+                            padding: '4px 12px',
+                            background: 'var(--off-paper)',
+                            borderRadius: 'var(--radius-sm)',
+                            fontSize: 14,
+                            color: 'var(--ink)',
+                          }}
+                        >
+                          {service.category}
+                        </span>
                       </div>
 
                       {service.includes && service.includes.length > 0 && (
-                        <div className="mt-4">
-                          <p className="text-xs text-text-tertiary mb-2">{sv.includes}</p>
-                          <div className="flex flex-wrap gap-2">
+                        <div style={{ marginTop: 16 }}>
+                          <p className="sc-helper" style={{ margin: 0, marginBottom: 8, fontSize: 12 }}>{sv.includes}</p>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                             {service.includes.slice(0, 3).map((item, index) => (
                               <span
                                 key={index}
-                                className="px-2 py-1 bg-surface-elevated text-xs rounded"
+                                style={{
+                                  padding: '4px 8px',
+                                  background: 'var(--off-paper)',
+                                  fontSize: 12,
+                                  borderRadius: 'var(--radius-sm)',
+                                  color: 'var(--ink)',
+                                }}
                               >
                                 {item}
                               </span>
                             ))}
                             {service.includes.length > 3 && (
-                              <span className="px-2 py-1 text-xs text-text-tertiary">
+                              <span style={{ padding: '4px 8px', fontSize: 12, color: 'var(--soft)' }}>
                                 +{service.includes.length - 3} {sv.more}
                               </span>
                             )}
@@ -182,34 +224,62 @@ export default function ServicesPage() {
                   </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex gap-2 ml-4">
-                  <Link
-                    href={`/admin/services/${service.id}`}
-                    className="p-2 bg-surface-elevated hover:bg-surface-secondary rounded-apple transition-all"
-                  >
-                    <Edit className="w-5 h-5" />
-                  </Link>
-                  <button
-                    onClick={() => handleDelete(service.id, service.name.en)}
-                    className="p-2 bg-surface-elevated hover:bg-error/20 hover:text-error rounded-apple transition-all"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                </div>
+                {!isSubAdmin && (
+                  <div style={{ display: 'flex', gap: 8, marginLeft: 16, flexShrink: 0 }}>
+                    <Link
+                      href={`/admin/services/${service.id}`}
+                      style={{
+                        padding: 8,
+                        background: 'var(--off-paper)',
+                        borderRadius: 'var(--radius-md)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--ink)',
+                        textDecoration: 'none',
+                        transition: 'background 0.15s ease',
+                      }}
+                    >
+                      <Edit className="w-5 h-5" />
+                    </Link>
+                    <button
+                      onClick={() => handleDelete(service.id, service.name.en)}
+                      style={{
+                        padding: 8,
+                        background: 'var(--off-paper)',
+                        borderRadius: 'var(--radius-md)',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'var(--ink)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(239,68,68,0.15)';
+                        e.currentTarget.style.color = '#ef4444';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'var(--off-paper)';
+                        e.currentTarget.style.color = 'var(--ink)';
+                      }}
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Summary */}
       {filteredServices.length > 0 && (
-        <div className="text-center text-sm text-text-tertiary">
+        <div style={{ textAlign: 'center', fontSize: 14, color: 'var(--soft)' }}>
           {sv.showing} {filteredServices.length} {sv.of} {services.length} {sv.services}
         </div>
       )}
     </div>
   );
 }
-

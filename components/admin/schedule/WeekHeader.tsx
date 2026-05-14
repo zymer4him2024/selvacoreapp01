@@ -21,6 +21,19 @@ interface WeekHeaderProps {
   showScFilter?: boolean;
 }
 
+const navIconBtn: React.CSSProperties = {
+  padding: 8,
+  background: 'transparent',
+  border: 'none',
+  borderRadius: 'var(--radius-md)',
+  color: 'var(--ink)',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  transition: 'background 0.15s ease',
+};
+
 export default function WeekHeader({
   weekStart, onPrev, onNext, onToday, subContractors, scFilter, onScFilterChange, labels,
   showScFilter = true,
@@ -30,34 +43,41 @@ export default function WeekHeader({
   const fmt = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
   return (
-    <div className="flex items-center justify-between flex-wrap gap-4">
-      {/* Week navigation */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onToday}
-          className="px-4 py-2 text-sm font-medium bg-[#0071E3] text-white rounded-[8px] hover:opacity-90 transition-opacity"
-        >
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <button onClick={onToday} className="sc-cta" style={{ padding: '8px 16px', fontSize: 13 }}>
           {labels.today}
         </button>
-        <div className="flex items-center gap-1">
-          <button onClick={onPrev} className="p-2 rounded-[8px] hover:bg-[#F5F5F7] transition-colors">
-            <ChevronLeft className="w-5 h-5 text-[#1D1D1F]" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button
+            onClick={onPrev}
+            style={navIconBtn}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+          >
+            <ChevronLeft size={20} />
           </button>
-          <button onClick={onNext} className="p-2 rounded-[8px] hover:bg-[#F5F5F7] transition-colors">
-            <ChevronRight className="w-5 h-5 text-[#1D1D1F]" />
+          <button
+            onClick={onNext}
+            style={navIconBtn}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+          >
+            <ChevronRight size={20} />
           </button>
         </div>
-        <span className="text-lg font-semibold text-[#1D1D1F]">
+        <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--ink)' }}>
           {labels.weekOf} {fmt(weekStart)} &ndash; {fmt(weekEnd)}
         </span>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         {showScFilter && (
           <select
             value={scFilter}
             onChange={(e) => onScFilterChange(e.target.value)}
-            className="px-4 py-2 text-sm border border-[#E5E5EA] rounded-[8px] bg-white text-[#1D1D1F] focus:border-[#0071E3] focus:outline-none"
+            className="sc-select"
+            style={{ fontSize: 13 }}
           >
             <option value="all">{labels.allSubContractors}</option>
             <option value="independent">{labels.independent}</option>
@@ -68,9 +88,10 @@ export default function WeekHeader({
         )}
         <button
           onClick={() => window.print()}
-          className="no-print flex items-center gap-2 px-4 py-2 text-sm font-medium border border-[#E5E5EA] rounded-[8px] bg-white text-[#1D1D1F] hover:bg-[#F5F5F7] transition-colors"
+          className="no-print sc-cta-ghost"
+          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', fontSize: 13 }}
         >
-          <Printer className="w-4 h-4" />
+          <Printer size={16} />
           {labels.printWeek}
         </button>
       </div>

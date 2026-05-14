@@ -26,16 +26,25 @@ export default function DroppableCell({
     data: { technicianId, date },
   });
 
+  const baseStyle: React.CSSProperties = {
+    minHeight: 88,
+    padding: 6,
+    borderRadius: 'var(--radius-md)',
+    transition: 'background 0.15s ease',
+  };
+
+  let stateStyle: React.CSSProperties = {};
+  if (isOver) {
+    stateStyle = { background: 'var(--brand-tint)', border: '2px dashed var(--brand)' };
+  } else if (isToday) {
+    stateStyle = { background: 'rgba(16,185,129,0.05)', borderTop: '2px solid var(--brand)' };
+  } else if (orders.length === 0) {
+    stateStyle = { border: '1px dashed var(--hairline)' };
+  }
+
   return (
-    <div
-      ref={setNodeRef}
-      className={`min-h-[88px] p-1.5 rounded-[12px] transition-colors ${
-        isOver ? 'bg-[#0071E3]/[0.08] border-2 border-[#0071E3]' : ''
-      } ${isToday && !isOver ? 'bg-[#0071E3]/[0.04] border-t-2 border-t-[#0071E3]' : ''} ${
-        !isOver && !isToday && orders.length === 0 ? 'border border-dashed border-[#E5E5EA]' : ''
-      } ${!isOver && !isToday && orders.length > 0 ? '' : ''}`}
-    >
-      <div className="space-y-1.5">
+    <div ref={setNodeRef} style={{ ...baseStyle, ...stateStyle }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {orders.map((order) => (
           <DraggableJobCard
             key={order.id}

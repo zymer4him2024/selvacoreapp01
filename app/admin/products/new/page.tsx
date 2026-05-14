@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Plus, Trash2, Upload, X } from 'lucide-react';
-import { Product, ProductVariation, MultiLanguageText, MaintenanceTemplateFilter } from '@/types';
+import { ProductVariation, MultiLanguageText, MaintenanceTemplateFilter } from '@/types';
 import { createProduct, updateProduct, uploadProductImage } from '@/lib/services/productService';
 import { PRODUCT_CATEGORIES, SUPPORTED_LANGUAGES } from '@/lib/utils/constants';
+import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -14,9 +15,15 @@ export default function NewProductPage() {
   const { t } = useTranslation();
   const pn = t.admin.productNew;
   const router = useRouter();
+  const { userData } = useAuth();
   const [loading, setLoading] = useState(false);
-  
-  // Form state
+
+  useEffect(() => {
+    if (userData && userData.role !== 'admin') {
+      router.replace('/admin/products');
+    }
+  }, [userData, router]);
+
   const [name, setName] = useState<MultiLanguageText>({ en: '', pt: '', es: '', ko: '' });
   const [description, setDescription] = useState<MultiLanguageText>({ en: '', pt: '', es: '', ko: '' });
   const [category, setCategory] = useState('');
@@ -28,16 +35,12 @@ export default function NewProductPage() {
   const [featured, setFeatured] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
-  
-  // Images
+
   const [images, setImages] = useState<File[]>([]);
   const [imagePreview, setImagePreview] = useState<string[]>([]);
-  
-  // Variations
-  const [variations, setVariations] = useState<ProductVariation[]>([]);
-  const [showVariationForm, setShowVariationForm] = useState(false);
 
-  // Maintenance Template
+  const [variations, setVariations] = useState<ProductVariation[]>([]);
+
   const [ezerIntervalDays, setEzerIntervalDays] = useState(180);
   const [templateFilters, setTemplateFilters] = useState<MaintenanceTemplateFilter[]>([
     { name: 'Sediment Filter', intervalDays: 180 },
@@ -49,16 +52,16 @@ export default function NewProductPage() {
     { label: pn.twelveMonths, days: 365 },
   ];
 
-  // Specifications
   const [specifications, setSpecifications] = useState<Record<string, string>>({});
   const [specKey, setSpecKey] = useState('');
   const [specValue, setSpecValue] = useState('');
 
+  if (userData && userData.role !== 'admin') return null;
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     setImages([...images, ...files]);
-    
-    // Create previews
+
     files.forEach(file => {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -109,7 +112,6 @@ export default function NewProductPage() {
       images: [],
     };
     setVariations([...variations, newVariation]);
-    setShowVariationForm(true);
   };
 
   const removeVariation = (id: string) => {
@@ -124,18 +126,17 @@ export default function NewProductPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validation
+
     if (!name.en.trim()) {
       toast.error(pn.validationName);
       return;
     }
-    
+
     if (!category) {
       toast.error(pn.validationCategory);
       return;
     }
-    
+
     if (!basePrice || parseFloat(basePrice) <= 0) {
       toast.error(pn.validationPrice);
       return;
@@ -144,7 +145,6 @@ export default function NewProductPage() {
     try {
       setLoading(true);
 
-      // Create product first to get ID
       const productId = await createProduct({
         name,
         description,
@@ -165,14 +165,12 @@ export default function NewProductPage() {
         },
       });
 
-      // Upload images
       const imageUrls: string[] = [];
       for (const file of images) {
         const url = await uploadProductImage(productId, file);
         imageUrls.push(url);
       }
 
-      // Update product with image URLs
       if (imageUrls.length > 0) {
         await updateProduct(productId, { images: imageUrls });
       }
@@ -187,39 +185,59 @@ export default function NewProductPage() {
     }
   };
 
+  const intervalBtnStyle = (active: boolean): React.CSSProperties => ({
+    padding: '8px 12px',
+    borderRadius: 'var(--radius-md)',
+    fontSize: 14,
+    fontWeight: 500,
+    border: `1px solid ${active ? 'var(--brand)' : 'var(--hairline)'}`,
+    background: active ? 'var(--brand)' : 'var(--off-paper)',
+    color: active ? '#fff' : 'var(--soft)',
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  });
+
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center gap-4">
+    <div className="sc" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <button
           onClick={() => router.back()}
-          className="p-2 hover:bg-surface-elevated rounded-apple transition-colors"
+          style={{
+            padding: 8,
+            borderRadius: 'var(--radius-md)',
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--ink)',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'background 0.15s ease',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">{pn.title}</h1>
-          <p className="text-text-secondary mt-1">
-            {pn.subtitle}
-          </p>
+          <h1 className="sc-h1" style={{ margin: 0 }}>{pn.title}</h1>
+          <p className="sc-helper" style={{ margin: '4px 0 0' }}>{pn.subtitle}</p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Information */}
-        <div className="apple-card">
-          <h2 className="text-2xl font-semibold mb-6">{pn.basicInfo}</h2>
-          
-          <div className="space-y-6">
-            {/* Product Name (Multi-language) */}
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div className="sc-card-static">
+          <h2 className="sc-h2" style={{ margin: 0, marginBottom: 24, fontSize: 24 }}>{pn.basicInfo}</h2>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <div>
-              <label className="block text-sm font-medium mb-3">
-                {pn.productName} <span className="text-error">*</span>
+              <label className="sc-label">
+                {pn.productName} <span style={{ color: '#ef4444' }}>*</span>
               </label>
-              <div className="space-y-3">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {SUPPORTED_LANGUAGES.map(lang => (
-                  <div key={lang.code} className="flex gap-3">
-                    <span className="flex items-center gap-2 w-32 text-sm text-text-secondary">
+                  <div key={lang.code} style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8, width: 128, fontSize: 14, color: 'var(--soft)' }}>
                       {lang.flag} {lang.name}
                     </span>
                     <input
@@ -227,7 +245,8 @@ export default function NewProductPage() {
                       value={name[lang.code] || ''}
                       onChange={(e) => setName({ ...name, [lang.code]: e.target.value })}
                       placeholder={`Product name in ${lang.name}`}
-                      className="flex-1 px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
+                      className="sc-input"
+                      style={{ flex: 1, minWidth: 200 }}
                       required={lang.code === 'en'}
                     />
                   </div>
@@ -235,15 +254,12 @@ export default function NewProductPage() {
               </div>
             </div>
 
-            {/* Product Description (Multi-language) */}
             <div>
-              <label className="block text-sm font-medium mb-3">
-                {pn.description}
-              </label>
-              <div className="space-y-3">
+              <label className="sc-label">{pn.description}</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {SUPPORTED_LANGUAGES.map(lang => (
-                  <div key={lang.code} className="flex gap-3">
-                    <span className="flex items-center gap-2 w-32 text-sm text-text-secondary">
+                  <div key={lang.code} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8, width: 128, fontSize: 14, color: 'var(--soft)', paddingTop: 12 }}>
                       {lang.flag} {lang.name}
                     </span>
                     <textarea
@@ -251,23 +267,23 @@ export default function NewProductPage() {
                       onChange={(e) => setDescription({ ...description, [lang.code]: e.target.value })}
                       placeholder={`Description in ${lang.name}`}
                       rows={3}
-                      className="flex-1 px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all resize-none"
+                      className="sc-textarea"
+                      style={{ flex: 1, minWidth: 200, resize: 'none' }}
                     />
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Category and Brand */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  {pn.category} <span className="text-error">*</span>
+                <label className="sc-label">
+                  {pn.category} <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
+                  className="sc-select"
                   required
                 >
                   <option value="">{pn.selectCategory}</option>
@@ -278,25 +294,24 @@ export default function NewProductPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  {pn.brand} <span className="text-error">*</span>
+                <label className="sc-label">
+                  {pn.brand} <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
                   type="text"
                   value={brand}
                   onChange={(e) => setBrand(e.target.value)}
                   placeholder={pn.brandPlaceholder}
-                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
+                  className="sc-input"
                   required
                 />
               </div>
             </div>
 
-            {/* Price and Installation Time */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  {pn.basePrice} <span className="text-error">*</span>
+                <label className="sc-label">
+                  {pn.basePrice} <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
                   type="number"
@@ -304,19 +319,17 @@ export default function NewProductPage() {
                   value={basePrice}
                   onChange={(e) => setBasePrice(e.target.value)}
                   placeholder="0.00"
-                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
+                  className="sc-input"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  {pn.currency}
-                </label>
+                <label className="sc-label">{pn.currency}</label>
                 <select
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
-                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
+                  className="sc-select"
                 >
                   <option value="USD">USD ($)</option>
                   <option value="EUR">EUR (€)</option>
@@ -326,51 +339,81 @@ export default function NewProductPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  {pn.installationTime}
-                </label>
+                <label className="sc-label">{pn.installationTime}</label>
                 <input
                   type="number"
                   value={installationTime}
                   onChange={(e) => setInstallationTime(e.target.value)}
                   placeholder="1"
-                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
+                  className="sc-input"
                 />
               </div>
             </div>
 
-            {/* Tags */}
             <div>
-              <label className="block text-sm font-medium mb-2">{pn.tags}</label>
-              <div className="flex gap-2 mb-3">
+              <label className="sc-label">{pn.tags}</label>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
                 <input
                   type="text"
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
                   placeholder={pn.tagsPlaceholder}
-                  className="flex-1 px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
+                  className="sc-input"
+                  style={{ flex: 1 }}
                 />
                 <button
                   type="button"
                   onClick={addTag}
-                  className="px-4 py-3 bg-surface-elevated hover:bg-surface-secondary rounded-apple transition-all"
+                  style={{
+                    padding: '12px 16px',
+                    background: 'var(--off-paper)',
+                    border: '1px solid var(--hairline)',
+                    borderRadius: 'var(--radius-sm)',
+                    color: 'var(--ink)',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'background 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--off-paper)'; }}
                 >
                   <Plus className="w-5 h-5" />
                 </button>
               </div>
               {tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {tags.map(tag => (
                     <span
                       key={tag}
-                      className="flex items-center gap-2 px-3 py-1 bg-primary/20 text-primary rounded-full text-sm"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '4px 12px',
+                        background: 'var(--brand-tint)',
+                        color: 'var(--brand)',
+                        borderRadius: 'var(--radius-full)',
+                        fontSize: 14,
+                      }}
                     >
                       {tag}
                       <button
                         type="button"
                         onClick={() => removeTag(tag)}
-                        className="hover:text-error transition-colors"
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          padding: 0,
+                          cursor: 'pointer',
+                          color: 'inherit',
+                          display: 'inline-flex',
+                          transition: 'color 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--brand)'; }}
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -380,69 +423,112 @@ export default function NewProductPage() {
               )}
             </div>
 
-            {/* Status Toggles */}
-            <div className="flex gap-6">
-              <label className="flex items-center gap-3 cursor-pointer">
+            <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
                 <input
                   type="checkbox"
                   checked={active}
                   onChange={(e) => setActive(e.target.checked)}
-                  className="w-5 h-5 rounded accent-primary"
+                  style={{ width: 20, height: 20, accentColor: 'var(--brand)' }}
                 />
-                <span className="text-sm font-medium">{pn.active}</span>
+                <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink)' }}>{pn.active}</span>
               </label>
 
-              <label className="flex items-center gap-3 cursor-pointer">
+              <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
                 <input
                   type="checkbox"
                   checked={featured}
                   onChange={(e) => setFeatured(e.target.checked)}
-                  className="w-5 h-5 rounded accent-warning"
+                  style={{ width: 20, height: 20, accentColor: 'var(--warn)' }}
                 />
-                <span className="text-sm font-medium">{pn.featured}</span>
+                <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink)' }}>{pn.featured}</span>
               </label>
             </div>
           </div>
         </div>
 
-        {/* Product Images */}
-        <div className="apple-card">
-          <h2 className="text-2xl font-semibold mb-6">{pn.productImages}</h2>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-border rounded-apple hover:border-primary transition-all cursor-pointer bg-surface-elevated hover:bg-surface-secondary">
-                <Upload className="w-12 h-12 text-text-tertiary mb-2" />
-                <span className="text-sm text-text-secondary">{pn.uploadImages}</span>
-                <span className="text-xs text-text-tertiary mt-1">{pn.imageFormats}</span>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden"
-                />
-              </label>
-            </div>
+        <div className="sc-card-static">
+          <h2 className="sc-h2" style={{ margin: 0, marginBottom: 24, fontSize: 24 }}>{pn.productImages}</h2>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <label
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100%',
+                height: 192,
+                border: '2px dashed var(--hairline)',
+                borderRadius: 'var(--radius-md)',
+                cursor: 'pointer',
+                background: 'var(--off-paper)',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'var(--brand)';
+                e.currentTarget.style.background = 'var(--hover-bg)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--hairline)';
+                e.currentTarget.style.background = 'var(--off-paper)';
+              }}
+            >
+              <Upload className="w-12 h-12" style={{ color: 'var(--soft)', marginBottom: 8 }} />
+              <span style={{ fontSize: 14, color: 'var(--soft)' }}>{pn.uploadImages}</span>
+              <span style={{ fontSize: 12, color: 'var(--soft)', marginTop: 4 }}>{pn.imageFormats}</span>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImageChange}
+                style={{ display: 'none' }}
+              />
+            </label>
 
             {imagePreview.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16 }}>
                 {imagePreview.map((preview, index) => (
-                  <div key={index} className="relative group">
+                  <div key={index} style={{ position: 'relative' }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={preview}
                       alt={`Preview ${index + 1}`}
-                      className="w-full h-32 object-cover rounded-apple"
+                      style={{ width: '100%', height: 128, objectFit: 'cover', borderRadius: 'var(--radius-md)' }}
                     />
                     <button
                       type="button"
                       onClick={() => removeImage(index)}
-                      className="absolute top-2 right-2 p-1 bg-error rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        padding: 4,
+                        background: '#ef4444',
+                        color: '#fff',
+                        borderRadius: 'var(--radius-full)',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
                     >
                       <X className="w-4 h-4" />
                     </button>
                     {index === 0 && (
-                      <div className="absolute bottom-2 left-2 px-2 py-1 bg-primary text-white text-xs rounded">
+                      <div
+                        style={{
+                          position: 'absolute',
+                          bottom: 8,
+                          left: 8,
+                          padding: '4px 8px',
+                          background: 'var(--brand)',
+                          color: '#fff',
+                          fontSize: 12,
+                          borderRadius: 'var(--radius-sm)',
+                        }}
+                      >
                         {pn.main}
                       </div>
                     )}
@@ -453,50 +539,82 @@ export default function NewProductPage() {
           </div>
         </div>
 
-        {/* Specifications */}
-        <div className="apple-card">
-          <h2 className="text-2xl font-semibold mb-6">{pn.specifications}</h2>
-          
-          <div className="space-y-4">
-            <div className="flex gap-3">
+        <div className="sc-card-static">
+          <h2 className="sc-h2" style={{ margin: 0, marginBottom: 24, fontSize: 24 }}>{pn.specifications}</h2>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <input
                 type="text"
                 value={specKey}
                 onChange={(e) => setSpecKey(e.target.value)}
                 placeholder={pn.specKey}
-                className="flex-1 px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
+                className="sc-input"
+                style={{ flex: 1, minWidth: 160 }}
               />
               <input
                 type="text"
                 value={specValue}
                 onChange={(e) => setSpecValue(e.target.value)}
                 placeholder={pn.specValue}
-                className="flex-1 px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
+                className="sc-input"
+                style={{ flex: 1, minWidth: 160 }}
               />
               <button
                 type="button"
                 onClick={addSpecification}
-                className="px-4 py-3 bg-surface-elevated hover:bg-surface-secondary rounded-apple transition-all"
+                style={{
+                  padding: '12px 16px',
+                  background: 'var(--off-paper)',
+                  border: '1px solid var(--hairline)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: 'var(--ink)',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background 0.15s ease',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--off-paper)'; }}
               >
                 <Plus className="w-5 h-5" />
               </button>
             </div>
 
             {Object.keys(specifications).length > 0 && (
-              <div className="space-y-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {Object.entries(specifications).map(([key, value]) => (
                   <div
                     key={key}
-                    className="flex items-center justify-between p-3 bg-surface rounded-apple"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: 12,
+                      background: 'var(--off-paper)',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--hairline)',
+                    }}
                   >
                     <div>
-                      <span className="font-medium">{key}:</span>
-                      <span className="text-text-secondary ml-2">{value}</span>
+                      <span style={{ fontWeight: 500, color: 'var(--ink)' }}>{key}:</span>
+                      <span style={{ color: 'var(--soft)', marginLeft: 8 }}>{value}</span>
                     </div>
                     <button
                       type="button"
                       onClick={() => removeSpecification(key)}
-                      className="p-1 hover:text-error transition-colors"
+                      style={{
+                        padding: 4,
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'var(--soft)',
+                        display: 'inline-flex',
+                        transition: 'color 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--soft)'; }}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -507,19 +625,17 @@ export default function NewProductPage() {
           </div>
         </div>
 
-        {/* Product Variations */}
-        <div className="apple-card">
-          <div className="flex items-center justify-between mb-6">
+        <div className="sc-card-static">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <h2 className="text-2xl font-semibold">{pn.productVariations}</h2>
-              <p className="text-sm text-text-secondary mt-1">
-                {pn.whatsIncluded}
-              </p>
+              <h2 className="sc-h2" style={{ margin: 0, fontSize: 24 }}>{pn.productVariations}</h2>
+              <p className="sc-helper" style={{ margin: '4px 0 0' }}>{pn.whatsIncluded}</p>
             </div>
             <button
               type="button"
               onClick={addVariation}
-              className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-apple transition-all"
+              className="sc-cta"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px' }}
             >
               <Plus className="w-5 h-5" />
               {pn.addVariation}
@@ -527,41 +643,53 @@ export default function NewProductPage() {
           </div>
 
           {variations.length === 0 ? (
-            <div className="text-center py-8 text-text-tertiary">
+            <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--soft)' }}>
               {pn.noVariations}
             </div>
           ) : (
-            <div className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {variations.map((variation, index) => (
                 <div
                   key={variation.id}
-                  className="p-4 bg-surface rounded-apple border border-border"
+                  style={{
+                    padding: 16,
+                    background: 'var(--off-paper)',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--hairline)',
+                  }}
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <h3 className="font-medium">Variation {index + 1}</h3>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+                    <h3 style={{ fontWeight: 500, color: 'var(--ink)', margin: 0 }}>Variation {index + 1}</h3>
                     <button
                       type="button"
                       onClick={() => removeVariation(variation.id)}
-                      className="text-error hover:text-error/80 transition-colors"
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: '#ef4444',
+                        display: 'inline-flex',
+                        padding: 4,
+                      }}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
                     <input
                       type="text"
                       value={variation.name}
                       onChange={(e) => updateVariation(variation.id, 'name', e.target.value)}
                       placeholder={pn.variationName}
-                      className="px-4 py-2 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                      className="sc-input"
                     />
                     <input
                       type="text"
                       value={variation.sku}
                       onChange={(e) => updateVariation(variation.id, 'sku', e.target.value)}
                       placeholder={pn.sku}
-                      className="px-4 py-2 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                      className="sc-input"
                     />
                     <input
                       type="number"
@@ -569,14 +697,14 @@ export default function NewProductPage() {
                       value={variation.price || ''}
                       onChange={(e) => updateVariation(variation.id, 'price', parseFloat(e.target.value) || 0)}
                       placeholder={pn.price}
-                      className="px-4 py-2 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                      className="sc-input"
                     />
                     <input
                       type="number"
                       value={variation.stock || ''}
                       onChange={(e) => updateVariation(variation.id, 'stock', parseInt(e.target.value) || 0)}
                       placeholder={pn.stock}
-                      className="px-4 py-2 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                      className="sc-input"
                     />
                   </div>
                 </div>
@@ -585,25 +713,23 @@ export default function NewProductPage() {
           )}
         </div>
 
-        {/* Maintenance Template */}
-        <div className="apple-card">
-          <div className="mb-6">
-            <h2 className="text-2xl font-semibold">{pn.maintenanceTemplate}</h2>
-            <p className="text-sm text-text-secondary mt-1">{pn.maintenanceTemplateDesc}</p>
+        <div className="sc-card-static">
+          <div style={{ marginBottom: 24 }}>
+            <h2 className="sc-h2" style={{ margin: 0, fontSize: 24 }}>{pn.maintenanceTemplate}</h2>
+            <p className="sc-helper" style={{ margin: '4px 0 0' }}>{pn.maintenanceTemplateDesc}</p>
           </div>
 
-          <div className="space-y-6">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <div>
-              <label className="block text-sm font-medium mb-3">{pn.ezerInterval}</label>
-              <div className="grid grid-cols-3 gap-2">
+              <label className="sc-label">{pn.ezerInterval}</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                 {INTERVAL_OPTIONS.map((opt) => (
-                  <button key={opt.days} type="button"
+                  <button
+                    key={opt.days}
+                    type="button"
                     onClick={() => setEzerIntervalDays(opt.days)}
-                    className={`px-3 py-2 rounded-apple text-sm font-medium transition-all ${
-                      ezerIntervalDays === opt.days
-                        ? 'bg-primary text-white'
-                        : 'bg-surface-elevated text-text-secondary hover:text-text-primary'
-                    }`}>
+                    style={intervalBtnStyle(ezerIntervalDays === opt.days)}
+                  >
                     {opt.label}
                   </button>
                 ))}
@@ -611,42 +737,84 @@ export default function NewProductPage() {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <label className="text-sm font-medium">{pn.filterSchedules}</label>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <label className="sc-label" style={{ marginBottom: 0 }}>{pn.filterSchedules}</label>
                 {templateFilters.length < 4 && (
-                  <button type="button"
+                  <button
+                    type="button"
                     onClick={() => setTemplateFilters([...templateFilters, { name: '', intervalDays: 180 }])}
-                    className="flex items-center gap-1 text-sm text-primary font-medium hover:text-primary/80 transition-all">
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      fontSize: 14,
+                      fontWeight: 500,
+                      color: 'var(--brand)',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      transition: 'color 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--brand-hover)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--brand)'; }}
+                  >
                     <Plus className="w-4 h-4" /> {pn.addFilter}
                   </button>
                 )}
               </div>
-              <div className="space-y-4">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {templateFilters.map((filter, index) => (
-                  <div key={index} className="p-4 bg-surface rounded-apple border border-border space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-text-secondary">{pn.filterName}</span>
+                  <div
+                    key={index}
+                    style={{
+                      padding: 16,
+                      background: 'var(--off-paper)',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--hairline)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 12,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--soft)' }}>{pn.filterName}</span>
                       {templateFilters.length > 1 && (
-                        <button type="button"
+                        <button
+                          type="button"
                           onClick={() => setTemplateFilters(templateFilters.filter((_, i) => i !== index))}
-                          className="text-sm text-error hover:text-error/80 transition-colors">
+                          style={{
+                            fontSize: 14,
+                            color: '#ef4444',
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: 0,
+                            transition: 'opacity 0.15s ease',
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.8'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+                        >
                           {pn.removeFilter}
                         </button>
                       )}
                     </div>
-                    <input type="text" value={filter.name}
+                    <input
+                      type="text"
+                      value={filter.name}
                       onChange={(e) => setTemplateFilters(templateFilters.map((f, i) => i === index ? { ...f, name: e.target.value } : f))}
                       placeholder={pn.filterNamePlaceholder}
-                      className="w-full px-4 py-2 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all text-sm" />
-                    <div className="grid grid-cols-3 gap-2">
+                      className="sc-input"
+                      style={{ fontSize: 14 }}
+                    />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                       {INTERVAL_OPTIONS.map((opt) => (
-                        <button key={opt.days} type="button"
+                        <button
+                          key={opt.days}
+                          type="button"
                           onClick={() => setTemplateFilters(templateFilters.map((f, i) => i === index ? { ...f, intervalDays: opt.days } : f))}
-                          className={`px-3 py-2 rounded-apple text-sm font-medium transition-all ${
-                            filter.intervalDays === opt.days
-                              ? 'bg-primary text-white'
-                              : 'bg-surface-elevated text-text-secondary hover:text-text-primary'
-                          }`}>
+                          style={intervalBtnStyle(filter.intervalDays === opt.days)}
+                        >
                           {opt.label}
                         </button>
                       ))}
@@ -658,19 +826,19 @@ export default function NewProductPage() {
           </div>
         </div>
 
-        {/* Submit Buttons */}
-        <div className="flex gap-4">
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 px-8 py-4 bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
+            className="sc-cta"
+            style={{ flex: 1, minWidth: 200 }}
           >
             {loading ? pn.creatingProduct : pn.createProduct}
           </button>
           <button
             type="button"
             onClick={() => router.back()}
-            className="px-8 py-4 bg-surface hover:bg-surface-elevated text-white font-semibold rounded-apple transition-all border border-border"
+            className="sc-cta-ghost"
           >
             {t.common.cancel}
           </button>
@@ -679,4 +847,3 @@ export default function NewProductPage() {
     </div>
   );
 }
-

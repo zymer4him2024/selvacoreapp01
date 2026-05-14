@@ -11,18 +11,11 @@ interface JobCardProps {
   unassignLabel?: string;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-[#FF9500]/10 text-[#FF9500]',
-  accepted: 'bg-[#0071E3]/10 text-[#0071E3]',
-  in_progress: 'bg-[#FF9500]/10 text-[#FF9500]',
-  completed: 'bg-[#34C759]/10 text-[#34C759]',
-};
-
-const STATUS_DOT: Record<string, string> = {
-  pending: 'bg-[#FF9500]',
-  accepted: 'bg-[#0071E3]',
-  in_progress: 'bg-[#FF9500]',
-  completed: 'bg-[#34C759]',
+const STATUS_STYLES: Record<string, { color: string; bg: string }> = {
+  pending: { color: 'var(--warn)', bg: 'var(--warn-tint)' },
+  accepted: { color: 'var(--brand)', bg: 'var(--brand-tint)' },
+  in_progress: { color: 'var(--warn)', bg: 'var(--warn-tint)' },
+  completed: { color: 'var(--brand)', bg: 'var(--brand-tint)' },
 };
 
 const SLOT_LABELS: Record<string, string> = {
@@ -32,46 +25,86 @@ const SLOT_LABELS: Record<string, string> = {
 export default function JobCard({ order, timeTbdLabel, onReschedule, onUnassign, rescheduleLabel, unassignLabel }: JobCardProps) {
   const hasScheduled = !!order.scheduledAt;
   const customerName = order.customerInfo?.name || 'Customer';
+  const status = STATUS_STYLES[order.status] || { color: 'var(--soft)', bg: 'var(--off-paper)' };
 
   return (
-    <div
-      className={`p-2 rounded-[12px] text-xs leading-tight transition-shadow hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)] ${
-        hasScheduled
-          ? 'bg-white border border-[#E5E5EA]'
-          : 'bg-white border border-dashed border-[#FF950099]'
-      }`}
+    <div style={{
+      padding: 8,
+      borderRadius: 'var(--radius-md)',
+      fontSize: 12,
+      lineHeight: 1.3,
+      background: 'var(--paper)',
+      border: hasScheduled ? '1px solid var(--hairline)' : '1px dashed var(--warn)',
+      transition: 'box-shadow 0.15s ease',
+    }}
+    onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)'; }}
+    onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
     >
-      {/* Time slot / TBD badge */}
-      <div className="flex items-center justify-between mb-1">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
         {hasScheduled ? (
-          <span className="font-semibold text-[#1D1D1F]">
+          <span style={{ fontWeight: 600, color: 'var(--ink)' }}>
             {SLOT_LABELS[order.timeSlot] || order.timeSlot}
           </span>
         ) : (
-          <span className="font-semibold text-[#FF9500]">{timeTbdLabel}</span>
+          <span style={{ fontWeight: 600, color: 'var(--warn)' }}>{timeTbdLabel}</span>
         )}
-        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium ${STATUS_COLORS[order.status] || ''}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[order.status] || 'bg-gray-400'}`} />
+        <span style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4,
+          padding: '2px 6px',
+          borderRadius: 'var(--radius-sm)',
+          fontSize: 10,
+          fontWeight: 500,
+          color: status.color,
+          background: status.bg,
+        }}>
+          <span style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: status.color }} />
           {order.status.replace('_', ' ')}
         </span>
       </div>
 
-      {/* Customer name */}
-      <p className="text-[#1D1D1F] font-medium truncate">{customerName}</p>
+      <p style={{ color: 'var(--ink)', fontWeight: 500, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{customerName}</p>
 
-      {/* Order number */}
-      <p className="text-[#86868B] truncate mt-0.5">#{order.orderNumber}</p>
+      <p style={{ color: 'var(--soft)', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>#{order.orderNumber}</p>
 
-      {/* Touch-friendly action buttons */}
       {(onReschedule || onUnassign) && (
-        <div className="flex gap-1 mt-1.5">
+        <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
           {onReschedule && (
-            <button onClick={onReschedule} className="flex-1 text-[10px] font-medium text-[#0071E3] bg-[#0071E3]/10 rounded-md py-1 hover:bg-[#0071E3]/20 transition-colors">
+            <button
+              onClick={onReschedule}
+              style={{
+                flex: 1,
+                fontSize: 10,
+                fontWeight: 500,
+                color: 'var(--brand)',
+                background: 'var(--brand-tint)',
+                border: 'none',
+                borderRadius: 'var(--radius-sm)',
+                padding: '4px 0',
+                cursor: 'pointer',
+                transition: 'background 0.15s ease',
+              }}
+            >
               {rescheduleLabel}
             </button>
           )}
           {onUnassign && (
-            <button onClick={onUnassign} className="flex-1 text-[10px] font-medium text-[#FF3B30] bg-[#FF3B30]/10 rounded-md py-1 hover:bg-[#FF3B30]/20 transition-colors">
+            <button
+              onClick={onUnassign}
+              style={{
+                flex: 1,
+                fontSize: 10,
+                fontWeight: 500,
+                color: '#ef4444',
+                background: 'rgba(239,68,68,0.1)',
+                border: 'none',
+                borderRadius: 'var(--radius-sm)',
+                padding: '4px 0',
+                cursor: 'pointer',
+                transition: 'background 0.15s ease',
+              }}
+            >
               {unassignLabel}
             </button>
           )}

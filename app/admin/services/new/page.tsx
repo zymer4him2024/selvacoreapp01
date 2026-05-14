@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Plus, X } from 'lucide-react';
-import { MultiLanguageText, Service } from '@/types';
+import { MultiLanguageText } from '@/types';
 import { createService } from '@/lib/services/serviceService';
 import { SUPPORTED_LANGUAGES, SERVICE_CATEGORIES } from '@/lib/utils/constants';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
@@ -13,9 +14,15 @@ export default function NewServicePage() {
   const { t } = useTranslation();
   const sn = t.admin.serviceNew;
   const router = useRouter();
+  const { userData } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  // Form state
+  useEffect(() => {
+    if (userData && userData.role !== 'admin') {
+      router.replace('/admin/services');
+    }
+  }, [userData, router]);
+
   const [name, setName] = useState<MultiLanguageText>({ en: '', pt: '', es: '', ko: '' });
   const [description, setDescription] = useState<MultiLanguageText>({ en: '', pt: '', es: '', ko: '' });
   const [price, setPrice] = useState('');
@@ -25,6 +32,8 @@ export default function NewServicePage() {
   const [includes, setIncludes] = useState<string[]>([]);
   const [includeInput, setIncludeInput] = useState('');
   const [active, setActive] = useState(true);
+
+  if (userData && userData.role !== 'admin') return null;
 
   const addInclude = () => {
     if (includeInput.trim() && !includes.includes(includeInput.trim())) {
@@ -40,7 +49,6 @@ export default function NewServicePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
     if (!name.en.trim()) {
       toast.error(sn.validationName);
       return;
@@ -86,38 +94,46 @@ export default function NewServicePage() {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center gap-4">
+    <div className="sc" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <button
           onClick={() => router.back()}
-          className="p-2 hover:bg-surface-elevated rounded-apple transition-colors"
+          style={{
+            padding: 8,
+            borderRadius: 'var(--radius-md)',
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--ink)',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'background 0.15s ease',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">{sn.title}</h1>
-          <p className="text-text-secondary mt-1">
-            {sn.subtitle}
-          </p>
+          <h1 className="sc-h1" style={{ margin: 0 }}>{sn.title}</h1>
+          <p className="sc-helper" style={{ margin: '4px 0 0' }}>{sn.subtitle}</p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Information */}
-        <div className="apple-card">
-          <h2 className="text-2xl font-semibold mb-6">{sn.basicInfo}</h2>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div className="sc-card-static">
+          <h2 className="sc-h2" style={{ margin: 0, marginBottom: 24, fontSize: 24 }}>{sn.basicInfo}</h2>
 
-          <div className="space-y-6">
-            {/* Service Name (Multi-language) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <div>
-              <label className="block text-sm font-medium mb-3">
-                {sn.serviceName} <span className="text-error">*</span>
+              <label className="sc-label">
+                {sn.serviceName} <span style={{ color: '#ef4444' }}>*</span>
               </label>
-              <div className="space-y-3">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {SUPPORTED_LANGUAGES.map((lang) => (
-                  <div key={lang.code} className="flex gap-3">
-                    <span className="flex items-center gap-2 w-32 text-sm text-text-secondary">
+                  <div key={lang.code} style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8, width: 128, fontSize: 14, color: 'var(--soft)' }}>
                       {lang.flag} {lang.name}
                     </span>
                     <input
@@ -125,7 +141,8 @@ export default function NewServicePage() {
                       value={name[lang.code] || ''}
                       onChange={(e) => setName({ ...name, [lang.code]: e.target.value })}
                       placeholder={`Service name in ${lang.name}`}
-                      className="flex-1 px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
+                      className="sc-input"
+                      style={{ flex: 1, minWidth: 200 }}
                       required={lang.code === 'en'}
                     />
                   </div>
@@ -133,13 +150,12 @@ export default function NewServicePage() {
               </div>
             </div>
 
-            {/* Description (Multi-language) */}
             <div>
-              <label className="block text-sm font-medium mb-3">{sn.description}</label>
-              <div className="space-y-3">
+              <label className="sc-label">{sn.description}</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {SUPPORTED_LANGUAGES.map((lang) => (
-                  <div key={lang.code} className="flex gap-3">
-                    <span className="flex items-center gap-2 w-32 text-sm text-text-secondary">
+                  <div key={lang.code} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8, width: 128, fontSize: 14, color: 'var(--soft)', paddingTop: 12 }}>
                       {lang.flag} {lang.name}
                     </span>
                     <textarea
@@ -147,23 +163,23 @@ export default function NewServicePage() {
                       onChange={(e) => setDescription({ ...description, [lang.code]: e.target.value })}
                       placeholder={`Description in ${lang.name}`}
                       rows={3}
-                      className="flex-1 px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all resize-none"
+                      className="sc-textarea"
+                      style={{ flex: 1, minWidth: 200, resize: 'none' }}
                     />
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Category, Price, Duration */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  {sn.category} <span className="text-error">*</span>
+                <label className="sc-label">
+                  {sn.category} <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                  className="sc-select"
                   required
                 >
                   <option value="">{sn.selectCategory}</option>
@@ -176,8 +192,8 @@ export default function NewServicePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  {sn.price} <span className="text-error">*</span>
+                <label className="sc-label">
+                  {sn.price} <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
                   type="number"
@@ -185,17 +201,17 @@ export default function NewServicePage() {
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   placeholder="0.00"
-                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                  className="sc-input"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">{sn.currency}</label>
+                <label className="sc-label">{sn.currency}</label>
                 <select
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
-                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                  className="sc-select"
                 >
                   <option value="USD">USD ($)</option>
                   <option value="EUR">EUR (€)</option>
@@ -205,52 +221,84 @@ export default function NewServicePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  {sn.duration} <span className="text-error">*</span>
+                <label className="sc-label">
+                  {sn.duration} <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
                   type="number"
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
                   placeholder="2"
-                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                  className="sc-input"
                   required
                 />
               </div>
             </div>
 
-            {/* What's Included */}
             <div>
-              <label className="block text-sm font-medium mb-2">{sn.whatsIncluded}</label>
-              <div className="flex gap-2 mb-3">
+              <label className="sc-label">{sn.whatsIncluded}</label>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
                 <input
                   type="text"
                   value={includeInput}
                   onChange={(e) => setIncludeInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addInclude())}
                   placeholder={sn.addItemPlaceholder}
-                  className="flex-1 px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                  className="sc-input"
+                  style={{ flex: 1 }}
                 />
                 <button
                   type="button"
                   onClick={addInclude}
-                  className="px-4 py-3 bg-surface-elevated hover:bg-surface-secondary rounded-apple transition-all"
+                  style={{
+                    padding: '12px 16px',
+                    background: 'var(--off-paper)',
+                    border: '1px solid var(--hairline)',
+                    borderRadius: 'var(--radius-sm)',
+                    color: 'var(--ink)',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'background 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--off-paper)'; }}
                 >
                   <Plus className="w-5 h-5" />
                 </button>
               </div>
               {includes.length > 0 && (
-                <div className="flex flex-wrap gap-2">
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {includes.map((item) => (
                     <span
                       key={item}
-                      className="flex items-center gap-2 px-3 py-1 bg-secondary/20 text-secondary rounded-full text-sm"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '4px 12px',
+                        background: 'var(--brand-tint)',
+                        color: 'var(--brand)',
+                        borderRadius: 'var(--radius-full)',
+                        fontSize: 14,
+                      }}
                     >
                       {item}
                       <button
                         type="button"
                         onClick={() => removeInclude(item)}
-                        className="hover:text-error transition-colors"
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          padding: 0,
+                          cursor: 'pointer',
+                          color: 'inherit',
+                          display: 'inline-flex',
+                          transition: 'color 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--brand)'; }}
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -260,34 +308,33 @@ export default function NewServicePage() {
               )}
             </div>
 
-            {/* Active Toggle */}
             <div>
-              <label className="flex items-center gap-3 cursor-pointer">
+              <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
                 <input
                   type="checkbox"
                   checked={active}
                   onChange={(e) => setActive(e.target.checked)}
-                  className="w-5 h-5 rounded accent-primary"
+                  style={{ width: 20, height: 20, accentColor: 'var(--brand)' }}
                 />
-                <span className="text-sm font-medium">{sn.active}</span>
+                <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink)' }}>{sn.active}</span>
               </label>
             </div>
           </div>
         </div>
 
-        {/* Submit Buttons */}
-        <div className="flex gap-4">
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 px-8 py-4 bg-secondary hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
+            className="sc-cta"
+            style={{ flex: 1, minWidth: 200 }}
           >
             {loading ? sn.creatingService : sn.createService}
           </button>
           <button
             type="button"
             onClick={() => router.back()}
-            className="px-8 py-4 bg-surface hover:bg-surface-elevated text-white font-semibold rounded-apple transition-all border border-border"
+            className="sc-cta-ghost"
           >
             {t.common.cancel}
           </button>
@@ -296,4 +343,3 @@ export default function NewServicePage() {
     </div>
   );
 }
-
