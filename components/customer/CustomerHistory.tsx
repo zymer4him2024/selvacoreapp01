@@ -4,13 +4,17 @@ import { useState, useEffect } from 'react';
 import { Clock, CreditCard, Package, CheckCircle, XCircle } from 'lucide-react';
 import { CustomerHistoryRecord, getCustomerHistory } from '@/lib/services/customerHistoryService';
 import { formatCurrency, formatDateTime } from '@/lib/utils/formatters';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface CustomerHistoryProps {
   customerId: string;
   limit?: number;
 }
 
+const ERROR_COLOR = '#ef4444';
+
 export default function CustomerHistory({ customerId, limit = 5 }: CustomerHistoryProps) {
+  const { t } = useTranslation();
   const [history, setHistory] = useState<CustomerHistoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -23,7 +27,7 @@ export default function CustomerHistory({ customerId, limit = 5 }: CustomerHisto
       setLoading(true);
       const historyData = await getCustomerHistory(customerId);
       setHistory(historyData.slice(0, limit));
-    } catch (error) {
+    } catch {
       // Silently ignore - UI will show empty state
     } finally {
       setLoading(false);
@@ -33,44 +37,44 @@ export default function CustomerHistory({ customerId, limit = 5 }: CustomerHisto
   const getHistoryIcon = (type: CustomerHistoryRecord['type']) => {
     switch (type) {
       case 'payment_made':
-        return <CreditCard className="w-4 h-4 text-success" />;
+        return <CreditCard className="w-4 h-4" style={{ color: 'var(--brand)' }} />;
       case 'order_placed':
-        return <Package className="w-4 h-4 text-primary" />;
+        return <Package className="w-4 h-4" style={{ color: 'var(--brand)' }} />;
       case 'service_completed':
-        return <CheckCircle className="w-4 h-4 text-success" />;
+        return <CheckCircle className="w-4 h-4" style={{ color: 'var(--brand)' }} />;
       case 'order_cancelled':
-        return <XCircle className="w-4 h-4 text-error" />;
+        return <XCircle className="w-4 h-4" style={{ color: ERROR_COLOR }} />;
       default:
-        return <Clock className="w-4 h-4 text-text-tertiary" />;
+        return <Clock className="w-4 h-4" style={{ color: 'var(--soft)' }} />;
     }
   };
 
   const getHistoryColor = (type: CustomerHistoryRecord['type']) => {
     switch (type) {
       case 'payment_made':
-        return 'text-success';
       case 'order_placed':
-        return 'text-primary';
       case 'service_completed':
-        return 'text-success';
+        return 'var(--brand)';
       case 'order_cancelled':
-        return 'text-error';
+        return ERROR_COLOR;
       default:
-        return 'text-text-secondary';
+        return 'var(--soft)';
     }
   };
 
   if (loading) {
     return (
-      <div className="apple-card">
-        <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
-        <div className="space-y-3">
+      <div className="sc-card-static">
+        <h2 className="sc-h2" style={{ marginBottom: 16 }}>
+          {t.components.customerHistory.recentActivity}
+        </h2>
+        <div className="sc-stack" style={{ gap: 12 }}>
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex items-center gap-3 animate-pulse">
-              <div className="w-4 h-4 bg-surface-elevated rounded"></div>
-              <div className="flex-1">
-                <div className="h-4 bg-surface-elevated rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-surface-elevated rounded w-1/2"></div>
+            <div key={i} className="sc-row" style={{ alignItems: 'center', gap: 12, opacity: 0.6 }}>
+              <div style={{ width: 16, height: 16, background: 'var(--off-paper)', borderRadius: 4 }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ height: 16, background: 'var(--off-paper)', borderRadius: 4, width: '75%', marginBottom: 8 }} />
+                <div style={{ height: 12, background: 'var(--off-paper)', borderRadius: 4, width: '50%' }} />
               </div>
             </div>
           ))}
@@ -81,56 +85,81 @@ export default function CustomerHistory({ customerId, limit = 5 }: CustomerHisto
 
   if (history.length === 0) {
     return (
-      <div className="apple-card">
-        <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
-        <div className="text-center py-8">
-          <Clock className="w-12 h-12 mx-auto mb-3 text-text-tertiary" />
-          <p className="text-text-secondary">No recent activity</p>
+      <div className="sc-card-static">
+        <h2 className="sc-h2" style={{ marginBottom: 16 }}>
+          {t.components.customerHistory.recentActivity}
+        </h2>
+        <div style={{ textAlign: 'center', padding: '32px 0' }}>
+          <Clock className="w-12 h-12" style={{ color: 'var(--soft)', margin: '0 auto 12px' }} />
+          <p className="sc-helper">{t.components.customerHistory.noRecentActivity}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="apple-card">
-      <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
-      
-      <div className="space-y-4">
+    <div className="sc-card-static">
+      <h2 className="sc-h2" style={{ marginBottom: 16 }}>
+        {t.components.customerHistory.recentActivity}
+      </h2>
+
+      <div className="sc-stack" style={{ gap: 16 }}>
         {history.map((record) => (
-          <div key={record.id} className="flex items-start gap-3 p-3 bg-surface-elevated rounded-apple">
-            <div className="flex-shrink-0 mt-1">
+          <div
+            key={record.id}
+            className="sc-row"
+            style={{
+              alignItems: 'flex-start',
+              gap: 12,
+              padding: 12,
+              background: 'var(--off-paper)',
+              borderRadius: 'var(--radius-md)',
+            }}
+          >
+            <div style={{ flexShrink: 0, marginTop: 4 }}>
               {getHistoryIcon(record.type)}
             </div>
-            
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className={`font-medium ${getHistoryColor(record.type)}`}>
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="sc-row-between" style={{ alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontWeight: 600, color: getHistoryColor(record.type), margin: 0 }}>
                     {record.title}
                   </p>
-                  <p className="text-sm text-text-secondary mt-1">
+                  <p className="sc-helper" style={{ marginTop: 4 }}>
                     {record.description}
                   </p>
-                  
+
                   {record.amount && (
-                    <p className="text-sm font-semibold text-success mt-1">
+                    <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--brand)', marginTop: 4 }}>
                       {formatCurrency(record.amount, record.currency || 'USD')}
                     </p>
                   )}
                 </div>
-                
-                <div className="text-right text-xs text-text-tertiary ml-4">
-                  <p>{formatDateTime(record.timestamp)}</p>
+
+                <div style={{ textAlign: 'right', fontSize: 12, color: 'var(--soft)', marginLeft: 16, flexShrink: 0 }}>
+                  <p style={{ margin: 0 }}>{formatDateTime(record.timestamp)}</p>
                 </div>
               </div>
             </div>
           </div>
         ))}
       </div>
-      
+
       {history.length >= limit && (
-        <div className="mt-4 pt-4 border-t border-border">
-          <button className="w-full text-sm text-primary hover:text-primary-hover font-medium">
+        <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--hairline)' }}>
+          <button
+            type="button"
+            style={{
+              width: '100%',
+              fontSize: 14,
+              color: 'var(--brand)',
+              fontWeight: 600,
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
             View All Activity
           </button>
         </div>

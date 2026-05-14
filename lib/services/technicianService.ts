@@ -4,6 +4,7 @@ import {
   doc,
   getDocs,
   getDoc,
+  getCountFromServer,
   updateDoc,
   query,
   where,
@@ -115,8 +116,43 @@ export async function getTechnicianJobsPaginated(
   };
 }
 
+export interface TechnicianJobCounts {
+  upcoming: number;
+  inProgress: number;
+  completed: number;
+}
+
 /**
- * Accept a job (uses Firestore transaction to prevent race conditions)
+ * Get tab counts for a technician's jobs via aggregate count queries.
+ * Uses getCountFromServer — billed at 1 read per 1000 docs, not per doc.
+ */
+export async function getTechnicianJobCounts(technicianId: string): Promise<TechnicianJobCounts> {
+  const ordersRef = collection(db, 'orders');
+  const upcomingQ = query(ordersRef, where('technicianId', '==', technicianId), where('status', '==', 'accepted'));
+  const inProgressQ = query(ordersRef, where('technicianId', '==', technicianId), where('status', '==', 'in_progress'));
+  const completedQ = query(ordersRef, where('technicianId', '==', technicianId), where('status', '==', 'completed'));
+
+  const [upcomingSnap, inProgressSnap, completedSnap] = await Promise.all([
+    getCountFromServer(upcomingQ),
+    getCountFromServer(inProgressQ),
+    getCountFromServer(completedQ),
+  ]);
+
+  return {
+    upcoming: upcomingSnap.data().count,
+    inProgress: inProgressSnap.data().count,
+    completed: completedSnap.data().count,
+  };
+}
+
+/**
+ * Accept a job (uses Firestore transaction to prevent race conditions).
+ *
+ * Reads canonical technician info from the users/{technicianId} doc inside the
+ * transaction so the embedded snapshot can't be spoofed by a malicious client.
+ * The `technicianInfo` parameter is retained for offline-queue compatibility
+ * (stored payloads in IndexedDB still pass it) but is used only as a fallback
+ * when the user doc is unreachable.
  */
 export async function acceptJob(
   orderId: string,
@@ -124,6 +160,7 @@ export async function acceptJob(
   technicianInfo: TechnicianInfo
 ): Promise<void> {
   const orderRef = doc(db, 'orders', orderId);
+  const userRef = doc(db, 'users', technicianId);
 
   await runTransaction(db, async (transaction) => {
     const orderSnap = await transaction.get(orderRef);
@@ -138,23 +175,35 @@ export async function acceptJob(
       throw new Error('This job has already been accepted by another technician');
     }
 
+    const userSnap = await transaction.get(userRef);
+    const userData = userSnap.exists() ? userSnap.data() : null;
+
+    // Block accept for technicians that aren't approved and active.
+    if (userData && (userData.technicianStatus !== 'approved' || userData.active === false)) {
+      throw new Error('Technician account is not approved or is inactive');
+    }
+
+    const canonical: TechnicianInfo = userData
+      ? {
+          name: userData.displayName ?? technicianInfo.name,
+          phone: userData.phone ?? technicianInfo.phone,
+          whatsapp: userData.whatsapp ?? technicianInfo.whatsapp,
+          photo: userData.photoURL ?? technicianInfo.photo,
+          rating: userData.averageRating ?? technicianInfo.rating ?? 0,
+        }
+      : technicianInfo;
+
     transaction.update(orderRef, {
       status: 'accepted',
       technicianId,
-      technicianInfo: {
-        name: technicianInfo.name,
-        phone: technicianInfo.phone,
-        whatsapp: technicianInfo.whatsapp,
-        photo: technicianInfo.photo,
-        rating: technicianInfo.rating,
-      },
+      technicianInfo: canonical,
       acceptedAt: Timestamp.now(),
       statusHistory: [
         ...(order.statusHistory || []),
         {
           status: 'accepted',
           timestamp: Timestamp.now(),
-          note: `Job accepted by ${technicianInfo.name}`,
+          note: `Job accepted by ${canonical.name}`,
           changedBy: technicianId,
         },
       ],
@@ -163,18 +212,15 @@ export async function acceptJob(
 }
 
 /**
- * Decline a job (optional tracking)
+ * Decline a job. No-op for now — could record per-technician declines later
+ * (used by JobDetailModal to dismiss the offer without state changes).
  */
 export async function declineJob(
-  orderId: string,
-  technicianId: string,
-  reason?: string
+  _orderId: string,
+  _technicianId: string,
+  _reason?: string
 ): Promise<void> {
-  try {
-    // No-op for now. Could track declined jobs per technician in the future.
-  } catch (error) {
-    throw error;
-  }
+  // intentionally empty
 }
 
 /**
@@ -184,71 +230,63 @@ export async function getTechnicianJobs(
   technicianId: string,
   statuses?: OrderStatus[]
 ): Promise<Order[]> {
-  try {
-    const ordersRef = collection(db, 'orders');
-    
-    let q;
-    if (statuses && statuses.length > 0) {
-      q = query(
+  const ordersRef = collection(db, 'orders');
+
+  const q = statuses && statuses.length > 0
+    ? query(
         ordersRef,
         where('technicianId', '==', technicianId),
         where('status', 'in', statuses),
         orderBy('installationDate', 'asc')
-      );
-    } else {
-      q = query(
+      )
+    : query(
         ordersRef,
         where('technicianId', '==', technicianId),
         orderBy('installationDate', 'asc')
       );
-    }
-    
-    const snapshot = await getDocs(q);
-    
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    } as Order));
-  } catch (error) {
-    throw error;
-  }
+
+  const snapshot = await getDocs(q);
+
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+  } as Order));
 }
 
 /**
  * Start a job (change status to in_progress)
  */
 export async function startJob(orderId: string, technicianId: string): Promise<void> {
-  try {
-    const orderRef = doc(db, 'orders', orderId);
-    const orderSnap = await getDoc(orderRef);
-    
-    if (!orderSnap.exists()) {
-      throw new Error('Order not found');
-    }
-    
-    const order = orderSnap.data() as Order;
-    
-    // Verify technician owns this job
-    if (order.technicianId !== technicianId) {
-      throw new Error('Unauthorized: This is not your job');
-    }
-    
-    await updateDoc(orderRef, {
-      status: 'in_progress',
-      startedAt: Timestamp.now(),
-      statusHistory: [
-        ...(order.statusHistory || []),
-        {
-          status: 'in_progress',
-          timestamp: Timestamp.now(),
-          note: 'Installation started',
-          changedBy: technicianId,
-        },
-      ],
-    });
-  } catch (error) {
-    throw error;
+  const orderRef = doc(db, 'orders', orderId);
+  const orderSnap = await getDoc(orderRef);
+
+  if (!orderSnap.exists()) {
+    throw new Error('Order not found');
   }
+
+  const order = orderSnap.data() as Order;
+
+  if (order.technicianId !== technicianId) {
+    throw new Error('Unauthorized: This is not your job');
+  }
+
+  if (order.status !== 'accepted') {
+    throw new Error('Job must be in accepted status to start');
+  }
+
+  await updateDoc(orderRef, {
+    status: 'in_progress',
+    startedAt: Timestamp.now(),
+    statusHistory: [
+      ...(order.statusHistory || []),
+      {
+        status: 'in_progress',
+        timestamp: Timestamp.now(),
+        note: 'Installation started',
+        changedBy: technicianId,
+      },
+    ],
+  });
 }
 
 /**
@@ -257,20 +295,14 @@ export async function startJob(orderId: string, technicianId: string): Promise<v
 export async function uploadInstallationPhoto(
   orderId: string,
   file: File,
-  description?: string
+  _description?: string
 ): Promise<string> {
-  try {
-    const fileName = `${uuidv4()}_${file.name}`;
-    const path = `orders/${orderId}/installation-photos/${fileName}`;
-    
-    const storageRef = ref(storage, path);
-    await uploadBytes(storageRef, file);
-    const downloadURL = await getDownloadURL(storageRef);
-    
-    return downloadURL;
-  } catch (error) {
-    throw error;
-  }
+  const fileName = `${uuidv4()}_${file.name}`;
+  const path = `orders/${orderId}/installation-photos/${fileName}`;
+
+  const storageRef = ref(storage, path);
+  await uploadBytes(storageRef, file);
+  return getDownloadURL(storageRef);
 }
 
 /**
@@ -280,48 +312,47 @@ export async function completeJob(
   orderId: string,
   technicianId: string,
   photoUrls: string[],
-  notes?: string
+  notes?: string,
+  descriptions?: string[]
 ): Promise<void> {
-  try {
-    const orderRef = doc(db, 'orders', orderId);
-    const orderSnap = await getDoc(orderRef);
-    
-    if (!orderSnap.exists()) {
-      throw new Error('Order not found');
-    }
-    
-    const order = orderSnap.data() as Order;
-    
-    // Verify technician owns this job
-    if (order.technicianId !== technicianId) {
-      throw new Error('Unauthorized: This is not your job');
-    }
-    
-    // Create installation photos array
-    const installationPhotos = photoUrls.map((url, index) => ({
-      url,
-      uploadedAt: Timestamp.now(),
-      description: `Installation photo ${index + 1}`,
-    }));
-    
-    await updateDoc(orderRef, {
-      status: 'completed',
-      completedAt: Timestamp.now(),
-      installationPhotos,
-      technicianNotes: notes || '',
-      statusHistory: [
-        ...(order.statusHistory || []),
-        {
-          status: 'completed',
-          timestamp: Timestamp.now(),
-          note: notes || 'Installation completed',
-          changedBy: technicianId,
-        },
-      ],
-    });
-  } catch (error) {
-    throw error;
+  const orderRef = doc(db, 'orders', orderId);
+  const orderSnap = await getDoc(orderRef);
+
+  if (!orderSnap.exists()) {
+    throw new Error('Order not found');
   }
+
+  const order = orderSnap.data() as Order;
+
+  if (order.technicianId !== technicianId) {
+    throw new Error('Unauthorized: This is not your job');
+  }
+
+  if (order.status !== 'in_progress') {
+    throw new Error('Job must be in progress to mark complete');
+  }
+
+  const installationPhotos = photoUrls.map((url, index) => ({
+    url,
+    uploadedAt: Timestamp.now(),
+    description: descriptions?.[index] || `Installation photo ${index + 1}`,
+  }));
+
+  await updateDoc(orderRef, {
+    status: 'completed',
+    completedAt: Timestamp.now(),
+    installationPhotos,
+    technicianNotes: notes || '',
+    statusHistory: [
+      ...(order.statusHistory || []),
+      {
+        status: 'completed',
+        timestamp: Timestamp.now(),
+        note: notes || 'Installation completed',
+        changedBy: technicianId,
+      },
+    ],
+  });
 }
 
 /**
@@ -334,7 +365,7 @@ export async function getTechnicianStats(technicianId: string): Promise<Technici
       ordersRef,
       where('technicianId', '==', technicianId)
     );
-    
+
     const snapshot = await getDocs(q);
     const jobs = snapshot.docs.map(doc => doc.data() as Order);
     
@@ -386,6 +417,7 @@ export async function getTechnicianStats(technicianId: string): Promise<Technici
       completionRate: Math.round(completionRate),
     };
   } catch (error) {
+    console.error('[technicianService] getTechnicianStats failed', error);
     return {
       totalJobs: 0,
       completedJobs: 0,
@@ -441,27 +473,22 @@ export async function getTechnicianJobById(
   orderId: string,
   technicianId: string
 ): Promise<Order | null> {
-  try {
-    const orderRef = doc(db, 'orders', orderId);
-    const orderSnap = await getDoc(orderRef);
-    
-    if (!orderSnap.exists()) {
-      return null;
-    }
-    
-    const order = orderSnap.data() as Order;
-    
-    // Technicians can view pending jobs or their own jobs
-    if (order.status === 'pending' || order.technicianId === technicianId) {
-      return {
-        ...order,
-        id: orderSnap.id,
-      } as Order;
-    }
-    
+  const orderRef = doc(db, 'orders', orderId);
+  const orderSnap = await getDoc(orderRef);
+
+  if (!orderSnap.exists()) {
     return null;
-  } catch (error) {
-    throw error;
   }
+
+  const order = orderSnap.data() as Order;
+
+  if (order.status === 'pending' || order.technicianId === technicianId) {
+    return {
+      ...order,
+      id: orderSnap.id,
+    } as Order;
+  }
+
+  return null;
 }
 

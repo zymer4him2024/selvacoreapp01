@@ -1,6 +1,7 @@
 import type { Config } from 'tailwindcss'
 
 const config: Config = {
+  darkMode: ['class', '[data-theme="dark"]'],
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -9,7 +10,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Apple-style color palette
+        // Apple-style color palette (legacy — admin/technician)
         background: '#000000',
         surface: '#1c1c1e',
         'surface-elevated': '#2c2c2e',
@@ -27,9 +28,22 @@ const config: Config = {
         },
         border: '#38383a',
         'border-light': '#48484a',
+
+        // Selvacore design system (theme-aware, CSS-variable-backed)
+        brand: 'var(--brand)',
+        'brand-hover': 'var(--brand-hover)',
+        'brand-tint': 'var(--brand-tint)',
+        ink: 'var(--ink)',
+        soft: 'var(--soft)',
+        paper: 'var(--paper)',
+        'off-paper': 'var(--off-paper)',
+        hairline: 'var(--hairline)',
+        warn: 'var(--warn)',
+        'warn-tint': 'var(--warn-tint)',
       },
       fontFamily: {
         sans: [
+          'var(--font-inter)',
           '-apple-system',
           'BlinkMacSystemFont',
           'SF Pro Text',
@@ -38,6 +52,13 @@ const config: Config = {
           'Helvetica',
           'Arial',
           'sans-serif',
+        ],
+        mono: [
+          'var(--font-jetbrains-mono)',
+          'ui-monospace',
+          'SFMono-Regular',
+          'Menlo',
+          'monospace',
         ],
         display: [
           '-apple-system',
@@ -55,12 +76,18 @@ const config: Config = {
         'apple': '12px',
         'apple-lg': '16px',
         'apple-xl': '20px',
+        'sc-sm': 'var(--radius-sm)',
+        'sc-md': 'var(--radius-md)',
+        'sc-full': 'var(--radius-full)',
       },
       boxShadow: {
         'apple-sm': '0 2px 8px rgba(0, 0, 0, 0.12)',
         'apple': '0 4px 16px rgba(0, 0, 0, 0.16)',
         'apple-lg': '0 8px 32px rgba(0, 0, 0, 0.24)',
         'apple-focus': '0 0 0 4px rgba(10, 132, 255, 0.3)',
+        'sc-sm': 'var(--shadow-sm)',
+        'sc-lg': 'var(--shadow-lg)',
+        'sc-focus': '0 0 0 3px var(--brand-tint)',
       },
       animation: {
         'fade-in': 'fadeIn 0.3s ease-in-out',

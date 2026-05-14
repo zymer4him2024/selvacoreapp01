@@ -165,168 +165,167 @@ export default function CustomerOrdersPage() {
     return until ? until.getTime() > Date.now() : false;
   };
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: 'bg-warning/20 text-warning border-warning/30',
-      accepted: 'bg-primary/20 text-primary border-primary/30',
-      in_progress: 'bg-secondary/20 text-secondary border-secondary/30',
-      completed: 'bg-success/20 text-success border-success/30',
-      cancelled: 'bg-error/20 text-error border-error/30',
-    };
-    return colors[status] || colors.pending;
+  const getStatusBadge = (status: string): { color: string; bg: string } => {
+    switch (status) {
+      case 'pending': return { color: 'var(--warn)', bg: 'var(--warn-tint)' };
+      case 'accepted': return { color: 'var(--brand)', bg: 'var(--brand-tint)' };
+      case 'in_progress': return { color: 'var(--brand)', bg: 'var(--brand-tint)' };
+      case 'completed': return { color: 'var(--brand)', bg: 'var(--brand-tint)' };
+      case 'cancelled': return { color: 'var(--warn)', bg: 'var(--warn-tint)' };
+      default: return { color: 'var(--soft)', bg: 'var(--off-paper)' };
+    }
   };
 
   const getStatusLabel = (status: string) => getOrderStatusLabel(status, 'customer', t);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">{t.customer.ordersListScreen.loading}</p>
-        </div>
+      <div className="sc">
+        <div className="sc-spinner-wrap"><div className="sc-spinner" /></div>
       </div>
     );
   }
 
-  const lang = userData?.preferredLanguage || 'en';
-
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="bg-surface border-b border-border sticky top-0 z-10 backdrop-blur-lg bg-surface/80">
-        <div className="max-w-4xl mx-auto px-4 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => router.push('/customer')}
-              className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              <span className="hidden sm:inline">{t.orders.backToProducts}</span>
-            </button>
-            <h1 className="text-2xl font-bold">{t.orders.title}</h1>
-            <div className="w-20"></div> {/* Spacer for centering */}
-          </div>
+    <div className="sc">
+      <header className="sc-nav">
+        <div className="sc-nav-inner">
+          <button
+            type="button"
+            onClick={() => router.push('/customer')}
+            className="sc-nav-link"
+            style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="sc-nav-text">{t.orders.backToProducts}</span>
+          </button>
+          <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: 'var(--ink)' }}>{t.orders.title}</h1>
+          <div style={{ width: 80 }} />
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-4xl mx-auto px-4 lg:px-8 py-8">
-        <div className="space-y-6 animate-fade-in">
-          {orders.length === 0 ? (
-            <div className="apple-card text-center py-16">
-              <PackageIcon className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
-              <h3 className="text-xl font-semibold mb-2">{t.orders.noOrders}</h3>
-              <p className="text-text-secondary mb-6">
-                {t.customer.ordersListScreen.startBrowsing}
-              </p>
-              <button
-                onClick={() => router.push('/customer')}
-                className="px-6 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all"
-              >
-                {t.orders.browseProducts}
-              </button>
-            </div>
-          ) : (
-            <>
-              {/* Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="apple-card text-center">
-                  <p className="text-text-tertiary text-sm">{t.customer.ordersListScreen.totalOrders}</p>
-                  <p className="text-2xl font-bold mt-1">{orders.length}</p>
-                </div>
-                <div className="apple-card text-center">
-                  <p className="text-text-tertiary text-sm">{t.customer.ordersListScreen.pending}</p>
-                  <p className="text-2xl font-bold mt-1 text-warning">
-                    {orders.filter((o) => o.status === 'pending').length}
-                  </p>
-                </div>
-                <div className="apple-card text-center">
-                  <p className="text-text-tertiary text-sm">{t.customer.ordersListScreen.active}</p>
-                  <p className="text-2xl font-bold mt-1 text-primary">
-                    {orders.filter((o) => ['accepted', 'in_progress'].includes(o.status)).length}
-                  </p>
-                </div>
-                <div className="apple-card text-center">
-                  <p className="text-text-tertiary text-sm">{t.customer.ordersListScreen.completed}</p>
-                  <p className="text-2xl font-bold mt-1 text-success">
-                    {orders.filter((o) => o.status === 'completed').length}
-                  </p>
-                </div>
+      <main className="sc-main" style={{ maxWidth: 880 }}>
+        {orders.length === 0 ? (
+          <div className="sc-empty">
+            <PackageIcon className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--soft)' }} />
+            <h3 className="sc-h2" style={{ marginBottom: 8 }}>{t.orders.noOrders}</h3>
+            <p className="sc-lede" style={{ marginBottom: 24 }}>{t.customer.ordersListScreen.startBrowsing}</p>
+            <button
+              type="button"
+              onClick={() => router.push('/customer')}
+              className="sc-cta"
+              style={{ display: 'inline-block' }}
+            >
+              {t.orders.browseProducts}
+            </button>
+          </div>
+        ) : (
+          <div className="sc-stack-lg">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="sc-card-static" style={{ textAlign: 'center' }}>
+                <p className="sc-helper" style={{ margin: 0 }}>{t.customer.ordersListScreen.totalOrders}</p>
+                <p style={{ fontSize: 24, fontWeight: 700, marginTop: 4, color: 'var(--ink)' }}>{orders.length}</p>
               </div>
+              <div className="sc-card-static" style={{ textAlign: 'center' }}>
+                <p className="sc-helper" style={{ margin: 0 }}>{t.customer.ordersListScreen.pending}</p>
+                <p style={{ fontSize: 24, fontWeight: 700, marginTop: 4, color: 'var(--warn)' }}>
+                  {orders.filter((o) => o.status === 'pending').length}
+                </p>
+              </div>
+              <div className="sc-card-static" style={{ textAlign: 'center' }}>
+                <p className="sc-helper" style={{ margin: 0 }}>{t.customer.ordersListScreen.active}</p>
+                <p style={{ fontSize: 24, fontWeight: 700, marginTop: 4, color: 'var(--brand)' }}>
+                  {orders.filter((o) => ['accepted', 'in_progress'].includes(o.status)).length}
+                </p>
+              </div>
+              <div className="sc-card-static" style={{ textAlign: 'center' }}>
+                <p className="sc-helper" style={{ margin: 0 }}>{t.customer.ordersListScreen.completed}</p>
+                <p style={{ fontSize: 24, fontWeight: 700, marginTop: 4, color: 'var(--brand)' }}>
+                  {orders.filter((o) => o.status === 'completed').length}
+                </p>
+              </div>
+            </div>
 
-              {/* Orders List */}
-              <div className="space-y-4">
-                {orders.map((order) => (
+            <div className="sc-stack">
+              {orders.map((order) => {
+                const badge = getStatusBadge(order.status);
+                return (
                   <Link
                     key={order.id}
                     href={`/customer/orders/${order.id}`}
-                    className="apple-card hover:scale-[1.01] transition-all block"
+                    className="sc-card"
+                    style={{ position: 'relative' }}
                   >
-                    <div className="flex items-start gap-4">
-                      {/* Fallback Indicator */}
+                    <div className="sc-row" style={{ alignItems: 'flex-start', gap: 16 }}>
                       {'isFallback' in order && order.isFallback && (
-                        <div className="absolute top-3 right-3 bg-warning/20 text-warning px-2 py-1 rounded-full text-xs font-medium">
+                        <div className="sc-badge-inline" style={{ position: 'absolute', top: 12, right: 12, color: 'var(--warn)', background: 'var(--warn-tint)' }}>
                           {t.customer.ordersListScreen.local}
                         </div>
                       )}
-                      
-                      {/* Product Image */}
-                      <div className="w-20 h-20 bg-surface-elevated rounded-apple overflow-hidden flex-shrink-0">
+
+                      <div
+                        style={{
+                          width: 80,
+                          height: 80,
+                          background: 'var(--off-paper)',
+                          borderRadius: 'var(--radius-sm)',
+                          overflow: 'hidden',
+                          flexShrink: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
                         {order.productSnapshot?.image ? (
                           <img
                             src={order.productSnapshot.image}
                             alt={order.productSnapshot.name?.en || 'Product'}
-                            className="w-full h-full object-cover"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <PackageIcon className="w-8 h-8 text-text-tertiary" />
-                          </div>
+                          <PackageIcon className="w-8 h-8" style={{ color: 'var(--soft)' }} />
                         )}
                       </div>
 
-                      {/* Order Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-2">
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="sc-row-between" style={{ alignItems: 'flex-start', marginBottom: 8 }}>
                           <div>
-                            <h3 className="font-semibold text-lg mb-1">
+                            <h3 className="sc-card-title">
                               {order.productSnapshot?.name?.en || 'Product'}
                             </h3>
-                            <p className="text-sm text-text-secondary">
+                            <p className="sc-helper" style={{ margin: 0 }}>
                               {t.orders.orderNumber} {order.orderNumber}
                             </p>
                           </div>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(order.status)}`}>
+                          <span className="sc-badge-inline" style={{ color: badge.color, background: badge.bg }}>
                             {getStatusLabel(order.status)}
                           </span>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-text-secondary mt-3">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4" />
-                            <span>{order.installationDate ? formatDate(order.installationDate, 'short') : t.customer.ordersListScreen.tbd}</span>
-                            <span className="px-2 py-0.5 bg-surface-elevated rounded text-xs">
-                              {order.timeSlot}
-                            </span>
-                          </div>
+                        <div className="sc-row" style={{ gap: 8, fontSize: 13, color: 'var(--soft)', marginTop: 8, flexWrap: 'wrap' }}>
+                          <Calendar className="w-4 h-4" />
+                          <span>{order.installationDate ? formatDate(order.installationDate, 'short') : t.customer.ordersListScreen.tbd}</span>
+                          {order.timeSlot && (
+                            <span className="sc-chip">{order.timeSlot}</span>
+                          )}
                         </div>
 
                         {'technicianInfo' in order && order.technicianInfo && (
-                          <div className="mt-3 pt-3 border-t border-border">
-                            <p className="text-xs text-text-tertiary mb-1">{t.customer.ordersListScreen.technician}</p>
-                            <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-                                <span className="text-xs font-semibold text-primary">
+                          <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--hairline)' }}>
+                            <p className="sc-helper" style={{ margin: '0 0 4px' }}>{t.customer.ordersListScreen.technician}</p>
+                            <div className="sc-row" style={{ gap: 8 }}>
+                              <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--brand-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--brand)' }}>
                                   {order.technicianInfo.name.charAt(0)}
                                 </span>
                               </div>
-                              <span className="text-sm font-medium">{order.technicianInfo.name}</span>
+                              <span style={{ fontSize: 13, fontWeight: 600 }}>{order.technicianInfo.name}</span>
                             </div>
                           </div>
                         )}
 
-                        <div className="flex items-center justify-between mt-4">
-                          <p className="text-xl font-bold text-primary">
+                        <div className="sc-row-between" style={{ marginTop: 16 }}>
+                          <p className="sc-price" style={{ fontSize: 20, margin: 0 }}>
                             {'payment' in order && order.payment
                               ? formatCurrency(order.payment.amount, order.payment.currency)
                               : 'total' in order
@@ -334,7 +333,7 @@ export default function CustomerOrdersPage() {
                                 : 'N/A'
                             }
                           </p>
-                          <span className="text-sm text-text-secondary">
+                          <span className="sc-helper" style={{ margin: 0 }}>
                             {t.customer.viewDetails} →
                           </span>
                         </div>
@@ -353,7 +352,8 @@ export default function CustomerOrdersPage() {
                                 e.stopPropagation();
                                 router.push(`/customer/orders/${order.id}/review`);
                               }}
-                              className="mt-4 w-full min-h-[44px] px-4 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-colors flex items-center justify-center gap-2"
+                              className="sc-cta"
+                              style={{ marginTop: 16, width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                             >
                               <Star className="w-4 h-4" aria-hidden />
                               {t.orders.reviewFlow.leaveCta}
@@ -362,20 +362,24 @@ export default function CustomerOrdersPage() {
                         }
                         const within = isWithinEditWindow(review);
                         return (
-                          <div className="mt-4 pt-4 border-t border-border">
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <div className="flex items-center gap-0.5" role="img" aria-label={`${review.rating}/5`}>
+                          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--hairline)' }}>
+                            <div className="sc-row-between" style={{ gap: 12 }}>
+                              <div className="sc-row" style={{ gap: 8, minWidth: 0 }}>
+                                <div className="sc-row" style={{ gap: 2 }} role="img" aria-label={`${review.rating}/5`}>
                                   {[1, 2, 3, 4, 5].map((n) => (
                                     <Star
                                       key={n}
-                                      className={`w-4 h-4 ${n <= review.rating ? 'text-warning fill-warning' : 'text-text-tertiary'}`}
+                                      className="w-4 h-4"
+                                      style={{
+                                        color: n <= review.rating ? 'var(--warn)' : 'var(--soft)',
+                                        fill: n <= review.rating ? 'var(--warn)' : 'transparent',
+                                      }}
                                       aria-hidden
                                     />
                                   ))}
                                 </div>
                                 {review.comment && (
-                                  <p className="text-sm text-text-secondary truncate min-w-0">
+                                  <p className="sc-helper" style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                     {review.comment}
                                   </p>
                                 )}
@@ -388,7 +392,7 @@ export default function CustomerOrdersPage() {
                                     e.stopPropagation();
                                     router.push(`/customer/orders/${order.id}/review`);
                                   }}
-                                  className="text-sm font-medium text-primary hover:text-primary-hover whitespace-nowrap min-h-[44px] px-2"
+                                  style={{ fontSize: 13, fontWeight: 600, color: 'var(--brand)', background: 'transparent', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
                                 >
                                   {t.orders.reviewFlow.edit}
                                 </button>
@@ -399,12 +403,12 @@ export default function CustomerOrdersPage() {
                       })()
                     )}
                   </Link>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   );
 }

@@ -147,11 +147,8 @@ export default function OrderDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">{o.loadingOrderDetails}</p>
-        </div>
+      <div className="sc">
+        <div className="sc-spinner-wrap"><div className="sc-spinner" /></div>
       </div>
     );
   }
@@ -160,99 +157,104 @@ export default function OrderDetailPage() {
 
   const lang = userData?.preferredLanguage || 'en';
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: 'bg-warning/20 text-warning border-warning',
-      accepted: 'bg-primary/20 text-primary border-primary',
-      in_progress: 'bg-secondary/20 text-secondary border-secondary',
-      completed: 'bg-success/20 text-success border-success',
-      cancelled: 'bg-error/20 text-error border-error',
-    };
-    return colors[status] || colors.pending;
+  const statusBadge = (status: string): { color: string; bg: string } => {
+    switch (status) {
+      case 'pending': return { color: 'var(--warn)', bg: 'var(--warn-tint)' };
+      case 'cancelled': return { color: 'var(--warn)', bg: 'var(--warn-tint)' };
+      default: return { color: 'var(--brand)', bg: 'var(--brand-tint)' };
+    }
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <div className="bg-surface border-b border-border sticky top-0 z-10 backdrop-blur-lg bg-surface/80">
-        <div className="max-w-4xl mx-auto px-4 lg:px-8 py-4">
+    <div className="sc">
+      <header className="sc-nav">
+        <div className="sc-nav-inner">
           <button
+            type="button"
             onClick={() => router.push('/customer/orders')}
-            className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
+            className="sc-nav-link"
+            style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}
           >
             <ArrowLeft className="w-5 h-5" />
-            {o.backToOrders}
+            <span className="sc-nav-text">{o.backToOrders}</span>
           </button>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-4xl mx-auto px-4 lg:px-8 py-8">
-        <div className="space-y-6 animate-fade-in">
-          {/* Success Message (for new orders) */}
+      <main className="sc-main" style={{ maxWidth: 880 }}>
+        <div className="sc-stack-lg">
           {isNewOrder && (
-            <div className="apple-card bg-success/10 border-success/30 animate-scale-in">
-              <div className="flex items-start gap-4">
-                <CheckCircle className="w-8 h-8 text-success flex-shrink-0" />
+            <div className="sc-card" style={{ background: 'var(--brand-tint)', borderLeftColor: 'var(--brand)' }}>
+              <div className="sc-row" style={{ alignItems: 'flex-start', gap: 16 }}>
+                <CheckCircle className="w-8 h-8 flex-shrink-0" style={{ color: 'var(--brand)' }} />
                 <div>
-                  <h3 className="font-semibold text-success mb-1">{o.orderPlacedSuccess}</h3>
-                  <p className="text-sm text-text-secondary">
-                    {o.orderPlacedDesc}
-                  </p>
+                  <h3 style={{ fontWeight: 600, margin: '0 0 4px', color: 'var(--brand)' }}>{o.orderPlacedSuccess}</h3>
+                  <p className="sc-helper" style={{ margin: 0 }}>{o.orderPlacedDesc}</p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Order Header */}
-          <div>
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h1 className="text-3xl font-bold mb-2">{o.orderNumber} {order.orderNumber}</h1>
-                <p className="text-text-secondary">
-                  {o.placedOn} {formatDate(order.createdAt, 'long')}
-                </p>
-              </div>
-              <span className={`px-4 py-2 rounded-apple text-sm font-medium border-2 ${getStatusColor(order.status)}`}>
-                {getOrderStatusLabel(order.status, 'customer', t)}
-              </span>
+          <div className="sc-row-between" style={{ alignItems: 'flex-start' }}>
+            <div>
+              <div className="sc-eyebrow">{o.orderNumber}</div>
+              <h1 className="sc-h1">{order.orderNumber}</h1>
+              <p className="sc-lede" style={{ marginTop: 4 }}>
+                {o.placedOn} {formatDate(order.createdAt, 'long')}
+              </p>
             </div>
+            <span
+              className="sc-badge-inline"
+              style={{ ...statusBadge(order.status), padding: '6px 12px', fontSize: 13 }}
+            >
+              {getOrderStatusLabel(order.status, 'customer', t)}
+            </span>
           </div>
 
-          {/* Product & Service Info */}
-          <div className="apple-card">
-            <h2 className="text-xl font-semibold mb-4">{o.orderDetails}</h2>
-            
-            <div className="space-y-4">
-              <div className="flex gap-4">
-                <div className="w-24 h-24 bg-surface-elevated rounded-apple overflow-hidden flex-shrink-0">
+          <div className="sc-card-static">
+            <h2 className="sc-h2" style={{ marginBottom: 16 }}>{o.orderDetails}</h2>
+
+            <div className="sc-stack">
+              <div className="sc-row" style={{ gap: 16, alignItems: 'flex-start' }}>
+                <div
+                  style={{
+                    width: 96,
+                    height: 96,
+                    background: 'var(--off-paper)',
+                    borderRadius: 'var(--radius-sm)',
+                    overflow: 'hidden',
+                    flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
                   {order.productSnapshot.image ? (
                     <img
                       src={order.productSnapshot.image}
                       alt={order.productSnapshot.name[lang]}
-                      className="w-full h-full object-cover"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <PackageIcon className="w-8 h-8 text-text-tertiary" />
-                    </div>
+                    <PackageIcon className="w-8 h-8" style={{ color: 'var(--soft)' }} />
                   )}
                 </div>
-                <div className="flex-1">
-                  <p className="font-semibold text-lg">{order.productSnapshot.name[lang]}</p>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontWeight: 600, fontSize: 16, margin: 0 }}>{order.productSnapshot.name[lang]}</p>
                   {order.productSnapshot.variation && (
-                    <p className="text-sm text-text-secondary">{order.productSnapshot.variation}</p>
+                    <p className="sc-helper" style={{ margin: '4px 0 0' }}>{order.productSnapshot.variation}</p>
                   )}
-                  <p className="text-primary font-semibold mt-2">
+                  <p className="sc-price" style={{ fontSize: 18, marginTop: 8 }}>
                     {formatCurrency(order.payment.productPrice, order.payment.currency)}
                   </p>
                 </div>
               </div>
 
               {order.serviceSnapshot && (
-                <div className="pt-4 border-t border-border">
-                  <p className="font-medium">{order.serviceSnapshot.name[lang]}</p>
-                  <p className="text-sm text-text-secondary">{order.serviceSnapshot.duration}h {o.installationService}</p>
-                  <p className="text-primary font-semibold mt-1">
+                <div style={{ paddingTop: 16, borderTop: '1px solid var(--hairline)' }}>
+                  <p style={{ fontWeight: 600, margin: 0 }}>{order.serviceSnapshot.name[lang]}</p>
+                  <p className="sc-helper" style={{ margin: '4px 0 0' }}>{order.serviceSnapshot.duration}h {o.installationService}</p>
+                  <p className="sc-price" style={{ fontSize: 16, marginTop: 4 }}>
                     {formatCurrency(order.payment.servicePrice, order.payment.currency)}
                   </p>
                 </div>
@@ -260,125 +262,127 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
-          {/* Installation Details */}
-          <div className="apple-card">
-            <h2 className="text-xl font-semibold mb-4">{o.installationSchedule}</h2>
-            
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <Calendar className="w-5 h-5 text-primary mt-1" />
+          <div className="sc-card-static">
+            <h2 className="sc-h2" style={{ marginBottom: 16 }}>{o.installationSchedule}</h2>
+
+            <div className="sc-stack">
+              <div className="sc-row" style={{ gap: 12, alignItems: 'flex-start' }}>
+                <Calendar className="w-5 h-5" style={{ color: 'var(--brand)', marginTop: 2 }} />
                 <div>
-                  <p className="font-medium">{formatDate(order.installationDate, 'full')}</p>
-                  <p className="text-sm text-text-secondary mt-1">Time: {order.timeSlot}</p>
+                  <p style={{ fontWeight: 600, margin: 0 }}>{formatDate(order.installationDate, 'full')}</p>
+                  <p className="sc-helper" style={{ margin: '4px 0 0' }}>Time: {order.timeSlot}</p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-primary mt-1" />
+              <div className="sc-row" style={{ gap: 12, alignItems: 'flex-start' }}>
+                <MapPin className="w-5 h-5" style={{ color: 'var(--brand)', marginTop: 2 }} />
                 <div>
-                  <p className="font-medium">{order.installationAddress.street}</p>
-                  <p className="text-sm text-text-secondary">
+                  <p style={{ fontWeight: 600, margin: 0 }}>{order.installationAddress.street}</p>
+                  <p className="sc-helper" style={{ margin: '4px 0 0' }}>
                     {order.installationAddress.city}, {order.installationAddress.state} {order.installationAddress.postalCode}
                   </p>
                   {order.installationAddress.landmark && (
-                    <p className="text-xs text-text-tertiary mt-1">
-                      📍 {order.installationAddress.landmark}
-                    </p>
+                    <p className="sc-helper" style={{ margin: '4px 0 0' }}>📍 {order.installationAddress.landmark}</p>
                   )}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Technician Info (if accepted) */}
           {order.technicianInfo ? (
-            <div className="apple-card bg-primary/5 border-primary/30">
-              <h2 className="text-xl font-semibold mb-4">{o.yourTechnician}</h2>
-              
-              <div className="flex items-start gap-4 mb-6">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-2xl font-bold flex-shrink-0">
+            <div className="sc-card-static" style={{ background: 'var(--brand-tint)' }}>
+              <h2 className="sc-h2" style={{ marginBottom: 16 }}>{o.yourTechnician}</h2>
+
+              <div className="sc-row" style={{ gap: 16, alignItems: 'flex-start', marginBottom: 24 }}>
+                <div
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: '50%',
+                    background: 'var(--brand)',
+                    color: 'var(--paper)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 24,
+                    fontWeight: 700,
+                    flexShrink: 0,
+                  }}
+                >
                   {order.technicianInfo.name.charAt(0)}
                 </div>
-                <div className="flex-1">
-                  <p className="font-semibold text-lg">{order.technicianInfo.name}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Star className="w-4 h-4 text-warning fill-warning" />
-                    <span className="font-medium">{order.technicianInfo.rating.toFixed(1)}</span>
-                    <span className="text-sm text-text-secondary">{o.rating}</span>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontWeight: 600, fontSize: 16, margin: 0 }}>{order.technicianInfo.name}</p>
+                  <div className="sc-row" style={{ gap: 6, marginTop: 4 }}>
+                    <Star className="w-4 h-4" style={{ color: 'var(--warn)', fill: 'var(--warn)' }} />
+                    <span style={{ fontWeight: 600 }}>{order.technicianInfo.rating.toFixed(1)}</span>
+                    <span className="sc-helper" style={{ margin: 0 }}>{o.rating}</span>
                   </div>
-                  <div className="flex items-center gap-2 mt-2 text-sm text-text-secondary">
+                  <div className="sc-row" style={{ gap: 8, marginTop: 8, fontSize: 13, color: 'var(--soft)' }}>
                     <Phone className="w-4 h-4" />
                     <span>{order.technicianInfo.phone}</span>
                   </div>
                 </div>
               </div>
 
-              {/* WhatsApp Button */}
-            <button
-              onClick={handleWhatsAppContact}
-              className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-success hover:bg-success/90 text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
-            >
-              <MessageCircle className="w-5 h-5" />
-              {o.contactWhatsApp}
-            </button>
+              <button
+                type="button"
+                onClick={handleWhatsAppContact}
+                className="sc-cta"
+                style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '14px 24px' }}
+              >
+                <MessageCircle className="w-5 h-5" />
+                {o.contactWhatsApp}
+              </button>
             </div>
           ) : (
-            <div className="apple-card bg-warning/5 border-warning/30">
-              <div className="text-center py-8">
-                <Clock className="w-12 h-12 mx-auto mb-3 text-warning" />
-                <h3 className="font-semibold mb-1">{o.waitingForTechnician}</h3>
-                <p className="text-sm text-text-secondary">
-                  {o.waitingDesc}
-                </p>
+            <div className="sc-card-static" style={{ background: 'var(--warn-tint)' }}>
+              <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                <Clock className="w-12 h-12 mx-auto mb-3" style={{ color: 'var(--warn)' }} />
+                <h3 style={{ fontWeight: 600, margin: '0 0 4px' }}>{o.waitingForTechnician}</h3>
+                <p className="sc-helper" style={{ margin: 0 }}>{o.waitingDesc}</p>
               </div>
             </div>
           )}
 
-          {/* Payment Info */}
-          <div className="apple-card">
-            <h2 className="text-xl font-semibold mb-4">{o.paymentSummary}</h2>
+          <div className="sc-card-static">
+            <h2 className="sc-h2" style={{ marginBottom: 16 }}>{o.paymentSummary}</h2>
 
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-text-secondary">{o.product}</span>
-                <span className="font-medium">
-                  {formatCurrency(order.payment.productPrice, order.payment.currency)}
-                </span>
+            <div className="sc-stack" style={{ gap: 12 }}>
+              <div className="sc-row-between">
+                <span style={{ color: 'var(--soft)' }}>{o.product}</span>
+                <span style={{ fontWeight: 600 }}>{formatCurrency(order.payment.productPrice, order.payment.currency)}</span>
               </div>
               {order.serviceSnapshot && (
-                <div className="flex justify-between">
-                  <span className="text-text-secondary">{o.service}</span>
-                  <span className="font-medium">
-                    {formatCurrency(order.payment.servicePrice, order.payment.currency)}
-                  </span>
+                <div className="sc-row-between">
+                  <span style={{ color: 'var(--soft)' }}>{o.service}</span>
+                  <span style={{ fontWeight: 600 }}>{formatCurrency(order.payment.servicePrice, order.payment.currency)}</span>
                 </div>
               )}
-              <div className="flex justify-between">
-                <span className="text-text-secondary">{o.tax}</span>
-                <span className="font-medium">
-                  {formatCurrency(order.payment.tax, order.payment.currency)}
-                </span>
+              <div className="sc-row-between">
+                <span style={{ color: 'var(--soft)' }}>{o.tax}</span>
+                <span style={{ fontWeight: 600 }}>{formatCurrency(order.payment.tax, order.payment.currency)}</span>
               </div>
-              <div className="pt-3 border-t border-border">
-                <div className="flex justify-between">
-                  <span className="text-lg font-semibold">{o.totalPaid}</span>
-                  <span className="text-2xl font-bold text-success">
+              <div style={{ paddingTop: 12, borderTop: '1px solid var(--hairline)' }}>
+                <div className="sc-row-between">
+                  <span style={{ fontSize: 16, fontWeight: 600 }}>{o.totalPaid}</span>
+                  <span className="sc-price" style={{ fontSize: 24 }}>
                     {formatCurrency(order.payment.amount, order.payment.currency)}
                   </span>
                 </div>
               </div>
-              <div className="pt-3 border-t border-border">
-                <div className="flex justify-between text-sm">
-                  <span className="text-text-tertiary">{o.paymentStatus}</span>
-                  <span className="text-success font-medium">✓ {o.paid}</span>
+              <div style={{ paddingTop: 12, borderTop: '1px solid var(--hairline)' }}>
+                <div className="sc-row-between" style={{ fontSize: 13 }}>
+                  <span style={{ color: 'var(--soft)' }}>{o.paymentStatus}</span>
+                  <span style={{ color: 'var(--brand)', fontWeight: 600 }}>✓ {o.paid}</span>
                 </div>
-                <div className="flex justify-between text-sm mt-2">
-                  <span className="text-text-tertiary">{o.transactionId}</span>
-                  <span className="font-mono text-xs">{order.payment.transactionId}</span>
+                <div className="sc-row-between" style={{ fontSize: 13, marginTop: 8 }}>
+                  <span style={{ color: 'var(--soft)' }}>{o.transactionId}</span>
+                  <span style={{ fontFamily: 'var(--font-jetbrains-mono), monospace', fontSize: 12 }}>{order.payment.transactionId}</span>
                 </div>
                 {order.payment.paidAt && (
-                  <div className="flex justify-between text-sm mt-2">
-                    <span className="text-text-tertiary">{o.paymentDate}</span>
+                  <div className="sc-row-between" style={{ fontSize: 13, marginTop: 8 }}>
+                    <span style={{ color: 'var(--soft)' }}>{o.paymentDate}</span>
                     <span>{formatDateTime(order.payment.paidAt)}</span>
                   </div>
                 )}
@@ -386,79 +390,57 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
-          {/* Site Photos */}
           {order.sitePhotos && (
-            <div className="apple-card">
-              <h2 className="text-xl font-semibold mb-4">{o.sitePhotosTitle}</h2>
-              
+            <div className="sc-card-static">
+              <h2 className="sc-h2" style={{ marginBottom: 16 }}>{o.sitePhotosTitle}</h2>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {order.sitePhotos.waterSource && (
                   <div>
-                    <p className="text-sm text-text-secondary mb-2">{o.waterSourceLabel}</p>
-                    <div className="w-full h-40 bg-surface-elevated rounded-apple overflow-hidden">
-                      <img
-                        src={order.sitePhotos.waterSource.url}
-                        alt="Water source"
-                        className="w-full h-full object-contain"
-                      />
+                    <p className="sc-helper" style={{ marginBottom: 8 }}>{o.waterSourceLabel}</p>
+                    <div style={{ width: '100%', height: 160, background: 'var(--off-paper)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+                      <img src={order.sitePhotos.waterSource.url} alt={t.components.sitePhotosAlt.waterSource} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                     </div>
                   </div>
                 )}
                 {order.sitePhotos.productLocation && (
                   <div>
-                    <p className="text-sm text-text-secondary mb-2">{o.installationLocation}</p>
-                    <div className="w-full h-40 bg-surface-elevated rounded-apple overflow-hidden">
-                      <img
-                        src={order.sitePhotos.productLocation.url}
-                        alt="Installation location"
-                        className="w-full h-full object-contain"
-                      />
+                    <p className="sc-helper" style={{ marginBottom: 8 }}>{o.installationLocation}</p>
+                    <div style={{ width: '100%', height: 160, background: 'var(--off-paper)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+                      <img src={order.sitePhotos.productLocation.url} alt={t.components.sitePhotosAlt.installationLocation} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                     </div>
                   </div>
                 )}
                 {order.sitePhotos.fullShot && (
                   <div>
-                    <p className="text-sm text-text-secondary mb-2">{o.fullShot}</p>
-                    <div className="w-full h-40 bg-surface-elevated rounded-apple overflow-hidden">
-                      <img
-                        src={order.sitePhotos.fullShot.url}
-                        alt="Full shot"
-                        className="w-full h-full object-contain"
-                      />
+                    <p className="sc-helper" style={{ marginBottom: 8 }}>{o.fullShot}</p>
+                    <div style={{ width: '100%', height: 160, background: 'var(--off-paper)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+                      <img src={order.sitePhotos.fullShot.url} alt={t.components.sitePhotosAlt.fullShot} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                     </div>
                   </div>
                 )}
                 {order.sitePhotos.waterRunningVideo && (
                   <div>
-                    <p className="text-sm text-text-secondary mb-2">{o.waterRunning}</p>
-                    <video
-                      src={order.sitePhotos.waterRunningVideo.url}
-                      controls
-                      className="w-full h-40 rounded-apple bg-black"
-                    />
+                    <p className="sc-helper" style={{ marginBottom: 8 }}>{o.waterRunning}</p>
+                    <video src={order.sitePhotos.waterRunningVideo.url} controls style={{ width: '100%', height: 160, borderRadius: 'var(--radius-sm)', background: '#000' }} />
                   </div>
                 )}
               </div>
             </div>
           )}
 
-          {/* Installation Photos (after completion) */}
           {order.installationPhotos && order.installationPhotos.length > 0 && (
-            <div className="apple-card">
-              <h2 className="text-xl font-semibold mb-4">{o.installationPhotos}</h2>
-              
+            <div className="sc-card-static">
+              <h2 className="sc-h2" style={{ marginBottom: 16 }}>{o.installationPhotos}</h2>
+
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {order.installationPhotos.map((photo, index) => (
                   <div key={index}>
-                    <div className="w-full h-40 bg-surface-elevated rounded-apple overflow-hidden">
-                      <img
-                        src={photo.url}
-                        alt={photo.description || `${o.installationPhotoAlt} ${index + 1}`}
-                        className="w-full h-full object-contain"
-                      />
+                    <div style={{ width: '100%', height: 160, background: 'var(--off-paper)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+                      <img src={photo.url} alt={photo.description || `${o.installationPhotoAlt} ${index + 1}`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                     </div>
                     {photo.description && (
-                      <p className="text-xs text-text-secondary mt-2">{photo.description}</p>
+                      <p className="sc-helper" style={{ marginTop: 8 }}>{photo.description}</p>
                     )}
                   </div>
                 ))}
@@ -466,98 +448,113 @@ export default function OrderDetailPage() {
             </div>
           )}
 
-          {/* Order Timeline */}
-          <div className="apple-card">
-            <h2 className="text-xl font-semibold mb-4">{o.orderTimeline}</h2>
-            
-            <div className="space-y-4">
+          <div className="sc-card-static">
+            <h2 className="sc-h2" style={{ marginBottom: 16 }}>{o.orderTimeline}</h2>
+
+            <div className="sc-stack">
               {order.statusHistory?.map((history, index) => (
-                <div key={index} className="flex gap-4">
-                  <div className="flex flex-col items-center">
-                    <div className={`w-3 h-3 rounded-full ${
-                      index === order.statusHistory.length - 1 ? 'bg-primary' : 'bg-success'
-                    }`}></div>
+                <div key={index} className="sc-row" style={{ gap: 16, alignItems: 'stretch' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div
+                      style={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: '50%',
+                        background: index === order.statusHistory.length - 1 ? 'var(--brand)' : 'var(--brand)',
+                        opacity: index === order.statusHistory.length - 1 ? 1 : 0.6,
+                      }}
+                    />
                     {index < order.statusHistory.length - 1 && (
-                      <div className="w-0.5 h-full bg-border mt-1"></div>
+                      <div style={{ width: 2, flex: 1, background: 'var(--hairline)', marginTop: 4 }} />
                     )}
                   </div>
-                  <div className="flex-1 pb-6">
-                    <p className="font-medium">{getOrderStatusLabel(history.status, 'customer', t)}</p>
+                  <div style={{ flex: 1, paddingBottom: 24 }}>
+                    <p style={{ fontWeight: 600, margin: 0 }}>{getOrderStatusLabel(history.status, 'customer', t)}</p>
                     {history.note && (
-                      <p className="text-sm text-text-secondary mt-1">{history.note}</p>
+                      <p className="sc-helper" style={{ margin: '4px 0 0' }}>{history.note}</p>
                     )}
-                    <p className="text-xs text-text-tertiary mt-2">
-                      {formatDateTime(history.timestamp)}
-                    </p>
+                    <p className="sc-helper" style={{ margin: '8px 0 0', fontSize: 11 }}>{formatDateTime(history.timestamp)}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Rating display */}
           {order.rating && (
-            <div className="apple-card bg-warning/5 border-warning/30">
-              <div className="flex items-start justify-between">
-                <h2 className="text-xl font-semibold mb-3">{o.yourReview}</h2>
+            <div className="sc-card-static" style={{ background: 'var(--warn-tint)' }}>
+              <div className="sc-row-between" style={{ alignItems: 'flex-start' }}>
+                <h2 className="sc-h2" style={{ marginBottom: 12 }}>{o.yourReview}</h2>
                 {canEditReview && (
                   <button
+                    type="button"
                     onClick={() => router.push(`/customer/orders/${orderId}/review`)}
-                    className="text-sm text-primary hover:text-primary/80 font-medium transition-colors"
+                    style={{ fontSize: 13, color: 'var(--brand)', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 600 }}
                   >
-                    Edit
+                    {t.orders.reviewFlow.edit}
                   </button>
                 )}
               </div>
-              <div className="flex items-center gap-1 mb-2">
+              <div className="sc-row" style={{ gap: 2, marginBottom: 8 }}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star
                     key={star}
-                    className={`w-5 h-5 ${star <= order.rating!.score ? 'text-warning fill-warning' : 'text-text-tertiary'}`}
+                    className="w-5 h-5"
+                    style={{
+                      color: star <= order.rating!.score ? 'var(--warn)' : 'var(--soft)',
+                      fill: star <= order.rating!.score ? 'var(--warn)' : 'transparent',
+                    }}
                   />
                 ))}
-                <span className="ml-2 font-medium">{order.rating.score}/5</span>
+                <span style={{ marginLeft: 8, fontWeight: 600 }}>{order.rating.score}/5</span>
               </div>
               {order.rating.review && (
-                <p className="text-sm text-text-secondary">{order.rating.review}</p>
+                <p className="sc-helper" style={{ margin: 0 }}>{order.rating.review}</p>
               )}
             </div>
           )}
 
-          {/* Cancellation info */}
           {order.cancellation && (
-            <div className="apple-card bg-error/5 border-error/30">
-              <h2 className="text-xl font-semibold mb-3 text-error">{o.orderCancelled}</h2>
-              <p className="text-sm text-text-secondary mb-1">{o.reason}: {order.cancellation.reason}</p>
+            <div className="sc-card-static" style={{ background: 'var(--warn-tint)' }}>
+              <h2 className="sc-h2" style={{ marginBottom: 12, color: 'var(--warn)' }}>{o.orderCancelled}</h2>
+              <p className="sc-helper" style={{ margin: '0 0 4px' }}>{o.reason}: {order.cancellation.reason}</p>
               {order.cancellation.refundIssued && (
-                <p className="text-sm text-success font-medium">{o.refundIssued}</p>
+                <p style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 600, margin: 0 }}>{o.refundIssued}</p>
               )}
             </div>
           )}
 
-          {/* Actions */}
           {order.status === 'completed' && !order.rating && (
             <button
+              type="button"
               onClick={() => router.push(`/customer/orders/${orderId}/review`)}
-              className="w-full px-8 py-4 bg-warning hover:bg-warning/90 text-black font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
+              className="sc-cta"
+              style={{
+                width: '100%',
+                padding: '14px 24px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                background: 'var(--warn)',
+              }}
             >
-              <div className="flex items-center justify-center gap-2">
-                <Star className="w-5 h-5" />
-                {o.rateExperience}
-              </div>
+              <Star className="w-5 h-5" />
+              {o.rateExperience}
             </button>
           )}
 
           {order.status === 'pending' && (
             <button
+              type="button"
               onClick={() => setShowCancelModal(true)}
-              className="w-full px-6 py-3 bg-surface hover:bg-surface-elevated border border-error text-error font-medium rounded-apple transition-all"
+              className="sc-cta-ghost"
+              style={{ width: '100%', color: 'var(--warn)', borderColor: 'var(--warn)' }}
             >
               {o.cancelOrder}
             </button>
           )}
         </div>
-      </div>
+      </main>
 
       {showCancelModal && (
         <CancelOrderModal
@@ -566,7 +563,6 @@ export default function OrderDetailPage() {
           onClose={() => setShowCancelModal(false)}
         />
       )}
-
     </div>
   );
 }

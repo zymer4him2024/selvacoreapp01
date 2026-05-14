@@ -97,20 +97,25 @@ export default function DeviceRegistrationFlow({
 
   if (step === 'done') {
     return (
-      <div className="text-center py-12 space-y-6 animate-fade-in">
-        <div className="w-20 h-20 rounded-full bg-success/20 flex items-center justify-center mx-auto">
-          <CheckCircle className="w-10 h-10 text-success" />
+      <div className="sc" style={{ textAlign: 'center', padding: '48px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+        <div
+          style={{
+            width: 80,
+            height: 80,
+            borderRadius: '50%',
+            background: 'var(--brand-tint)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <CheckCircle className="w-10 h-10" style={{ color: 'var(--brand)' }} />
         </div>
         <div>
-          <h2 className="text-2xl font-bold mb-2">{td.successTitle}</h2>
-          <p className="text-text-secondary">
-            {td.successMessage}
-          </p>
+          <h2 className="sc-h1" style={{ marginBottom: 8 }}>{td.successTitle}</h2>
+          <p className="sc-helper" style={{ margin: 0 }}>{td.successMessage}</p>
         </div>
-        <button
-          onClick={onComplete}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white font-semibold rounded-apple hover:bg-primary/90 transition-all"
-        >
+        <button onClick={onComplete} className="sc-cta" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           {td.backToJobs}
           <ArrowRight className="w-5 h-5" />
         </button>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { X, SwitchCamera } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface QRScannerProps {
   onScan: (data: string) => void;
@@ -10,6 +11,7 @@ interface QRScannerProps {
 }
 
 export default function QRScanner({ onScan, onCancel, onError }: QRScannerProps) {
+  const { t } = useTranslation();
   const [scanning, setScanning] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const scannerRef = useRef<any>(null);
@@ -34,7 +36,7 @@ export default function QRScanner({ onScan, onCancel, onError }: QRScannerProps)
             scannerRef.current = null;
             onScan(decodedText);
           },
-          () => {} // ignore scan failures (no QR in frame)
+          () => {}
         );
 
         if (mounted) setScanning(true);
@@ -66,7 +68,6 @@ export default function QRScanner({ onScan, onCancel, onError }: QRScannerProps)
       const cameras = await Html5Qrcode.getCameras();
       if (cameras.length < 2) return;
 
-      // Toggle between cameras
       const currentFacing = scannerRef.current._localMediaStream
         ?.getVideoTracks()[0]
         ?.getSettings()?.facingMode;
@@ -87,62 +88,126 @@ export default function QRScanner({ onScan, onCancel, onError }: QRScannerProps)
     }
   };
 
+  const iconBtn: React.CSSProperties = {
+    padding: 8,
+    borderRadius: 'var(--radius-sm)',
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--ink)',
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  };
+
   return (
-    <div className="fixed inset-0 bg-background z-50 flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-surface/80 backdrop-blur-sm border-b border-border">
+    <div
+      className="sc"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'var(--paper)',
+        zIndex: 50,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: 16,
+          background: 'var(--paper)',
+          borderBottom: '1px solid var(--line)',
+          backdropFilter: 'blur(8px)',
+        }}
+      >
         <button
           onClick={onCancel}
-          className="p-2 rounded-apple hover:bg-surface-elevated transition-all"
+          aria-label={t.components.qrScanner.cancelScan}
+          style={iconBtn}
         >
           <X className="w-6 h-6" />
         </button>
-        <h2 className="text-lg font-semibold">Scan QR Code</h2>
+        <h2 className="sc-h2" style={{ margin: 0, fontSize: 18 }}>{t.components.qrScanner.title}</h2>
         <button
           onClick={handleSwitchCamera}
-          className="p-2 rounded-apple hover:bg-surface-elevated transition-all"
+          aria-label={t.components.qrScanner.switchCamera}
+          style={iconBtn}
         >
           <SwitchCamera className="w-6 h-6" />
         </button>
       </div>
 
-      {/* Scanner area */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4" ref={containerRef}>
+      <div
+        ref={containerRef}
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 16,
+        }}
+      >
         {cameraError ? (
-          <div className="text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-error/20 flex items-center justify-center mx-auto">
-              <X className="w-8 h-8 text-error" />
-            </div>
-            <p className="text-error font-medium">Camera Error</p>
-            <p className="text-sm text-text-secondary max-w-sm">{cameraError}</p>
-            <button
-              onClick={onCancel}
-              className="px-6 py-3 bg-surface-elevated rounded-apple font-medium hover:bg-border transition-all"
+          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: '50%',
+                background: 'rgba(239,68,68,0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
-              Go Back
+              <X className="w-8 h-8" style={{ color: '#ef4444' }} />
+            </div>
+            <p style={{ color: '#ef4444', fontWeight: 500, margin: 0 }}>{t.components.qrScanner.cameraError}</p>
+            <p className="sc-helper" style={{ maxWidth: 360, margin: 0 }}>{cameraError}</p>
+            <button onClick={onCancel} className="sc-cta-ghost">
+              {t.components.qrScanner.goBack}
             </button>
           </div>
         ) : (
           <>
             <div
               id="qr-reader"
-              className="w-full max-w-sm rounded-apple overflow-hidden"
-              style={{ minHeight: 300 }}
+              style={{
+                width: '100%',
+                maxWidth: 384,
+                borderRadius: 'var(--radius-md)',
+                overflow: 'hidden',
+                minHeight: 300,
+              }}
             />
             {!scanning && (
-              <div className="mt-4 text-center">
-                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                <p className="text-sm text-text-secondary">Starting camera...</p>
+              <div style={{ marginTop: 16, textAlign: 'center' }}>
+                <div
+                  className="sc-spinner"
+                  style={{ margin: '0 auto 8px' }}
+                />
+                <p className="sc-helper" style={{ margin: 0 }}>{t.components.qrScanner.startingCamera}</p>
               </div>
             )}
           </>
         )}
       </div>
 
-      {/* Footer instruction */}
       {scanning && !cameraError && (
-        <div className="p-4 text-center bg-surface/80 backdrop-blur-sm border-t border-border">
-          <p className="text-sm text-text-secondary">
+        <div
+          style={{
+            padding: 16,
+            textAlign: 'center',
+            background: 'var(--paper)',
+            borderTop: '1px solid var(--line)',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          <p className="sc-helper" style={{ margin: 0 }}>
             Point camera at the QR code on the Ezer device
           </p>
         </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { X, Star } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const CATEGORIES = [
   { key: 'punctuality', label: 'Punctuality' },
@@ -22,6 +23,7 @@ interface RatingModalProps {
 }
 
 export default function RatingModal({ orderNumber, technicianName, onSubmit, onClose }: RatingModalProps) {
+  const { t } = useTranslation();
   const [score, setScore] = useState(0);
   const [hoverScore, setHoverScore] = useState(0);
   const [review, setReview] = useState('');
@@ -48,121 +50,151 @@ export default function RatingModal({ orderNumber, technicianName, onSubmit, onC
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+    <div className="sc" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, minHeight: 'auto' }}>
+      <div
+        style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+        onClick={onClose}
+      />
 
-      <div className="relative w-full max-w-md bg-surface rounded-2xl shadow-apple-lg animate-scale-in overflow-hidden max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-start justify-between mb-6">
-            <div>
-              <h2 className="text-lg font-semibold">Rate Your Experience</h2>
-              <p className="text-sm text-text-secondary">Order {orderNumber}</p>
-            </div>
-            <button onClick={onClose} className="p-2 hover:bg-surface-elevated rounded-apple transition-colors">
-              <X className="w-5 h-5" />
-            </button>
+      <div
+        className="sc-card-static"
+        style={{
+          position: 'relative',
+          width: '100%',
+          maxWidth: 448,
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          padding: 24,
+        }}
+      >
+        <div className="sc-row-between" style={{ alignItems: 'flex-start', marginBottom: 24 }}>
+          <div>
+            <h2 className="sc-h2" style={{ margin: 0 }}>{t.components.ratingModal.rateExperience}</h2>
+            <p className="sc-helper" style={{ margin: '4px 0 0' }}>Order {orderNumber}</p>
           </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="sc-cta-ghost"
+            style={{ padding: 8, width: 36, height: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+            aria-label="Close"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-          {/* Overall Rating */}
-          <div className="text-center mb-6">
-            <p className="text-sm text-text-secondary mb-3">How was your experience with {technicianName}?</p>
-            <div className="flex items-center justify-center gap-2">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  onMouseEnter={() => setHoverScore(star)}
-                  onMouseLeave={() => setHoverScore(0)}
-                  onClick={() => setScore(star)}
-                  className="p-1 transition-transform hover:scale-110"
-                >
-                  <Star
-                    className={`w-10 h-10 transition-colors ${
-                      star <= (hoverScore || score)
-                        ? 'text-warning fill-warning'
-                        : 'text-text-tertiary'
-                    }`}
-                  />
-                </button>
-              ))}
-            </div>
-            {score > 0 && (
-              <p className="text-sm font-medium mt-2 text-warning">
-                {score === 1 && 'Poor'}
-                {score === 2 && 'Fair'}
-                {score === 3 && 'Good'}
-                {score === 4 && 'Very Good'}
-                {score === 5 && 'Excellent'}
-              </p>
-            )}
-          </div>
-
-          {/* Category Ratings */}
-          <div className="space-y-4 mb-6">
-            <p className="text-sm font-medium text-text-secondary">Rate specific areas (optional)</p>
-            {CATEGORIES.map(({ key, label }) => (
-              <div key={key} className="flex items-center justify-between">
-                <span className="text-sm">{label}</span>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      onClick={() => updateCategory(key, star)}
-                      className="p-0.5"
-                    >
-                      <Star
-                        className={`w-5 h-5 transition-colors ${
-                          star <= categories[key as keyof typeof categories]
-                            ? 'text-warning fill-warning'
-                            : 'text-text-tertiary'
-                        }`}
-                      />
-                    </button>
-                  ))}
-                </div>
-              </div>
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <p className="sc-helper" style={{ marginBottom: 12 }}>How was your experience with {technicianName}?</p>
+          <div className="sc-row" style={{ justifyContent: 'center', gap: 8 }}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                type="button"
+                onMouseEnter={() => setHoverScore(star)}
+                onMouseLeave={() => setHoverScore(0)}
+                onClick={() => setScore(star)}
+                style={{
+                  padding: 4,
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'transform 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+              >
+                <Star
+                  className="w-10 h-10"
+                  style={{
+                    color: star <= (hoverScore || score) ? 'var(--warn)' : 'var(--soft)',
+                    fill: star <= (hoverScore || score) ? 'var(--warn)' : 'none',
+                    transition: 'color 150ms, fill 150ms',
+                  }}
+                />
+              </button>
             ))}
           </div>
+          {score > 0 && (
+            <p style={{ fontSize: 14, fontWeight: 600, marginTop: 8, color: 'var(--warn)' }}>
+              {score === 1 && 'Poor'}
+              {score === 2 && 'Fair'}
+              {score === 3 && 'Good'}
+              {score === 4 && 'Very Good'}
+              {score === 5 && 'Excellent'}
+            </p>
+          )}
+        </div>
 
-          {/* Review Text */}
-          <div className="mb-6">
-            <label className="text-sm font-medium text-text-secondary mb-2 block">
-              Write a review (optional)
-            </label>
-            <textarea
-              value={review}
-              onChange={(e) => setReview(e.target.value)}
-              placeholder="Share your experience with the installation..."
-              rows={3}
-              maxLength={500}
-              className="w-full px-4 py-3 rounded-apple border border-border bg-surface focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm resize-none"
-            />
-            <p className="text-xs text-text-tertiary mt-1 text-right">{review.length}/500</p>
-          </div>
+        <div className="sc-stack" style={{ gap: 16, marginBottom: 24 }}>
+          <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--soft)', margin: 0 }}>
+            {t.components.ratingModal.rateSpecificAreas}
+          </p>
+          {CATEGORIES.map(({ key, label }) => (
+            <div key={key} className="sc-row-between">
+              <span style={{ fontSize: 14 }}>{label}</span>
+              <div className="sc-row" style={{ gap: 4 }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => updateCategory(key, star)}
+                    style={{ padding: 2, background: 'transparent', border: 'none', cursor: 'pointer' }}
+                  >
+                    <Star
+                      className="w-5 h-5"
+                      style={{
+                        color: star <= categories[key as keyof typeof categories] ? 'var(--warn)' : 'var(--soft)',
+                        fill: star <= categories[key as keyof typeof categories] ? 'var(--warn)' : 'none',
+                        transition: 'color 150ms, fill 150ms',
+                      }}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
 
-          {/* Submit */}
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              disabled={processing}
-              className="flex-1 px-4 py-3 bg-surface-elevated hover:bg-border text-text-primary font-medium rounded-apple transition-all"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={score === 0 || processing}
-              className="flex-1 px-4 py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-apple transition-all"
-            >
-              {processing ? (
-                <div className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Submitting...
-                </div>
-              ) : (
-                'Submit Review'
-              )}
-            </button>
-          </div>
+        <div style={{ marginBottom: 24 }}>
+          <label className="sc-label">
+            Write a review (optional)
+          </label>
+          <textarea
+            value={review}
+            onChange={(e) => setReview(e.target.value)}
+            placeholder={t.components.ratingModal.commentPlaceholder}
+            rows={3}
+            maxLength={500}
+            className="sc-input"
+            style={{ resize: 'none' }}
+          />
+          <p style={{ fontSize: 12, color: 'var(--soft)', marginTop: 4, textAlign: 'right' }}>{review.length}/500</p>
+        </div>
+
+        <div className="sc-row" style={{ gap: 12 }}>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={processing}
+            className="sc-cta-ghost"
+            style={{ flex: 1 }}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={score === 0 || processing}
+            className="sc-cta"
+            style={{ flex: 1 }}
+          >
+            {processing ? (
+              <span className="sc-row" style={{ justifyContent: 'center', gap: 8 }}>
+                <span style={{ width: 16, height: 16, border: '2px solid currentColor', borderTopColor: 'transparent', borderRadius: '50%', animation: 'sc-spin 0.8s linear infinite' }} />
+                Submitting...
+              </span>
+            ) : (
+              'Submit Review'
+            )}
+          </button>
         </div>
       </div>
     </div>

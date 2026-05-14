@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ArrowLeft, Check, Plus, Trash2, QrCode } from 'lucide-react';
 import { MaintenanceScheduleInput } from '@/types/device';
 import { DeviceRegistrationInput } from '@/types/device';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface MaintenanceScheduleFormProps {
   qrCodeData: string;
@@ -32,6 +33,7 @@ export default function MaintenanceScheduleForm({
   onBack,
   submitting,
 }: MaintenanceScheduleFormProps) {
+  const { t } = useTranslation();
   const [ezerInterval, setEzerInterval] = useState(180);
   const [ezerDueDate, setEzerDueDate] = useState(getDefaultDueDate(180));
 
@@ -80,41 +82,76 @@ export default function MaintenanceScheduleForm({
 
   const isValid = ezerDueDate && filters.every((f) => f.name.trim() && f.dueDate);
 
+  const intervalBtn = (active: boolean): React.CSSProperties => ({
+    padding: '8px 12px',
+    fontSize: 14,
+    fontWeight: 500,
+    borderRadius: 'var(--radius-sm)',
+    border: '1px solid var(--line)',
+    background: active ? 'var(--brand)' : 'var(--paper)',
+    color: active ? '#fff' : 'var(--ink-soft)',
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  });
+
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center gap-3">
+    <div className="sc" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <button
           onClick={onBack}
-          className="p-2 rounded-apple hover:bg-surface-elevated transition-all"
+          aria-label="Back"
+          style={{
+            padding: 8,
+            borderRadius: 'var(--radius-sm)',
+            background: 'var(--paper)',
+            border: '1px solid var(--line)',
+            color: 'var(--ink)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h2 className="text-xl font-bold">Maintenance Schedule</h2>
-          <p className="text-sm text-text-secondary">Set up maintenance for this device</p>
+          <h2 className="sc-h2" style={{ margin: 0 }}>{t.components.maintenanceForm.title}</h2>
+          <p className="sc-helper" style={{ margin: 0 }}>{t.components.maintenanceForm.subtitle}</p>
         </div>
       </div>
 
-      {/* QR Code confirmation */}
-      <div className="apple-card flex items-center gap-3">
-        <div className="w-10 h-10 rounded-apple bg-success/20 flex items-center justify-center flex-shrink-0">
-          <QrCode className="w-5 h-5 text-success" />
+      <div className="sc-card-static" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 'var(--radius-sm)',
+            background: 'var(--brand-tint)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <QrCode className="w-5 h-5" style={{ color: 'var(--brand)' }} />
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm text-text-secondary">QR Code Scanned</p>
-          <p className="font-mono text-sm truncate">{qrCodeData}</p>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p className="sc-helper" style={{ margin: 0 }}>{t.components.maintenanceForm.qrCodeScanned}</p>
+          <p style={{ fontFamily: 'monospace', fontSize: 14, margin: 0, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {qrCodeData}
+          </p>
         </div>
-        <Check className="w-5 h-5 text-success flex-shrink-0" />
+        <Check className="w-5 h-5" style={{ color: 'var(--brand)', flexShrink: 0 }} />
       </div>
 
-      {/* Ezer Maintenance */}
-      <div className="apple-card">
-        <h3 className="font-semibold mb-4">Ezer Maintenance</h3>
-        <div className="space-y-4">
+      <div className="sc-card-static">
+        <h3 className="sc-h2" style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>
+          {t.components.maintenanceForm.ezerMaintenance}
+        </h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <label className="block text-sm text-text-secondary mb-2">Maintenance Interval</label>
-            <div className="grid grid-cols-3 gap-2">
+            <label className="sc-label">{t.components.maintenanceForm.maintenanceInterval}</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
               {INTERVAL_OPTIONS.map((opt) => (
                 <button
                   key={opt.days}
@@ -123,11 +160,7 @@ export default function MaintenanceScheduleForm({
                     setEzerInterval(opt.days);
                     setEzerDueDate(getDefaultDueDate(opt.days));
                   }}
-                  className={`px-3 py-2 rounded-apple text-sm font-medium transition-all ${
-                    ezerInterval === opt.days
-                      ? 'bg-primary text-white'
-                      : 'bg-surface-elevated text-text-secondary hover:text-text-primary'
-                  }`}
+                  style={intervalBtn(ezerInterval === opt.days)}
                 >
                   {opt.label}
                 </button>
@@ -135,26 +168,35 @@ export default function MaintenanceScheduleForm({
             </div>
           </div>
           <div>
-            <label className="block text-sm text-text-secondary mb-2">First Due Date</label>
+            <label className="sc-label">{t.components.maintenanceForm.firstDueDate}</label>
             <input
               type="date"
               value={ezerDueDate}
               onChange={(e) => setEzerDueDate(e.target.value)}
-              className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+              className="sc-input"
             />
           </div>
         </div>
       </div>
 
-      {/* Filter Replacements */}
-      <div className="apple-card">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold">Filter Replacements</h3>
+      <div className="sc-card-static">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <h3 className="sc-h2" style={{ margin: 0, fontSize: 18 }}>{t.components.maintenanceForm.filterReplacements}</h3>
           {filters.length < 2 && (
             <button
               type="button"
               onClick={addFilter}
-              className="flex items-center gap-1 text-sm text-primary font-medium hover:text-primary/80 transition-all"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                fontSize: 14,
+                fontWeight: 500,
+                color: 'var(--brand)',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+              }}
             >
               <Plus className="w-4 h-4" />
               Add Filter
@@ -162,18 +204,37 @@ export default function MaintenanceScheduleForm({
           )}
         </div>
 
-        <div className="space-y-6">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           {filters.map((filter, index) => (
-            <div key={index} className="space-y-4 p-4 bg-surface-elevated rounded-apple">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-text-secondary">
+            <div
+              key={index}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 16,
+                padding: 16,
+                background: 'var(--off-paper)',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--line)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink-soft)' }}>
                   Filter {index + 1}
                 </span>
                 {filters.length > 1 && (
                   <button
                     type="button"
                     onClick={() => removeFilter(index)}
-                    className="p-1 text-text-tertiary hover:text-error transition-all"
+                    aria-label="Remove filter"
+                    style={{
+                      padding: 4,
+                      color: 'var(--soft)',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                    }}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -181,19 +242,19 @@ export default function MaintenanceScheduleForm({
               </div>
 
               <div>
-                <label className="block text-sm text-text-secondary mb-2">Filter Name</label>
+                <label className="sc-label">{t.components.maintenanceForm.filterName}</label>
                 <input
                   type="text"
                   value={filter.name}
                   onChange={(e) => updateFilter(index, 'name', e.target.value)}
-                  placeholder="e.g. Sediment Filter"
-                  className="w-full px-4 py-3 bg-background border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                  placeholder={t.components.maintenanceForm.filterPlaceholder}
+                  className="sc-input"
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-text-secondary mb-2">Replacement Interval</label>
-                <div className="grid grid-cols-3 gap-2">
+                <label className="sc-label">{t.components.maintenanceForm.replacementInterval}</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                   {INTERVAL_OPTIONS.map((opt) => (
                     <button
                       key={opt.days}
@@ -202,11 +263,7 @@ export default function MaintenanceScheduleForm({
                         updateFilter(index, 'intervalDays', opt.days);
                         updateFilter(index, 'dueDate', getDefaultDueDate(opt.days));
                       }}
-                      className={`px-3 py-2 rounded-apple text-sm font-medium transition-all ${
-                        filter.intervalDays === opt.days
-                          ? 'bg-primary text-white'
-                          : 'bg-background text-text-secondary hover:text-text-primary'
-                      }`}
+                      style={intervalBtn(filter.intervalDays === opt.days)}
                     >
                       {opt.label}
                     </button>
@@ -215,12 +272,12 @@ export default function MaintenanceScheduleForm({
               </div>
 
               <div>
-                <label className="block text-sm text-text-secondary mb-2">First Due Date</label>
+                <label className="sc-label">{t.components.maintenanceForm.firstDueDate}</label>
                 <input
                   type="date"
                   value={filter.dueDate}
                   onChange={(e) => updateFilter(index, 'dueDate', e.target.value)}
-                  className="w-full px-4 py-3 bg-background border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                  className="sc-input"
                 />
               </div>
             </div>
@@ -228,17 +285,26 @@ export default function MaintenanceScheduleForm({
         </div>
       </div>
 
-      {/* Submit */}
       <button
         onClick={handleSubmit}
         disabled={!isValid || submitting}
-        className="w-full px-6 py-4 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-apple transition-all hover:scale-[1.02]"
+        className="sc-cta"
+        style={{
+          width: '100%',
+          padding: '16px 24px',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 12,
+          opacity: !isValid || submitting ? 0.5 : 1,
+          cursor: !isValid || submitting ? 'not-allowed' : 'pointer',
+        }}
       >
         {submitting ? (
-          <div className="flex items-center justify-center gap-3">
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          <>
+            <span className="sc-spinner" />
             Registering Device...
-          </div>
+          </>
         ) : (
           'Register Device'
         )}

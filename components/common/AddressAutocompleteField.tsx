@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { MapPin, Loader2, Pencil } from 'lucide-react';
 import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 import { Address } from '@/types';
+import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
 type AddressForm = Omit<Address, 'id'>;
@@ -67,6 +68,7 @@ export default function AddressAutocompleteField({
   showCountry = true,
   showLandmark = true,
 }: AddressAutocompleteFieldProps) {
+  const { t } = useTranslation();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
@@ -108,7 +110,7 @@ export default function AddressAutocompleteField({
       })
       .catch(() => {
         if (cancelled) return;
-        toast.error('Address autocomplete unavailable — please enter manually');
+        toast.error(t.components.address.autoUnavailable);
         setManualMode(true);
         setReady(true);
       });
@@ -124,11 +126,11 @@ export default function AddressAutocompleteField({
 
   const handleUseMyLocation = () => {
     if (!navigator.geolocation) {
-      toast.error('Geolocation not supported on this device');
+      toast.error(t.components.address.geolocNotSupported);
       return;
     }
     if (!geocoderRef.current) {
-      toast.error('Address service not ready — please try again');
+      toast.error(t.components.address.addrServiceNotReady);
       return;
     }
     setLocating(true);
@@ -140,7 +142,7 @@ export default function AddressAutocompleteField({
           .then((res) => {
             const first = res.results[0];
             if (!first) {
-              toast.error('No address found at current location');
+              toast.error(t.components.address.noAddrAtLocation);
               return;
             }
             const parsed = parseGooglePlace(first.address_components);
@@ -155,17 +157,17 @@ export default function AddressAutocompleteField({
             if (searchInputRef.current) {
               searchInputRef.current.value = first.formatted_address ?? '';
             }
-            toast.success('Address filled from your location');
+            toast.success(t.components.address.addrFilled);
           })
-          .catch(() => toast.error('Failed to resolve address from location'))
+          .catch(() => toast.error(t.components.address.failedResolve))
           .finally(() => setLocating(false));
       },
       (err) => {
         setLocating(false);
         if (err.code === err.PERMISSION_DENIED) {
-          toast.error('Location permission denied');
+          toast.error(t.components.address.locationDenied);
         } else {
-          toast.error('Could not get current location');
+          toast.error(t.components.address.couldNotGetLocation);
         }
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
@@ -196,7 +198,7 @@ export default function AddressAutocompleteField({
 
       {!manualMode && (
         <div>
-          <label className="block text-xs font-medium mb-1">Search address</label>
+          <label className="block text-xs font-medium mb-1">{t.components.address.search}</label>
           <div className="relative">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary pointer-events-none" />
             <input
@@ -248,19 +250,19 @@ export default function AddressAutocompleteField({
           )}
 
           <div>
-            <label className="block text-xs font-medium mb-1">Street *</label>
+            <label className="block text-xs font-medium mb-1">{t.components.address.street} *</label>
             <input
               type="text"
               value={value.street}
               onChange={(e) => onChange({ ...value, street: e.target.value })}
-              placeholder="123 Main Street"
+              placeholder={t.components.address.streetPlaceholder}
               className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none text-sm"
             />
           </div>
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-medium mb-1">City *</label>
+              <label className="block text-xs font-medium mb-1">{t.components.address.city} *</label>
               <input
                 type="text"
                 value={value.city}
@@ -302,7 +304,7 @@ export default function AddressAutocompleteField({
 
           {showLandmark && (
             <div>
-              <label className="block text-xs font-medium mb-1">Landmark (optional)</label>
+              <label className="block text-xs font-medium mb-1">{t.components.address.landmarkOptional}</label>
               <input
                 type="text"
                 value={value.landmark ?? ''}

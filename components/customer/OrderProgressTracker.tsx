@@ -17,97 +17,103 @@ export default function OrderProgressTracker({ currentStep }: OrderProgressTrack
     { number: 4, label: t.customer?.orderSteps?.payment || 'Payment' },
   ];
 
+  const circleStyle = (step: number): React.CSSProperties => {
+    if (step < currentStep) {
+      return { background: 'var(--brand)', color: 'var(--paper)', border: 'none' };
+    }
+    if (step === currentStep) {
+      return { background: 'var(--brand)', color: 'var(--paper)', border: 'none', boxShadow: '0 0 0 4px var(--brand-tint)' };
+    }
+    return { background: 'var(--paper)', color: 'var(--soft)', border: '2px solid var(--hairline)' };
+  };
+
   return (
-    <div className="w-full py-6">
-      {/* Desktop View */}
-      <div className="hidden md:flex items-center justify-center gap-2">
+    <div style={{ width: '100%', padding: '24px 0' }}>
+      <div className="hidden md:flex" style={{ alignItems: 'center', justifyContent: 'center', gap: 8 }}>
         {steps.map((step, index) => (
-          <div key={step.number} className="flex items-center">
-            {/* Step Circle */}
-            <div className="flex flex-col items-center">
+          <div key={step.number} className="sc-row" style={{ alignItems: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <div
-                className={`
-                  w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all
-                  ${
-                    step.number < currentStep
-                      ? 'bg-success text-white'
-                      : step.number === currentStep
-                      ? 'bg-primary text-white ring-4 ring-primary/20'
-                      : 'bg-surface border-2 border-border text-text-tertiary'
-                  }
-                `}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+                  ...circleStyle(step.number),
+                }}
               >
-                {step.number < currentStep ? (
-                  <Check className="w-5 h-5" />
-                ) : (
-                  step.number
-                )}
+                {step.number < currentStep ? <Check className="w-5 h-5" /> : step.number}
               </div>
               <span
-                className={`
-                  mt-2 text-xs font-medium whitespace-nowrap
-                  ${
-                    step.number <= currentStep
-                      ? 'text-text-primary'
-                      : 'text-text-tertiary'
-                  }
-                `}
+                style={{
+                  marginTop: 8,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap',
+                  color: step.number <= currentStep ? 'var(--ink)' : 'var(--soft)',
+                }}
               >
                 {step.label}
               </span>
             </div>
 
-            {/* Connector Line */}
             {index < steps.length - 1 && (
               <div
-                className={`
-                  w-16 h-1 mx-2 transition-all
-                  ${
-                    step.number < currentStep
-                      ? 'bg-success'
-                      : 'bg-border'
-                  }
-                `}
-              ></div>
+                style={{
+                  width: 64,
+                  height: 4,
+                  margin: '0 8px',
+                  background: step.number < currentStep ? 'var(--brand)' : 'var(--hairline)',
+                  transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+              />
             )}
           </div>
         ))}
       </div>
 
-      {/* Mobile View */}
       <div className="md:hidden">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-text-secondary">
+        <div className="sc-row-between" style={{ marginBottom: 8 }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--soft)' }}>
             Step {currentStep} of {steps.length}
           </span>
-          <span className="text-sm font-medium text-primary">
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--brand)' }}>
             {steps[currentStep - 1]?.label}
           </span>
         </div>
-        
-        {/* Progress Bar */}
-        <div className="w-full h-2 bg-surface-elevated rounded-full overflow-hidden">
+
+        <div style={{ width: '100%', height: 8, background: 'var(--off-paper)', borderRadius: 9999, overflow: 'hidden' }}>
           <div
-            className="h-full bg-primary transition-all duration-500"
-            style={{ width: `${(currentStep / steps.length) * 100}%` }}
-          ></div>
+            style={{
+              height: '100%',
+              background: 'var(--brand)',
+              width: `${(currentStep / steps.length) * 100}%`,
+              transition: 'width 500ms cubic-bezier(0.4, 0, 0.2, 1)',
+            }}
+          />
         </div>
 
-        {/* Step Labels */}
-        <div className="flex items-center justify-between mt-2">
+        <div className="sc-row-between" style={{ marginTop: 8 }}>
           {steps.map((step) => (
             <div
               key={step.number}
-              className={`
-                w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
-                ${
-                  step.number < currentStep
-                    ? 'bg-success text-white'
-                    : step.number === currentStep
-                    ? 'bg-primary text-white'
-                    : 'bg-surface border border-border text-text-tertiary'
-                }
-              `}
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 12,
+                fontWeight: 700,
+                ...circleStyle(step.number),
+                boxShadow: 'none',
+              }}
             >
               {step.number < currentStep ? <Check className="w-3 h-3" /> : step.number}
             </div>
@@ -117,4 +123,3 @@ export default function OrderProgressTracker({ currentStep }: OrderProgressTrack
     </div>
   );
 }
-

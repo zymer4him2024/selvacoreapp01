@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/hooks/useTranslation';
 import { UserRole } from '@/types';
 
 interface ProtectedRouteProps {
@@ -17,6 +18,7 @@ export default function ProtectedRoute({
   redirectTo = '/login',
 }: ProtectedRouteProps) {
   const { user, userData, loading } = useAuth();
+  const { t } = useTranslation();
   const router = useRouter();
 
   useEffect(() => {
@@ -26,7 +28,7 @@ export default function ProtectedRoute({
       } else if (allowedRoles && userData && !allowedRoles.includes(userData.role)) {
         const roleDashboards: Record<UserRole, string> = {
           admin: '/admin',
-          'sub-admin': '/sub-admin',
+          'sub-admin': '/admin',
           technician: '/technician',
           customer: '/customer',
         };
@@ -40,7 +42,7 @@ export default function ProtectedRoute({
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">Loading...</p>
+          <p className="text-text-secondary">{t.common.loading}</p>
         </div>
       </div>
     );

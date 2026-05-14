@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import {
   WriteType,
   FailedWrite,
@@ -34,6 +34,7 @@ async function handleCompleteJob(entry: QueuedWrite) {
   // Upload photos from IDB photoQueue first
   const queuedPhotos = await getPhotosForOrder(orderId);
   const photoUrls: string[] = [];
+  const queuedDescriptions: string[] = [];
   for (const photo of queuedPhotos) {
     if (photo.downloadUrl) {
       photoUrls.push(photo.downloadUrl);
@@ -41,12 +42,22 @@ async function handleCompleteJob(entry: QueuedWrite) {
       const url = await uploadInstallationPhoto(orderId, new File([photo.blob], photo.filename, { type: photo.blob.type }));
       photoUrls.push(url);
     }
+    queuedDescriptions.push(photo.description || '');
   }
 
   // If no queued photos, check if URLs were passed directly (online path)
   const finalUrls = photoUrls.length > 0 ? photoUrls : (p.photoUrls as string[] | undefined) ?? [];
+  const finalDescriptions = queuedDescriptions.length > 0
+    ? queuedDescriptions
+    : (p.photoDescriptions as string[] | undefined) ?? [];
 
-  await completeJob(orderId, p.technicianId as string, finalUrls, p.notes as string | undefined);
+  await completeJob(
+    orderId,
+    p.technicianId as string,
+    finalUrls,
+    p.notes as string | undefined,
+    finalDescriptions.length > 0 ? finalDescriptions : undefined,
+  );
 
   // Clean up photo queue for this order
   if (queuedPhotos.length > 0) {
@@ -66,14 +77,6 @@ const HANDLERS: Record<WriteType, (entry: QueuedWrite) => Promise<void>> = {
   register_device: handleRegisterDevice,
 };
 
-// ── Friendly labels for UI ───────────────────────────────────────────
-const FRIENDLY_LABELS: Record<WriteType, string> = {
-  accept_job: 'Job acceptance',
-  start_job: 'Job start',
-  complete_job: 'Job completion',
-  register_device: 'Device registration',
-};
-
 // ── Context types ────────────────────────────────────────────────────
 interface OfflineQueueState {
   pendingCount: number;
@@ -81,7 +84,6 @@ interface OfflineQueueState {
   enqueue: (type: WriteType, payload: Record<string, unknown>) => Promise<void>;
   retryAll: () => Promise<void>;
   dismissFailure: (entryId: string) => void;
-  friendlyLabel: (type: WriteType) => string;
 }
 
 const OfflineQueueContext = createContext<OfflineQueueState | null>(null);
@@ -96,7 +98,6 @@ export function useOfflineQueue(): OfflineQueueState {
 export function OfflineQueueProvider({ children }: { children: ReactNode }) {
   const [pendingCount, setPendingCount] = useState(0);
   const [failures, setFailures] = useState<FailedWrite[]>([]);
-  const onlineListenerRef = useRef(false);
 
   const refreshCount = useCallback(async () => {
     const count = await writeQueueCount();
@@ -110,18 +111,17 @@ export function OfflineQueueProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Register handlers + online listener once
   useEffect(() => {
     setFlushHandlers(HANDLERS, handleDrainResult);
     refreshCount();
 
-    if (!onlineListenerRef.current) {
-      onlineListenerRef.current = true;
-      const onOnline = () => { void flush(); };
-      window.addEventListener('online', onOnline);
-      // Attempt flush on mount if online (catch queued items from previous session)
-      if (navigator.onLine) void flush();
-    }
+    const onOnline = () => { void flush(); };
+    window.addEventListener('online', onOnline);
+    if (navigator.onLine) void flush();
+
+    return () => {
+      window.removeEventListener('online', onOnline);
+    };
   }, [handleDrainResult, refreshCount]);
 
   const enqueue = useCallback(async (type: WriteType, payload: Record<string, unknown>) => {
@@ -141,10 +141,8 @@ export function OfflineQueueProvider({ children }: { children: ReactNode }) {
     setFailures(prev => prev.filter(f => f.entry.id !== entryId));
   }, []);
 
-  const friendlyLabel = useCallback((type: WriteType) => FRIENDLY_LABELS[type] || type, []);
-
   return (
-    <OfflineQueueContext.Provider value={{ pendingCount, failures, enqueue, retryAll, dismissFailure, friendlyLabel }}>
+    <OfflineQueueContext.Provider value={{ pendingCount, failures, enqueue, retryAll, dismissFailure }}>
       {children}
     </OfflineQueueContext.Provider>
   );

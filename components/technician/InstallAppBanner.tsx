@@ -2,9 +2,11 @@
 
 import { Download, X } from 'lucide-react';
 import { useInstallPrompt } from '@/hooks/useInstallPrompt';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function InstallAppBanner() {
   const { canInstall, install, dismiss } = useInstallPrompt();
+  const { t } = useTranslation();
 
   if (!canInstall) return null;
 
@@ -14,8 +16,8 @@ export default function InstallAppBanner() {
         <Download className="w-5 h-5 text-white" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm">Install Selvacore</p>
-        <p className="text-xs text-text-secondary">Add to home screen for quick access</p>
+        <p className="font-semibold text-sm">{t.components.installBanner.installSelvacore}</p>
+        <p className="text-xs text-text-secondary">{t.components.installBanner.addToHomeScreen}</p>
       </div>
       <button
         onClick={install}
@@ -26,7 +28,7 @@ export default function InstallAppBanner() {
       <button
         onClick={dismiss}
         className="p-1.5 hover:bg-surface-elevated rounded-apple transition-all flex-shrink-0"
-        aria-label="Dismiss install prompt"
+        aria-label={t.components.installBanner.dismissInstall}
       >
         <X className="w-4 h-4 text-text-secondary" />
       </button>

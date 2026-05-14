@@ -4,11 +4,20 @@ import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useOfflineQueue } from '@/contexts/OfflineQueueContext';
 import { WifiOff, AlertTriangle, RefreshCw, X } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
+import type { WriteType } from '@/lib/offline/writeQueue';
+
+const LABEL_KEY: Record<WriteType, 'acceptJob' | 'startJob' | 'completeJob' | 'registerDevice'> = {
+  accept_job: 'acceptJob',
+  start_job: 'startJob',
+  complete_job: 'completeJob',
+  register_device: 'registerDevice',
+};
 
 export default function NetworkStatusBar() {
   const { isOnline } = useNetworkStatus();
-  const { pendingCount, failures, retryAll, dismissFailure, friendlyLabel } = useOfflineQueue();
+  const { pendingCount, failures, retryAll, dismissFailure } = useOfflineQueue();
   const { t } = useTranslation();
+  const friendlyLabel = (type: WriteType) => t.common.offlineQueue[LABEL_KEY[type]] || type;
 
   // Red banner: permanent failures
   if (failures.length > 0) {

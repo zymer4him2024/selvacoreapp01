@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function Error({
   error,
@@ -9,6 +10,7 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const { t } = useTranslation();
   useEffect(() => {
     console.error('Application error:', error);
   }, [error]);
@@ -22,9 +24,9 @@ export default function Error({
           </svg>
         </div>
         <div className="space-y-2">
-          <h1 className="text-2xl font-semibold text-text-primary">Something went wrong</h1>
+          <h1 className="text-2xl font-semibold text-text-primary">{t.errorPages.somethingWentWrong}</h1>
           <p className="text-text-secondary">
-            An unexpected error occurred. Please try again.
+            {t.errorPages.unexpectedError}
           </p>
         </div>
         <div className="flex gap-3 justify-center">
@@ -32,13 +34,13 @@ export default function Error({
             onClick={reset}
             className="px-6 py-3 bg-primary text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
           >
-            Try again
+            {t.errorPages.tryAgain}
           </button>
           <a
             href="/"
             className="px-6 py-3 bg-surface-secondary text-text-primary font-medium rounded-lg hover:opacity-90 transition-opacity"
           >
-            Go home
+            {t.errorPages.goHome}
           </a>
         </div>
       </div>

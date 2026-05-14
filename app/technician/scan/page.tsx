@@ -143,7 +143,6 @@ export default function TechnicianScanPage() {
         return;
       }
 
-      // Device QR — try online first, fall back to cache if offline/unknown
       let foundDevice: Device | null = null;
       if (typeof navigator !== 'undefined' && navigator.onLine === false) {
         foundDevice = await getCachedDevice(qrData);
@@ -161,7 +160,6 @@ export default function TechnicianScanPage() {
           }
           cacheDevice(foundDevice).catch(() => {});
         } else {
-          // Might be a device we've seen before but is temporarily unreachable
           const cached = await getCachedDevice(qrData);
           if (cached) {
             foundDevice = cached;
@@ -275,7 +273,6 @@ export default function TechnicianScanPage() {
         return;
       }
 
-      // Online path
       try {
         await submitVisitOnline({
           id: 'inline',
@@ -292,9 +289,6 @@ export default function TechnicianScanPage() {
         setStep('done');
         toast.success(ts.visitRecordedToast);
       } catch (error) {
-        // Only fall back to the offline queue for actual connectivity errors.
-        // Permission-denied, quota, validation, etc. must surface to the user
-        // so they don't sit forever in the queue hitting the same error.
         const wentOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
         const firebaseCode =
           error && typeof error === 'object' && 'code' in error
@@ -324,7 +318,6 @@ export default function TechnicianScanPage() {
         } else {
           const message = error instanceof Error ? error.message : ts.submitFailed;
           toast.error(`${ts.submitFailed}: ${message}`);
-          // Stay on the form so the technician can retry or adjust.
         }
       }
     } catch (error: unknown) {
@@ -365,288 +358,395 @@ export default function TechnicianScanPage() {
     );
   }
 
+  const backBtn: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 8,
+    color: 'var(--ink-soft)',
+    background: 'transparent',
+    border: 'none',
+    fontSize: 14,
+    fontWeight: 500,
+    cursor: 'pointer',
+  };
+
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Pending-sync banner (when offline queue has items) */}
-      {pendingCount > 0 && (
-        <div className="flex items-center justify-between gap-3 px-4 py-3 bg-warning/10 border border-warning/30 rounded-apple">
-          <div className="flex items-center gap-2 text-warning">
-            <CloudOff className="w-5 h-5" />
-            <span className="text-sm font-medium">
-              {pendingCount} {pendingCount > 1 ? ts.visitsPendingSync : ts.visitPendingSync}
-            </span>
-          </div>
-          <button
-            onClick={handleManualSync}
-            className="flex items-center gap-1.5 text-sm font-semibold text-warning hover:text-warning/80"
+    <div className="sc">
+      <main className="sc-main" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        {pendingCount > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              padding: '12px 16px',
+              background: 'var(--warn-tint)',
+              border: '1px solid var(--warn)',
+              borderRadius: 'var(--radius-md)',
+            }}
           >
-            <RefreshCw className="w-4 h-4" /> {ts.retryNow}
-          </button>
-        </div>
-      )}
-
-      {/* Idle */}
-      {step === 'idle' && (
-        <div className="text-center py-16 space-y-6">
-          <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-            <QrCode className="w-12 h-12 text-primary" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--warn)' }}>
+              <CloudOff className="w-5 h-5" />
+              <span style={{ fontSize: 14, fontWeight: 500 }}>
+                {pendingCount} {pendingCount > 1 ? ts.visitsPendingSync : ts.visitPendingSync}
+              </span>
+            </div>
+            <button
+              onClick={handleManualSync}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: 14,
+                fontWeight: 600,
+                color: 'var(--warn)',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <RefreshCw className="w-4 h-4" /> {ts.retryNow}
+            </button>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold mb-2">{ts.title}</h1>
-            <p className="text-text-secondary max-w-sm mx-auto">
-              {ts.subtitle}
-            </p>
-          </div>
-          <button
-            onClick={() => setStep('scanning')}
-            className="px-8 py-4 bg-primary hover:bg-primary/90 text-white font-semibold rounded-apple transition-all text-lg"
-          >
-            {ts.startScan}
-          </button>
-        </div>
-      )}
+        )}
 
-      {/* Device picker (common maintenance QR) */}
-      {step === 'device-picker' && (
-        <>
-          <button onClick={handleReset} className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-all">
-            <ArrowLeft className="w-4 h-4" /> {ts.back}
-          </button>
-          <div className="apple-card">
-            <h2 className="text-xl font-bold mb-4">{ts.chooseSite}</h2>
-            {loadingDevices ? (
-              <p className="text-text-secondary py-4">{ts.loadingSites}</p>
-            ) : techOrders.length === 0 && techDevices.length === 0 ? (
-              <p className="text-text-secondary py-4">{ts.noJobsFound}</p>
-            ) : (
-              <div className="space-y-2">
-                {pickerItems.map((item) => {
-                  const hasDevice = !!item.device;
-                  const name = item.order?.customerInfo?.name || item.device?.customerInfo?.name || ts.unknownCustomer;
-                  const addr = item.order?.installationAddress ?? item.device!.installationAddress;
-                  const addressLine1 = addr.street;
-                  const addressLine2 = [addr.city, addr.state, addr.postalCode].filter(Boolean).join(', ');
-                  const phone = item.order?.customerInfo?.phone || item.device?.customerInfo?.phone || '';
-                  const order = item.order;
-                  let appointment: string | null = null;
-                  if (order) {
-                    const when = order.scheduledAt?.toDate() ?? order.installationDate?.toDate();
-                    if (when) {
-                      const date = when.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-                      if (order.scheduledAt) {
-                        const time = when.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-                        appointment = `${date} · ${time}`;
-                      } else {
-                        appointment = order.timeSlot ? `${date} · ${order.timeSlot}h` : date;
+        {step === 'idle' && (
+          <div style={{ textAlign: 'center', padding: '64px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+            <div
+              style={{
+                width: 96,
+                height: 96,
+                borderRadius: '50%',
+                background: 'var(--brand-tint)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <QrCode className="w-12 h-12" style={{ color: 'var(--brand)' }} />
+            </div>
+            <div>
+              <h1 className="sc-h1" style={{ marginBottom: 8 }}>{ts.title}</h1>
+              <p className="sc-lede" style={{ maxWidth: 360, margin: '0 auto' }}>{ts.subtitle}</p>
+            </div>
+            <button
+              onClick={() => setStep('scanning')}
+              className="sc-cta"
+              style={{ padding: '16px 32px', fontSize: 17 }}
+            >
+              {ts.startScan}
+            </button>
+          </div>
+        )}
+
+        {step === 'device-picker' && (
+          <>
+            <button onClick={handleReset} style={backBtn}>
+              <ArrowLeft className="w-4 h-4" /> {ts.back}
+            </button>
+            <div className="sc-card-static">
+              <h2 className="sc-h2" style={{ marginTop: 0, marginBottom: 16 }}>{ts.chooseSite}</h2>
+              {loadingDevices ? (
+                <p className="sc-helper" style={{ padding: '16px 0' }}>{ts.loadingSites}</p>
+              ) : techOrders.length === 0 && techDevices.length === 0 ? (
+                <p className="sc-helper" style={{ padding: '16px 0' }}>{ts.noJobsFound}</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {pickerItems.map((item) => {
+                    const hasDevice = !!item.device;
+                    const name = item.order?.customerInfo?.name || item.device?.customerInfo?.name || ts.unknownCustomer;
+                    const addr = item.order?.installationAddress ?? item.device!.installationAddress;
+                    const addressLine1 = addr.street;
+                    const addressLine2 = [addr.city, addr.state, addr.postalCode].filter(Boolean).join(', ');
+                    const phone = item.order?.customerInfo?.phone || item.device?.customerInfo?.phone || '';
+                    const order = item.order;
+                    let appointment: string | null = null;
+                    if (order) {
+                      const when = order.scheduledAt?.toDate() ?? order.installationDate?.toDate();
+                      if (when) {
+                        const date = when.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                        if (order.scheduledAt) {
+                          const time = when.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+                          appointment = `${date} · ${time}`;
+                        } else {
+                          appointment = order.timeSlot ? `${date} · ${order.timeSlot}h` : date;
+                        }
                       }
                     }
-                  }
-                  const key = item.device?.id || item.order?.id;
+                    const key = item.device?.id || item.order?.id;
 
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => {
-                        if (hasDevice) {
-                          openForm(item.device!);
-                        } else {
-                          toast.error(ts.deviceNotRegisteredYet);
-                        }
-                      }}
-                      className={`w-full text-left p-4 rounded-apple border transition-all ${
-                        hasDevice
-                          ? 'bg-surface-elevated hover:bg-surface-elevated/80 border-border'
-                          : 'bg-surface-elevated/50 border-border/50 opacity-70'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0 flex-1 space-y-1">
-                          <p className="font-medium truncate">{name}</p>
-                          {phone && (
-                            <p className="text-xs text-text-tertiary truncate">{phone}</p>
-                          )}
-                          <div className="text-sm text-text-secondary">
-                            <p className="truncate">{addressLine1}</p>
-                            {addressLine2 && <p className="truncate">{addressLine2}</p>}
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => {
+                          if (hasDevice) {
+                            openForm(item.device!);
+                          } else {
+                            toast.error(ts.deviceNotRegisteredYet);
+                          }
+                        }}
+                        style={{
+                          width: '100%',
+                          textAlign: 'left',
+                          padding: 16,
+                          borderRadius: 'var(--radius-md)',
+                          border: '1px solid var(--line)',
+                          background: hasDevice ? 'var(--paper)' : 'var(--off-paper)',
+                          opacity: hasDevice ? 1 : 0.7,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => { if (hasDevice) e.currentTarget.style.background = 'var(--off-paper)'; }}
+                        onMouseLeave={(e) => { if (hasDevice) e.currentTarget.style.background = 'var(--paper)'; }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                          <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <p style={{ margin: 0, fontWeight: 500, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</p>
+                            {phone && (
+                              <p style={{ margin: 0, fontSize: 12, color: 'var(--soft)' }}>{phone}</p>
+                            )}
+                            <div style={{ fontSize: 14, color: 'var(--ink-soft)' }}>
+                              <p style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{addressLine1}</p>
+                              {addressLine2 && <p style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{addressLine2}</p>}
+                            </div>
+                            {appointment && (
+                              <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: 'var(--brand)' }}>{appointment}</p>
+                            )}
+                            {item.order && (
+                              <p style={{ margin: 0, fontSize: 12, color: 'var(--soft)' }}>
+                                {ts.orderNumber} #{item.order.orderNumber}
+                              </p>
+                            )}
                           </div>
-                          {appointment && (
-                            <p className="text-xs font-medium text-primary">{appointment}</p>
-                          )}
-                          {item.order && (
-                            <p className="text-xs text-text-tertiary">
-                              {ts.orderNumber} #{item.order.orderNumber}
-                            </p>
-                          )}
+                          <div style={{ marginLeft: 12, flexShrink: 0 }}>
+                            {hasDevice ? (
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  padding: '4px 8px',
+                                  background: 'var(--brand-tint)',
+                                  color: 'var(--brand)',
+                                  fontSize: 12,
+                                  fontWeight: 500,
+                                  borderRadius: 9999,
+                                }}
+                              >
+                                <CheckCircle className="w-3 h-3" />
+                                {ts.registered}
+                              </span>
+                            ) : (
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  padding: '4px 8px',
+                                  background: 'var(--warn-tint)',
+                                  color: 'var(--warn)',
+                                  fontSize: 12,
+                                  fontWeight: 500,
+                                  borderRadius: 9999,
+                                }}
+                              >
+                                <QrCode className="w-3 h-3" />
+                                {ts.noDevice}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <div className="ml-3 flex-shrink-0">
-                          {hasDevice ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-success/10 text-success text-xs font-medium rounded-full">
-                              <CheckCircle className="w-3 h-3" />
-                              {ts.registered}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-warning/10 text-warning text-xs font-medium rounded-full">
-                              <QrCode className="w-3 h-3" />
-                              {ts.noDevice}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </>
-      )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </>
+        )}
 
-      {/* Maintenance form */}
-      {step === 'form' && device && (
-        <>
-          <button onClick={handleReset} className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-all">
-            <ArrowLeft className="w-4 h-4" /> {ts.back}
-          </button>
+        {step === 'form' && device && (
+          <>
+            <button onClick={handleReset} style={backBtn}>
+              <ArrowLeft className="w-4 h-4" /> {ts.back}
+            </button>
 
-          <div className="apple-card">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-apple bg-primary/10 flex items-center justify-center">
-                <ClipboardCheck className="w-6 h-6 text-primary" />
+            <div className="sc-card-static">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+                <div
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'var(--brand-tint)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <ClipboardCheck className="w-6 h-6" style={{ color: 'var(--brand)' }} />
+                </div>
+                <div>
+                  <h2 className="sc-h2" style={{ margin: 0 }}>{ts.maintenanceUpdate}</h2>
+                  <p className="sc-helper" style={{ margin: 0 }}>
+                    {device.customerInfo.name} — {device.installationAddress.city}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-xl font-bold">{ts.maintenanceUpdate}</h2>
-                <p className="text-sm text-text-secondary">
-                  {device.customerInfo.name} — {device.installationAddress.city}
-                </p>
+
+              <div style={{ marginBottom: 24 }}>
+                <label className="sc-label" style={{ display: 'block', marginBottom: 12 }}>{ts.checklist}</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {[
+                    { key: 'installationOk', label: ts.installationOk },
+                    { key: 'operationOk', label: ts.operationOk },
+                    { key: 'waterPressureOk', label: ts.waterPressureOk },
+                    { key: 'sedimentFilterReplaced', label: ts.sedimentFilterReplaced },
+                    { key: 'carbonFilterReplaced', label: ts.carbonFilterReplaced },
+                  ].map((item) => (
+                    <label
+                      key={item.key}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: 12,
+                        background: 'var(--off-paper)',
+                        borderRadius: 'var(--radius-sm)',
+                        cursor: 'pointer',
+                        border: '1px solid var(--line)',
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checks[item.key as keyof MaintenanceVisitChecks]}
+                        onChange={(e) =>
+                          setChecks({ ...checks, [item.key]: e.target.checked })
+                        }
+                        style={{ width: 20, height: 20, accentColor: 'var(--brand)' }}
+                      />
+                      <span style={{ fontWeight: 500, color: 'var(--ink)' }}>{item.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <PhotoSlot
+                  label={ts.before}
+                  slotKey="before"
+                  file={beforeFile}
+                  onChange={setBeforeFile}
+                  removeAriaLabel={ts.removePhoto.replace('{label}', ts.before)}
+                  photoAltLabel={ts.photoAlt.replace('{label}', ts.before)}
+                  tapToCapture={ts.tapToCapture}
+                />
+                <PhotoSlot
+                  label={ts.after}
+                  slotKey="after"
+                  file={afterFile}
+                  onChange={setAfterFile}
+                  removeAriaLabel={ts.removePhoto.replace('{label}', ts.after)}
+                  photoAltLabel={ts.photoAlt.replace('{label}', ts.after)}
+                  tapToCapture={ts.tapToCapture}
+                />
+              </div>
+
+              <div style={{ marginBottom: 24 }}>
+                <label className="sc-label">{ts.remark}</label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder={ts.remarkPlaceholder}
+                  rows={4}
+                  className="sc-textarea"
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button
+                  onClick={handleReset}
+                  className="sc-cta-ghost"
+                  style={{ flex: 1 }}
+                >
+                  {ts.cancel}
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  className="sc-cta"
+                  style={{ flex: 1, opacity: submitting ? 0.5 : 1, cursor: submitting ? 'not-allowed' : 'pointer' }}
+                >
+                  {submitting ? ts.submitting : ts.submit}
+                </button>
               </div>
             </div>
+          </>
+        )}
 
-            {/* Checklist */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-3">{ts.checklist}</label>
-              <div className="space-y-2">
-                {[
-                  { key: 'installationOk', label: ts.installationOk },
-                  { key: 'operationOk', label: ts.operationOk },
-                  { key: 'waterPressureOk', label: ts.waterPressureOk },
-                  { key: 'sedimentFilterReplaced', label: ts.sedimentFilterReplaced },
-                  { key: 'carbonFilterReplaced', label: ts.carbonFilterReplaced },
-                ].map((item) => (
-                  <label
-                    key={item.key}
-                    className="flex items-center gap-3 p-3 bg-surface-elevated rounded-apple cursor-pointer hover:bg-surface-elevated/80 transition-all"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checks[item.key as keyof MaintenanceVisitChecks]}
-                      onChange={(e) =>
-                        setChecks({ ...checks, [item.key]: e.target.checked })
-                      }
-                      className="w-5 h-5 rounded border-border text-primary focus:ring-primary"
-                    />
-                    <span className="font-medium">{item.label}</span>
-                  </label>
-                ))}
-              </div>
+        {step === 'done' && (
+          <div style={{ textAlign: 'center', padding: '64px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+            <div
+              style={{
+                width: 96,
+                height: 96,
+                borderRadius: '50%',
+                background: savedOffline ? 'var(--warn-tint)' : 'var(--brand-tint)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {savedOffline ? (
+                <CloudOff className="w-12 h-12" style={{ color: 'var(--warn)' }} />
+              ) : (
+                <CheckCircle className="w-12 h-12" style={{ color: 'var(--brand)' }} />
+              )}
             </div>
-
-            {/* Photos */}
-            <div className="mb-6 grid grid-cols-2 gap-4">
-              <PhotoSlot
-                label={ts.before}
-                slotKey="before"
-                file={beforeFile}
-                onChange={setBeforeFile}
-                removeAriaLabel={ts.removePhoto.replace('{label}', ts.before)}
-                photoAltLabel={ts.photoAlt.replace('{label}', ts.before)}
-                tapToCapture={ts.tapToCapture}
-              />
-              <PhotoSlot
-                label={ts.after}
-                slotKey="after"
-                file={afterFile}
-                onChange={setAfterFile}
-                removeAriaLabel={ts.removePhoto.replace('{label}', ts.after)}
-                photoAltLabel={ts.photoAlt.replace('{label}', ts.after)}
-                tapToCapture={ts.tapToCapture}
-              />
+            <div>
+              <h2 className="sc-h1" style={{ marginBottom: 8 }}>
+                {savedOffline ? ts.savedOffline : ts.visitRecorded}
+              </h2>
+              <p className="sc-lede" style={{ margin: 0 }}>
+                {savedOffline ? ts.savedOfflineDesc : ts.visitRecordedDesc}
+              </p>
             </div>
-
-            {/* Remark */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">{ts.remark}</label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder={ts.remarkPlaceholder}
-                rows={4}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all resize-none"
-              />
-            </div>
-
-            <div className="flex gap-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 320, width: '100%' }}>
+              <button
+                onClick={handleScanAnother}
+                className="sc-cta"
+                style={{ padding: '16px 32px', fontSize: 17 }}
+              >
+                {ts.scanAnother}
+              </button>
+              {device?.orderId && !savedOffline && (
+                <button
+                  onClick={() => router.push(`/technician/jobs/${device.orderId}`)}
+                  className="sc-cta-ghost"
+                  style={{ padding: '12px 32px' }}
+                >
+                  {ts.viewJobDetails}
+                </button>
+              )}
               <button
                 onClick={handleReset}
-                className="flex-1 px-6 py-3 text-text-secondary hover:text-text-primary font-medium rounded-apple transition-all border border-border"
+                style={{
+                  padding: '8px 24px',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: 'var(--ink-soft)',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
               >
-                {ts.cancel}
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="flex-1 px-6 py-3 bg-success hover:bg-success/90 disabled:opacity-50 text-white font-semibold rounded-apple transition-all"
-              >
-                {submitting ? ts.submitting : ts.submit}
+                {ts.done}
               </button>
             </div>
           </div>
-        </>
-      )}
-
-      {/* Done */}
-      {step === 'done' && (
-        <div className="text-center py-16 space-y-6">
-          <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto ${
-            savedOffline ? 'bg-warning/10' : 'bg-success/10'
-          }`}>
-            {savedOffline ? (
-              <CloudOff className="w-12 h-12 text-warning" />
-            ) : (
-              <CheckCircle className="w-12 h-12 text-success" />
-            )}
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold mb-2">
-              {savedOffline ? ts.savedOffline : ts.visitRecorded}
-            </h2>
-            <p className="text-text-secondary">
-              {savedOffline ? ts.savedOfflineDesc : ts.visitRecordedDesc}
-            </p>
-          </div>
-          <div className="flex flex-col gap-2 max-w-xs mx-auto">
-            <button
-              onClick={handleScanAnother}
-              className="px-8 py-4 bg-primary hover:bg-primary/90 text-white font-semibold rounded-apple transition-all text-lg"
-            >
-              {ts.scanAnother}
-            </button>
-            {device?.orderId && !savedOffline && (
-              <button
-                onClick={() => router.push(`/technician/jobs/${device.orderId}`)}
-                className="px-8 py-3 border border-border hover:bg-surface-elevated text-text-primary font-medium rounded-apple transition-all"
-              >
-                {ts.viewJobDetails}
-              </button>
-            )}
-            <button
-              onClick={handleReset}
-              className="px-6 py-2 text-text-secondary hover:text-text-primary text-sm font-medium transition-all"
-            >
-              {ts.done}
-            </button>
-          </div>
-        </div>
-      )}
+        )}
+      </main>
     </div>
   );
 }
@@ -677,20 +777,41 @@ function PhotoSlot({ label, slotKey, file, onChange, removeAriaLabel, photoAltLa
   const inputId = `photo-${slotKey}`;
   return (
     <div>
-      <label className="block text-sm font-medium mb-2">{label}</label>
+      <label className="sc-label">{label}</label>
       {previewUrl ? (
-        <div className="relative">
+        <div style={{ position: 'relative' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={previewUrl}
             alt={photoAltLabel}
-            className="w-full h-40 object-cover rounded-apple border border-border"
+            style={{
+              width: '100%',
+              height: 160,
+              objectFit: 'cover',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--line)',
+              display: 'block',
+            }}
           />
           <button
             type="button"
             onClick={() => onChange(null)}
-            className="absolute top-1 right-1 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80"
             aria-label={removeAriaLabel}
+            style={{
+              position: 'absolute',
+              top: 4,
+              right: 4,
+              width: 28,
+              height: 28,
+              borderRadius: '50%',
+              background: 'rgba(0,0,0,0.6)',
+              color: '#fff',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
           >
             <X className="w-4 h-4" />
           </button>
@@ -698,10 +819,22 @@ function PhotoSlot({ label, slotKey, file, onChange, removeAriaLabel, photoAltLa
       ) : (
         <label
           htmlFor={inputId}
-          className="flex flex-col items-center justify-center gap-2 h-40 bg-surface-elevated border border-dashed border-border rounded-apple cursor-pointer hover:border-primary/50 transition-all"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            height: 160,
+            background: 'var(--off-paper)',
+            border: '1px dashed var(--line)',
+            borderRadius: 'var(--radius-md)',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
         >
-          <Camera className="w-6 h-6 text-text-tertiary" />
-          <span className="text-sm text-text-secondary">{tapToCapture}</span>
+          <Camera className="w-6 h-6" style={{ color: 'var(--soft)' }} />
+          <span style={{ fontSize: 14, color: 'var(--ink-soft)' }}>{tapToCapture}</span>
         </label>
       )}
       <input
@@ -709,11 +842,10 @@ function PhotoSlot({ label, slotKey, file, onChange, removeAriaLabel, photoAltLa
         type="file"
         accept="image/*"
         capture="environment"
-        className="hidden"
+        style={{ display: 'none' }}
         onChange={(e) => {
           const f = e.target.files?.[0] ?? null;
           onChange(f);
-          // Reset so the same file can be picked again after removal
           e.target.value = '';
         }}
       />

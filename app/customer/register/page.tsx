@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Plus, X } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
@@ -91,106 +91,96 @@ export default function CustomerRegistrationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 lg:p-8">
-      <div className="max-w-3xl mx-auto space-y-8 animate-fade-in">
-        {/* Header */}
-        <div className="flex items-center gap-4">
+    <div className="sc">
+      <main className="sc-main" style={{ maxWidth: 720 }}>
+        <div className="sc-row" style={{ marginBottom: 24 }}>
           <button
+            type="button"
             onClick={() => router.back()}
-            className="p-2 hover:bg-surface-elevated rounded-apple transition-colors"
+            className="sc-cta-ghost"
+            style={{ padding: 8, width: 40, height: 40, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+            aria-label="Back"
           >
-            <ArrowLeft className="w-6 h-6" />
+            <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-4xl font-bold tracking-tight">{rs.welcome}</h1>
-            <p className="text-text-secondary mt-1">
-              {rs.subtitle}
-            </p>
+            <div className="sc-eyebrow">{t.customer.welcome}</div>
+            <h1 className="sc-h1">{rs.welcome}</h1>
+            <p className="sc-lede">{rs.subtitle}</p>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Contact Information */}
-          <div className="apple-card">
-            <h2 className="text-2xl font-semibold mb-6">{rs.contactInformation}</h2>
+        <form onSubmit={handleSubmit} className="sc-stack-lg">
+          <div className="sc-card-static">
+            <h2 className="sc-h2" style={{ marginBottom: 16 }}>{rs.contactInformation}</h2>
 
-            <div className="space-y-4">
+            <div className="sc-stack">
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  {t.common.name}
-                </label>
+                <label className="sc-label">{t.common.name}</label>
                 <input
                   type="text"
                   value={userData?.displayName || ''}
                   disabled
-                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple opacity-50"
+                  className="sc-input"
+                  style={{ opacity: 0.5 }}
                 />
-                <p className="text-xs text-text-tertiary mt-1">{rs.fromGoogleAccount}</p>
+                <p className="sc-helper">{rs.fromGoogleAccount}</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  {t.common.email}
-                </label>
+                <label className="sc-label">{t.common.email}</label>
                 <input
                   type="email"
                   value={userData?.email || ''}
                   disabled
-                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple opacity-50"
+                  className="sc-input"
+                  style={{ opacity: 0.5 }}
                 />
-                <p className="text-xs text-text-tertiary mt-1">{rs.fromGoogleAccount}</p>
+                <p className="sc-helper">{rs.fromGoogleAccount}</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  {t.customer.profileScreen.phoneNumber} <span className="text-error">*</span>
+                <label className="sc-label">
+                  {t.customer.profileScreen.phoneNumber} <span style={{ color: 'var(--warn)' }}>*</span>
                 </label>
                 <input
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder={t.customer.profileScreen.phoneNumberPlaceholder}
-                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none focus:shadow-apple-focus transition-all"
+                  className="sc-input"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  {rs.whatsappOptional}
-                </label>
+                <label className="sc-label">{rs.whatsappOptional}</label>
                 <input
                   type="tel"
                   value={whatsapp}
                   onChange={(e) => setWhatsapp(e.target.value)}
                   placeholder={t.customer.profileScreen.phoneNumberPlaceholder}
-                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                  className="sc-input"
                 />
-                <p className="text-xs text-text-tertiary mt-1">
-                  {rs.whatsappHint}
-                </p>
+                <p className="sc-helper">{rs.whatsappHint}</p>
               </div>
             </div>
           </div>
 
-          {/* Address Information */}
-          <div className="apple-card">
-            <h2 className="text-2xl font-semibold mb-6">{rs.installationAddress}</h2>
+          <div className="sc-card-static">
+            <h2 className="sc-h2" style={{ marginBottom: 16 }}>{rs.installationAddress}</h2>
 
-            <div className="space-y-4">
+            <div className="sc-stack">
               <div>
-                <label className="block text-sm font-medium mb-2">{rs.addressType}</label>
-                <div className="flex gap-3">
+                <label className="sc-label">{rs.addressType}</label>
+                <div className="sc-row" style={{ gap: 8 }}>
                   {(['home', 'office', 'other'] as const).map((type) => (
                     <button
                       key={type}
                       type="button"
                       onClick={() => setAddressLabel(type)}
-                      className={`flex-1 px-4 py-3 rounded-apple font-medium transition-all ${
-                        addressLabel === type
-                          ? 'bg-primary text-white'
-                          : 'bg-surface-elevated hover:bg-surface-secondary'
-                      }`}
+                      className={addressLabel === type ? 'sc-cta' : 'sc-cta-ghost'}
+                      style={{ flex: 1 }}
                     >
                       {t.orders[type]}
                     </button>
@@ -199,102 +189,92 @@ export default function CustomerRegistrationPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  {rs.streetAddress} <span className="text-error">*</span>
+                <label className="sc-label">
+                  {rs.streetAddress} <span style={{ color: 'var(--warn)' }}>*</span>
                 </label>
                 <input
                   type="text"
                   value={street}
                   onChange={(e) => setStreet(e.target.value)}
                   placeholder={rs.streetAddressPlaceholder}
-                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                  className="sc-input"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    {t.orders.city} <span className="text-error">*</span>
+                  <label className="sc-label">
+                    {t.orders.city} <span style={{ color: 'var(--warn)' }}>*</span>
                   </label>
                   <input
                     type="text"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     placeholder={rs.cityPlaceholder}
-                    className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                    className="sc-input"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    {rs.stateProvince}
-                  </label>
+                  <label className="sc-label">{rs.stateProvince}</label>
                   <input
                     type="text"
                     value={state}
                     onChange={(e) => setState(e.target.value)}
                     placeholder={rs.statePlaceholder}
-                    className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                    className="sc-input"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    {rs.postalCode}
-                  </label>
+                  <label className="sc-label">{rs.postalCode}</label>
                   <input
                     type="text"
                     value={postalCode}
                     onChange={(e) => setPostalCode(e.target.value)}
                     placeholder={rs.postalCodePlaceholder}
-                    className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                    className="sc-input"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    {t.orders.country}
-                  </label>
+                  <label className="sc-label">{t.orders.country}</label>
                   <input
                     type="text"
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
                     placeholder={rs.countryPlaceholder}
-                    className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                    className="sc-input"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  {rs.landmarkOptional}
-                </label>
+                <label className="sc-label">{rs.landmarkOptional}</label>
                 <input
                   type="text"
                   value={landmark}
                   onChange={(e) => setLandmark(e.target.value)}
                   placeholder={rs.landmarkPlaceholder}
-                  className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
+                  className="sc-input"
                 />
-                <p className="text-xs text-text-tertiary mt-1">
-                  {rs.landmarkHint}
-                </p>
+                <p className="sc-helper">{rs.landmarkHint}</p>
               </div>
             </div>
           </div>
 
-          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-8 py-4 bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
+            className="sc-cta"
+            style={{ width: '100%', padding: '14px 24px', fontSize: 15 }}
           >
             {loading ? rs.creatingProfile : rs.continueToProducts}
           </button>
         </form>
-      </div>
+      </main>
     </div>
   );
 }

@@ -141,32 +141,8 @@ export default function ReviewPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background pb-20">
-        <div className="bg-surface border-b border-border sticky top-0 z-10">
-          <div className="max-w-lg mx-auto px-4 py-4 min-h-[44px]" />
-        </div>
-        <div className="max-w-lg mx-auto px-4 py-8 space-y-6">
-          {/* Order summary skeleton */}
-          <div className="apple-card animate-pulse">
-            <div className="h-3 w-24 bg-surface-elevated rounded mb-4" />
-            <div className="space-y-3">
-              <div className="flex justify-between"><div className="h-3 w-20 bg-surface-elevated rounded" /><div className="h-3 w-32 bg-surface-elevated rounded" /></div>
-              <div className="flex justify-between"><div className="h-3 w-16 bg-surface-elevated rounded" /><div className="h-3 w-24 bg-surface-elevated rounded" /></div>
-              <div className="flex justify-between"><div className="h-3 w-20 bg-surface-elevated rounded" /><div className="h-3 w-28 bg-surface-elevated rounded" /></div>
-            </div>
-          </div>
-          {/* Star prompt skeleton */}
-          <div className="apple-card animate-pulse">
-            <div className="h-6 w-3/4 bg-surface-elevated rounded mb-6" />
-            <div className="flex justify-center gap-2 mt-5">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <div key={n} className="w-12 h-12 bg-surface-elevated rounded-apple" />
-              ))}
-            </div>
-          </div>
-          {/* Submit skeleton */}
-          <div className="h-12 bg-surface-elevated rounded-apple animate-pulse" />
-        </div>
+      <div className="sc">
+        <div className="sc-spinner-wrap"><div className="sc-spinner" /></div>
       </div>
     );
   }
@@ -174,27 +150,27 @@ export default function ReviewPage() {
   if (!order || order.status !== 'completed') return null;
 
   const OrderSummary = () => (
-    <div className="apple-card">
-      <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-3">
+    <div className="sc-card-static">
+      <h2 className="sc-eyebrow" style={{ marginBottom: 12 }}>
         {t.orders.reviewFlow.orderSummary}
       </h2>
-      <dl className="space-y-2 text-sm">
+      <dl className="sc-stack" style={{ gap: 8, fontSize: 14 }}>
         {order.technicianInfo?.name && (
-          <div className="flex justify-between gap-4">
-            <dt className="text-text-tertiary">{t.orders.reviewFlow.technician}</dt>
-            <dd className="font-medium text-right">{order.technicianInfo.name}</dd>
+          <div className="sc-row-between" style={{ gap: 16 }}>
+            <dt style={{ color: 'var(--soft)' }}>{t.orders.reviewFlow.technician}</dt>
+            <dd style={{ fontWeight: 600, textAlign: 'right', margin: 0 }}>{order.technicianInfo.name}</dd>
           </div>
         )}
         {installDate && (
-          <div className="flex justify-between gap-4">
-            <dt className="text-text-tertiary">{t.orders.reviewFlow.date}</dt>
-            <dd className="font-medium text-right">{installDate}</dd>
+          <div className="sc-row-between" style={{ gap: 16 }}>
+            <dt style={{ color: 'var(--soft)' }}>{t.orders.reviewFlow.date}</dt>
+            <dd style={{ fontWeight: 600, textAlign: 'right', margin: 0 }}>{installDate}</dd>
           </div>
         )}
         {productName && (
-          <div className="flex justify-between gap-4">
-            <dt className="text-text-tertiary">{t.orders.reviewFlow.device}</dt>
-            <dd className="font-medium text-right">{productName}</dd>
+          <div className="sc-row-between" style={{ gap: 16 }}>
+            <dt style={{ color: 'var(--soft)' }}>{t.orders.reviewFlow.device}</dt>
+            <dd style={{ fontWeight: 600, textAlign: 'right', margin: 0 }}>{productName}</dd>
           </div>
         )}
       </dl>
@@ -202,53 +178,59 @@ export default function ReviewPage() {
   );
 
   const Header = () => (
-    <div className="bg-surface border-b border-border sticky top-0 z-10">
-      <div className="max-w-lg mx-auto px-4 py-4">
+    <header className="sc-nav">
+      <div className="sc-nav-inner">
         <button
+          type="button"
           onClick={() => router.push(`/customer/orders/${orderId}`)}
-          className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors min-h-[44px]"
+          className="sc-nav-link"
+          style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}
           aria-label={t.orders.reviewFlow.backToOrder}
         >
           <ArrowLeft className="w-5 h-5" />
-          {t.orders.reviewFlow.backToOrder}
+          <span className="sc-nav-text">{t.orders.reviewFlow.backToOrder}</span>
         </button>
       </div>
-    </div>
+    </header>
   );
 
   // Read-only locked view
   if (existingReview && editExpired) {
     return (
-      <div className="min-h-screen bg-background pb-20">
+      <div className="sc">
         <Header />
-        <div className="max-w-lg mx-auto px-4 py-8 space-y-6 animate-fade-in">
-          <OrderSummary />
-          <div className="apple-card">
-            <div className="flex items-center gap-2 mb-4">
-              <Lock className="w-5 h-5 text-text-tertiary" aria-hidden />
-              <h1 className="text-xl font-semibold">{t.orders.reviewFlow.yourReview}</h1>
-            </div>
-            <div className="flex items-center gap-1 mb-3" role="img" aria-label={`${existingReview.rating}/5`}>
-              {[1, 2, 3, 4, 5].map((n) => (
-                <Star
-                  key={n}
-                  className={`w-7 h-7 ${
-                    n <= existingReview.rating ? 'text-warning fill-warning' : 'text-text-tertiary'
-                  }`}
-                  aria-hidden
-                />
-              ))}
-              <span className="ml-2 font-medium">{existingReview.rating}/5</span>
-            </div>
-            {existingReview.comment && (
-              <p className="text-text-secondary mb-4 whitespace-pre-wrap">{existingReview.comment}</p>
-            )}
-            <div className="pt-3 border-t border-border">
-              <p className="text-sm font-medium text-text-primary">{t.orders.reviewFlow.locked}</p>
-              <p className="text-xs text-text-tertiary mt-1">{t.orders.reviewFlow.editWindowEnded}</p>
+        <main className="sc-main" style={{ maxWidth: 560 }}>
+          <div className="sc-stack-lg">
+            <OrderSummary />
+            <div className="sc-card-static">
+              <div className="sc-row" style={{ gap: 8, marginBottom: 16 }}>
+                <Lock className="w-5 h-5" style={{ color: 'var(--soft)' }} aria-hidden />
+                <h1 className="sc-h2" style={{ margin: 0 }}>{t.orders.reviewFlow.yourReview}</h1>
+              </div>
+              <div className="sc-row" style={{ gap: 4, marginBottom: 12 }} role="img" aria-label={`${existingReview.rating}/5`}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Star
+                    key={n}
+                    className="w-7 h-7"
+                    style={{
+                      color: n <= existingReview.rating ? 'var(--warn)' : 'var(--soft)',
+                      fill: n <= existingReview.rating ? 'var(--warn)' : 'none',
+                    }}
+                    aria-hidden
+                  />
+                ))}
+                <span style={{ marginLeft: 8, fontWeight: 600 }}>{existingReview.rating}/5</span>
+              </div>
+              {existingReview.comment && (
+                <p style={{ color: 'var(--soft)', marginBottom: 16, whiteSpace: 'pre-wrap' }}>{existingReview.comment}</p>
+              )}
+              <div style={{ paddingTop: 12, borderTop: '1px solid var(--hairline)' }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>{t.orders.reviewFlow.locked}</p>
+                <p style={{ fontSize: 12, color: 'var(--soft)', margin: '4px 0 0' }}>{t.orders.reviewFlow.editWindowEnded}</p>
+              </div>
             </div>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
@@ -256,46 +238,53 @@ export default function ReviewPage() {
   // Thank-you screen (after submit, within edit window)
   if (thankYou && existingReview) {
     return (
-      <div className="min-h-screen bg-background pb-20">
+      <div className="sc">
         <Header />
-        <div className="max-w-lg mx-auto px-4 py-8 space-y-6 animate-fade-in">
-          <div className="apple-card text-center">
-            <CheckCircle2 className="w-14 h-14 mx-auto mb-3 text-success animate-success-pop" aria-hidden />
-            <h1 className="text-2xl font-bold mb-1">{t.orders.reviewFlow.thanksFeedback}</h1>
-          </div>
-          <div className="apple-card">
-            <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-3">
-              {t.orders.reviewFlow.yourReview}
-            </h2>
-            <div
-              className="flex items-center gap-1 mb-3"
-              role="img"
-              aria-label={`${existingReview.rating}/5`}
-            >
-              {[1, 2, 3, 4, 5].map((n) => (
-                <Star
-                  key={n}
-                  className={`w-7 h-7 ${
-                    n <= existingReview.rating ? 'text-warning fill-warning' : 'text-text-tertiary'
-                  }`}
-                  aria-hidden
-                />
-              ))}
-              <span className="ml-2 font-medium">{existingReview.rating}/5</span>
+        <main className="sc-main" style={{ maxWidth: 560 }}>
+          <div className="sc-stack-lg">
+            <div className="sc-card-static" style={{ textAlign: 'center', background: 'var(--brand-tint)' }}>
+              <CheckCircle2 className="w-14 h-14 mx-auto mb-3" style={{ color: 'var(--brand)' }} aria-hidden />
+              <h1 className="sc-h1" style={{ marginBottom: 4 }}>{t.orders.reviewFlow.thanksFeedback}</h1>
             </div>
-            {existingReview.comment && (
-              <p className="text-text-secondary whitespace-pre-wrap">{existingReview.comment}</p>
+            <div className="sc-card-static">
+              <h2 className="sc-eyebrow" style={{ marginBottom: 12 }}>
+                {t.orders.reviewFlow.yourReview}
+              </h2>
+              <div
+                className="sc-row"
+                style={{ gap: 4, marginBottom: 12 }}
+                role="img"
+                aria-label={`${existingReview.rating}/5`}
+              >
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Star
+                    key={n}
+                    className="w-7 h-7"
+                    style={{
+                      color: n <= existingReview.rating ? 'var(--warn)' : 'var(--soft)',
+                      fill: n <= existingReview.rating ? 'var(--warn)' : 'none',
+                    }}
+                    aria-hidden
+                  />
+                ))}
+                <span style={{ marginLeft: 8, fontWeight: 600 }}>{existingReview.rating}/5</span>
+              </div>
+              {existingReview.comment && (
+                <p style={{ color: 'var(--soft)', whiteSpace: 'pre-wrap', margin: 0 }}>{existingReview.comment}</p>
+              )}
+            </div>
+            {!editExpired && (
+              <button
+                type="button"
+                onClick={() => setThankYou(false)}
+                className="sc-cta-ghost"
+                style={{ width: '100%' }}
+              >
+                {t.orders.reviewFlow.edit}
+              </button>
             )}
           </div>
-          {!editExpired && (
-            <button
-              onClick={() => setThankYou(false)}
-              className="w-full min-h-[48px] px-4 py-3 bg-surface-elevated hover:bg-border text-text-primary font-medium rounded-apple transition-colors"
-            >
-              {t.orders.reviewFlow.edit}
-            </button>
-          )}
-        </div>
+        </main>
       </div>
     );
   }
@@ -305,20 +294,20 @@ export default function ReviewPage() {
   const overLimit = commentCount > MAX_COMMENT;
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="sc">
       <Header />
-      <div className="max-w-lg mx-auto px-4 py-8">
-        <div className="space-y-6 animate-fade-in">
+      <main className="sc-main" style={{ maxWidth: 560 }}>
+        <div className="sc-stack-lg">
           <OrderSummary />
 
-          <div className="apple-card">
-            <h1 className="text-2xl font-bold mb-1">
+          <div className="sc-card-static">
+            <h1 className="sc-h1" style={{ marginBottom: 4 }}>
               {order.technicianInfo?.name
                 ? t.orders.reviewFlow.howWasInstallationWith.replace('{tech}', order.technicianInfo.name)
                 : t.orders.reviewFlow.howWasInstallation}
             </h1>
             {existingReview && daysLeft > 0 && (
-              <p className="text-xs text-warning mt-1">
+              <p style={{ fontSize: 12, color: 'var(--warn)', marginTop: 4 }}>
                 {daysLeft} {daysLeft === 1
                   ? t.orders.reviewFlow.dayLeftToEdit
                   : t.orders.reviewFlow.daysLeftToEdit}
@@ -326,7 +315,8 @@ export default function ReviewPage() {
             )}
 
             <div
-              className="flex items-center justify-center gap-2 sm:gap-3 mt-5 mb-2"
+              className="sc-row"
+              style={{ justifyContent: 'center', gap: 12, marginTop: 20, marginBottom: 8 }}
               role="radiogroup"
               aria-label={t.orders.reviewFlow.howWasInstallation}
             >
@@ -341,14 +331,26 @@ export default function ReviewPage() {
                     aria-checked={score === n}
                     aria-label={ariaLabel}
                     onClick={() => handleRate(n)}
-                    className={`inline-flex items-center justify-center min-w-[48px] min-h-[48px] rounded-apple active:scale-95 transition-transform ${
-                      poppedStar === n ? 'animate-star-pop' : ''
-                    }`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      minWidth: 48,
+                      minHeight: 48,
+                      borderRadius: 'var(--radius-sm)',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'transform 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+                      transform: poppedStar === n ? 'scale(1.15)' : 'scale(1)',
+                    }}
                   >
                     <Star
-                      className={`w-10 h-10 ${
-                        active ? 'text-warning fill-warning' : 'text-text-tertiary'
-                      }`}
+                      className="w-10 h-10"
+                      style={{
+                        color: active ? 'var(--warn)' : 'var(--soft)',
+                        fill: active ? 'var(--warn)' : 'none',
+                      }}
                       aria-hidden
                     />
                   </button>
@@ -357,8 +359,8 @@ export default function ReviewPage() {
             </div>
           </div>
 
-          <div className="apple-card">
-            <label htmlFor="review-comment" className="text-sm font-medium mb-2 block">
+          <div className="sc-card-static">
+            <label htmlFor="review-comment" className="sc-label">
               {t.orders.reviewFlow.commentLabel}
             </label>
             <textarea
@@ -368,12 +370,16 @@ export default function ReviewPage() {
               placeholder={t.orders.reviewFlow.commentPlaceholder}
               rows={4}
               maxLength={MAX_COMMENT}
-              className="w-full px-4 py-3 rounded-apple border border-border bg-surface focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm resize-none"
+              className="sc-input"
+              style={{ resize: 'none' }}
             />
             <p
-              className={`text-xs mt-1 text-right ${
-                overLimit ? 'text-error' : 'text-text-tertiary'
-              }`}
+              style={{
+                fontSize: 12,
+                marginTop: 4,
+                textAlign: 'right',
+                color: overLimit ? 'var(--warn)' : 'var(--soft)',
+              }}
               aria-live="polite"
             >
               {commentCount}/{MAX_COMMENT}
@@ -381,13 +387,15 @@ export default function ReviewPage() {
           </div>
 
           <button
+            type="button"
             onClick={handleSubmit}
             disabled={score === 0 || submitting || overLimit}
-            className="w-full min-h-[48px] px-4 py-4 bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-apple transition-colors"
+            className="sc-cta"
+            style={{ width: '100%', padding: '14px 24px', fontSize: 15 }}
           >
             {submitting ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <span className="sc-row" style={{ justifyContent: 'center', gap: 8 }}>
+                <span style={{ width: 16, height: 16, border: '2px solid currentColor', borderTopColor: 'transparent', borderRadius: '50%', animation: 'sc-spin 0.8s linear infinite' }} />
                 {existingReview ? t.orders.reviewFlow.updating : t.orders.reviewFlow.submitting}
               </span>
             ) : (
@@ -395,7 +403,7 @@ export default function ReviewPage() {
             )}
           </button>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

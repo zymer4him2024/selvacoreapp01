@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { User, Mail, Phone, Star, Award, Briefcase, TrendingUp, ImageIcon, Save } from 'lucide-react';
+import { User, Mail, Phone, Star, Award, Briefcase, TrendingUp, ImageIcon, Save, Pencil, X, MapPin, MessageCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getTechnicianStats, TechnicianStats } from '@/lib/services/technicianService';
 import { getReviewsForTechnician } from '@/lib/services/reviewService';
@@ -9,6 +9,7 @@ import { Review } from '@/types';
 import { formatCurrency, formatDate } from '@/lib/utils/formatters';
 import LogoUpload from '@/components/common/LogoUpload';
 import { useTranslation } from '@/hooks/useTranslation';
+import { DEFAULT_CURRENCY } from '@/lib/utils/constants';
 import toast from 'react-hot-toast';
 
 export default function TechnicianProfilePage() {
@@ -20,10 +21,66 @@ export default function TechnicianProfilePage() {
   const [loading, setLoading] = useState(true);
   const [logoURL, setLogoURL] = useState('');
   const [savingLogo, setSavingLogo] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [form, setForm] = useState({
+    displayName: '',
+    phone: '',
+    whatsapp: '',
+    bio: '',
+    serviceAreas: '',
+  });
 
   useEffect(() => {
     if (userData?.logoURL) setLogoURL(userData.logoURL);
   }, [userData]);
+
+  useEffect(() => {
+    if (!userData) return;
+    setForm({
+      displayName: userData.displayName || '',
+      phone: userData.phone || '',
+      whatsapp: userData.whatsapp || '',
+      bio: userData.bio || '',
+      serviceAreas: (userData.serviceAreas || []).join(', '),
+    });
+  }, [userData]);
+
+  const handleSaveProfile = async () => {
+    try {
+      setSavingProfile(true);
+      const serviceAreas = form.serviceAreas
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
+      await updateUserData({
+        displayName: form.displayName.trim(),
+        phone: form.phone.trim(),
+        whatsapp: form.whatsapp.trim() || undefined,
+        bio: form.bio.trim() || undefined,
+        serviceAreas: serviceAreas.length > 0 ? serviceAreas : undefined,
+      });
+      toast.success(tp.profileUpdated);
+      setEditingProfile(false);
+    } catch {
+      toast.error(tp.profileUpdateError);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    if (userData) {
+      setForm({
+        displayName: userData.displayName || '',
+        phone: userData.phone || '',
+        whatsapp: userData.whatsapp || '',
+        bio: userData.bio || '',
+        serviceAreas: (userData.serviceAreas || []).join(', '),
+      });
+    }
+    setEditingProfile(false);
+  };
 
   useEffect(() => {
     if (user) {
@@ -42,7 +99,7 @@ export default function TechnicianProfilePage() {
       ]);
       setStats(techStats);
       setRecentReviews(reviewsResult.items);
-    } catch (error: unknown) {
+    } catch {
       toast.error(tp.loadStatsError);
     } finally {
       setLoading(false);
@@ -51,234 +108,409 @@ export default function TechnicianProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">{tp.loading}</p>
+      <div className="sc" style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="sc-stack" style={{ alignItems: 'center', gap: 16 }}>
+          <div className="sc-spinner-wrap"><div className="sc-spinner" /></div>
+          <p className="sc-helper">{tp.loading}</p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <div>
-        <h1 className="text-4xl font-bold tracking-tight">{tp.title}</h1>
-        <p className="text-text-secondary mt-2">{tp.subtitle}</p>
-      </div>
-
-      {/* Profile Card */}
-      <div className="apple-card">
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Profile Photo */}
-          <div className="flex-shrink-0">
-            <div className="w-32 h-32 bg-surface-elevated rounded-apple overflow-hidden">
-              {userData?.photoURL ? (
-                <img
-                  src={userData.photoURL}
-                  alt={userData.displayName || tp.profileAlt}
-                  className="w-full h-full object-cover object-center"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-primary/10">
-                  <User className="w-16 h-16 text-primary" />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Profile Info */}
-          <div className="flex-1 space-y-4">
-            <div>
-              <h2 className="text-2xl font-bold">{userData?.displayName || tp.defaultTechName}</h2>
-              <p className="text-text-secondary">{tp.professionalInstaller}</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center gap-3">
-                <Mail className="w-5 h-5 text-primary" />
-                <div>
-                  <p className="text-sm text-text-secondary">{tp.email}</p>
-                  <p className="font-medium">{userData?.email || tp.notProvided}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Phone className="w-5 h-5 text-primary" />
-                <div>
-                  <p className="text-sm text-text-secondary">{tp.phone}</p>
-                  <p className="font-medium">{userData?.phone || tp.notProvided}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Star className="w-5 h-5 text-warning" />
-                <div>
-                  <p className="text-sm text-text-secondary">{tp.rating}</p>
-                  <p className="font-medium">{stats?.averageRating.toFixed(1) || '0.0'} / 5.0</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Award className="w-5 h-5 text-success" />
-                <div>
-                  <p className="text-sm text-text-secondary">{tp.completionRate}</p>
-                  <p className="font-medium">{stats?.completionRate || 0}%</p>
-                </div>
-              </div>
-            </div>
-          </div>
+  const StatTile = ({
+    icon: Icon,
+    iconColor,
+    iconBg,
+    value,
+    label,
+  }: {
+    icon: typeof Briefcase;
+    iconColor: string;
+    iconBg: string;
+    value: string | number;
+    label: string;
+  }) => (
+    <div className="sc-card-static">
+      <div className="sc-row" style={{ alignItems: 'center', gap: 12 }}>
+        <div
+          style={{
+            width: 48,
+            height: 48,
+            background: iconBg,
+            borderRadius: 'var(--radius-md)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <Icon className="w-6 h-6" style={{ color: iconColor }} />
         </div>
-      </div>
-
-      {/* Logo Upload */}
-      <div className="apple-card">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <ImageIcon className="w-6 h-6 text-primary" />
-            <h2 className="text-2xl font-semibold">{tp.businessLogo}</h2>
-          </div>
-          <button
-            onClick={async () => {
-              try {
-                setSavingLogo(true);
-                await updateUserData({ logoURL: logoURL || undefined });
-                toast.success(tp.logoSaved);
-              } catch {
-                toast.error(tp.logoSaveError);
-              } finally {
-                setSavingLogo(false);
-              }
-            }}
-            disabled={savingLogo}
-            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white text-sm font-semibold rounded-apple transition-all"
-          >
-            <Save className="w-4 h-4" />
-            {savingLogo ? tp.saving : tp.save}
-          </button>
+        <div>
+          <p style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>{value}</p>
+          <p className="sc-helper" style={{ margin: 0 }}>{label}</p>
         </div>
-        <LogoUpload
-          currentLogoURL={logoURL}
-          onLogoUploaded={(url) => setLogoURL(url)}
-          onLogoRemoved={() => setLogoURL('')}
-          label={tp.yourLogo}
-          hint={tp.logoHint}
-        />
-      </div>
-
-      {/* Statistics */}
-      <div>
-        <h2 className="text-2xl font-bold mb-6">{tp.performanceStats}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="apple-card">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-primary/10 rounded-apple flex items-center justify-center">
-                <Briefcase className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats?.totalJobs || 0}</p>
-                <p className="text-sm text-text-secondary">{tp.totalJobs}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="apple-card">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-success/10 rounded-apple flex items-center justify-center">
-                <Award className="w-6 h-6 text-success" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats?.completedJobs || 0}</p>
-                <p className="text-sm text-text-secondary">{tp.completed}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="apple-card">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-warning/10 rounded-apple flex items-center justify-center">
-                <Star className="w-6 h-6 text-warning" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats?.averageRating.toFixed(1) || '0.0'}</p>
-                <p className="text-sm text-text-secondary">{tp.avgRating}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="apple-card">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-primary/10 rounded-apple flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{formatCurrency(stats?.totalEarnings || 0, 'BRL')}</p>
-                <p className="text-sm text-text-secondary">{tp.totalEarnings}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Current Status */}
-      <div className="apple-card">
-        <h3 className="text-lg font-semibold mb-4">{tp.currentStatus}</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 bg-primary/10 rounded-apple">
-            <p className="text-sm text-text-secondary mb-1">{tp.upcomingJobs}</p>
-            <p className="text-2xl font-bold text-primary">{stats?.upcomingJobs || 0}</p>
-          </div>
-
-          <div className="p-4 bg-warning/10 rounded-apple">
-            <p className="text-sm text-text-secondary mb-1">{tp.inProgress}</p>
-            <p className="text-2xl font-bold text-warning">{stats?.inProgressJobs || 0}</p>
-          </div>
-
-          <div className="p-4 bg-success/10 rounded-apple">
-            <p className="text-sm text-text-secondary mb-1">{tp.completionRate}</p>
-            <p className="text-2xl font-bold text-success">{stats?.completionRate || 0}%</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Reviews */}
-      <div>
-        <h2 className="text-2xl font-bold mb-6">{tp.recentReviews}</h2>
-        {recentReviews.length === 0 ? (
-          <div className="apple-card text-center py-8">
-            <Star className="w-10 h-10 mx-auto mb-3 text-text-tertiary" />
-            <p className="text-text-secondary">{tp.noReviewsYet}</p>
-            <p className="text-sm text-text-tertiary mt-1">{tp.reviewsWillAppear}</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {recentReviews.map(review => (
-              <div key={review.id} className="apple-card">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="text-xs text-text-tertiary">
-                      {tp.orderLabel} {review.orderId} | {formatDate(review.createdAt, 'short')}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map(star => (
-                      <Star
-                        key={star}
-                        className={`w-4 h-4 ${star <= review.rating ? 'text-warning fill-warning' : 'text-text-tertiary'}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-                {review.comment && (
-                  <p className="text-sm text-text-secondary">{review.comment}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
-}
 
+  return (
+    <div className="sc">
+      <main className="sc-main">
+        <div className="sc-stack-lg" style={{ gap: 32 }}>
+          <div>
+            <div className="sc-eyebrow">{tp.title}</div>
+            <h1 className="sc-h1">{tp.title}</h1>
+            <p className="sc-lede">{tp.subtitle}</p>
+          </div>
+
+          <div className="sc-card-static">
+            <div className="sc-row" style={{ flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' }}>
+              <div style={{ flexShrink: 0 }}>
+                <div
+                  style={{
+                    width: 128,
+                    height: 128,
+                    background: 'var(--off-paper)',
+                    borderRadius: 'var(--radius-md)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {userData?.photoURL ? (
+                    <img
+                      src={userData.photoURL}
+                      alt={userData.displayName || tp.profileAlt}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'var(--brand-tint)',
+                      }}
+                    >
+                      <User className="w-16 h-16" style={{ color: 'var(--brand)' }} />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ flex: 1, minWidth: 240 }}>
+                <div className="sc-row-between" style={{ alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
+                  <div>
+                    <h2 className="sc-h2" style={{ margin: 0 }}>{userData?.displayName || tp.defaultTechName}</h2>
+                    <p className="sc-helper" style={{ margin: '4px 0 0' }}>{tp.professionalInstaller}</p>
+                  </div>
+                  {!editingProfile ? (
+                    <button
+                      type="button"
+                      onClick={() => setEditingProfile(true)}
+                      className="sc-cta-ghost"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 12px' }}
+                    >
+                      <Pencil className="w-4 h-4" />
+                      <span className="hidden sm:inline">{tp.editProfile}</span>
+                    </button>
+                  ) : (
+                    <div className="sc-row" style={{ gap: 8 }}>
+                      <button
+                        type="button"
+                        onClick={handleCancelEdit}
+                        disabled={savingProfile}
+                        className="sc-cta-ghost"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 12px', opacity: savingProfile ? 0.5 : 1 }}
+                      >
+                        <X className="w-4 h-4" />
+                        <span className="hidden sm:inline">{tp.cancel}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveProfile}
+                        disabled={savingProfile}
+                        className="sc-cta"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 12px', opacity: savingProfile ? 0.5 : 1 }}
+                      >
+                        <Save className="w-4 h-4" />
+                        <span className="hidden sm:inline">{savingProfile ? tp.saving : tp.saveProfile}</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {editingProfile ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+                    <div>
+                      <label className="sc-label">{tp.displayName}</label>
+                      <input
+                        type="text"
+                        value={form.displayName}
+                        onChange={(e) => setForm({ ...form, displayName: e.target.value })}
+                        className="sc-input"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="sc-label">{tp.email}</label>
+                      <input
+                        type="email"
+                        value={userData?.email || ''}
+                        disabled
+                        className="sc-input"
+                        style={{ color: 'var(--soft)', cursor: 'not-allowed', background: 'var(--off-paper)' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="sc-label">{tp.phone}</label>
+                      <input
+                        type="tel"
+                        value={form.phone}
+                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                        className="sc-input"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="sc-label">{tp.whatsapp}</label>
+                      <input
+                        type="tel"
+                        value={form.whatsapp}
+                        onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
+                        className="sc-input"
+                      />
+                    </div>
+
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label className="sc-label">{tp.bio}</label>
+                      <textarea
+                        value={form.bio}
+                        onChange={(e) => setForm({ ...form, bio: e.target.value })}
+                        placeholder={tp.bioPlaceholder}
+                        rows={3}
+                        className="sc-textarea"
+                      />
+                    </div>
+
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label className="sc-label">{tp.serviceAreas}</label>
+                      <input
+                        type="text"
+                        value={form.serviceAreas}
+                        onChange={(e) => setForm({ ...form, serviceAreas: e.target.value })}
+                        className="sc-input"
+                      />
+                      <p className="sc-helper">{tp.serviceAreasHint}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="sc-stack" style={{ gap: 16 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+                      <div className="sc-row" style={{ alignItems: 'center', gap: 12 }}>
+                        <Mail className="w-5 h-5" style={{ color: 'var(--brand)' }} />
+                        <div>
+                          <p className="sc-helper" style={{ margin: 0 }}>{tp.email}</p>
+                          <p style={{ fontWeight: 600, margin: 0 }}>{userData?.email || tp.notProvided}</p>
+                        </div>
+                      </div>
+
+                      <div className="sc-row" style={{ alignItems: 'center', gap: 12 }}>
+                        <Phone className="w-5 h-5" style={{ color: 'var(--brand)' }} />
+                        <div>
+                          <p className="sc-helper" style={{ margin: 0 }}>{tp.phone}</p>
+                          <p style={{ fontWeight: 600, margin: 0 }}>{userData?.phone || tp.notProvided}</p>
+                        </div>
+                      </div>
+
+                      <div className="sc-row" style={{ alignItems: 'center', gap: 12 }}>
+                        <MessageCircle className="w-5 h-5" style={{ color: 'var(--brand)' }} />
+                        <div>
+                          <p className="sc-helper" style={{ margin: 0 }}>{tp.whatsapp}</p>
+                          <p style={{ fontWeight: 600, margin: 0 }}>{userData?.whatsapp || tp.notProvided}</p>
+                        </div>
+                      </div>
+
+                      <div className="sc-row" style={{ alignItems: 'center', gap: 12 }}>
+                        <Star className="w-5 h-5" style={{ color: 'var(--warn)' }} />
+                        <div>
+                          <p className="sc-helper" style={{ margin: 0 }}>{tp.rating}</p>
+                          <p style={{ fontWeight: 600, margin: 0 }}>{stats?.averageRating.toFixed(1) || '0.0'} / 5.0</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ paddingTop: 8, borderTop: '1px solid var(--hairline)' }}>
+                      <p className="sc-helper" style={{ marginBottom: 4 }}>{tp.bio}</p>
+                      <p style={{ whiteSpace: 'pre-line', margin: 0 }}>
+                        {userData?.bio || <span style={{ color: 'var(--soft)', fontStyle: 'italic' }}>{tp.bioEmpty}</span>}
+                      </p>
+                    </div>
+
+                    <div>
+                      <div className="sc-row" style={{ alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        <MapPin className="w-4 h-4" style={{ color: 'var(--soft)' }} />
+                        <p className="sc-helper" style={{ margin: 0 }}>{tp.serviceAreas}</p>
+                      </div>
+                      {userData?.serviceAreas && userData.serviceAreas.length > 0 ? (
+                        <div className="sc-row" style={{ flexWrap: 'wrap', gap: 8 }}>
+                          {userData.serviceAreas.map((area) => (
+                            <span
+                              key={area}
+                              style={{
+                                padding: '4px 12px',
+                                background: 'var(--brand-tint)',
+                                color: 'var(--brand)',
+                                fontSize: 13,
+                                fontWeight: 600,
+                                borderRadius: 9999,
+                              }}
+                            >
+                              {area}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p style={{ color: 'var(--soft)', fontStyle: 'italic', fontSize: 13, margin: 0 }}>{tp.serviceAreasEmpty}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="sc-card-static">
+            <div className="sc-row-between" style={{ alignItems: 'center', marginBottom: 24 }}>
+              <div className="sc-row" style={{ alignItems: 'center', gap: 12 }}>
+                <ImageIcon className="w-6 h-6" style={{ color: 'var(--brand)' }} />
+                <h2 className="sc-h2" style={{ margin: 0 }}>{tp.businessLogo}</h2>
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    setSavingLogo(true);
+                    await updateUserData({ logoURL: logoURL || undefined });
+                    toast.success(tp.logoSaved);
+                  } catch {
+                    toast.error(tp.logoSaveError);
+                  } finally {
+                    setSavingLogo(false);
+                  }
+                }}
+                disabled={savingLogo}
+                className="sc-cta"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', opacity: savingLogo ? 0.5 : 1 }}
+              >
+                <Save className="w-4 h-4" />
+                {savingLogo ? tp.saving : tp.save}
+              </button>
+            </div>
+            <LogoUpload
+              currentLogoURL={logoURL}
+              onLogoUploaded={(url) => setLogoURL(url)}
+              onLogoRemoved={() => setLogoURL('')}
+              label={tp.yourLogo}
+              hint={tp.logoHint}
+            />
+          </div>
+
+          <div>
+            <h2 className="sc-h2" style={{ marginBottom: 24 }}>{tp.performanceStats}</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+              <StatTile
+                icon={Briefcase}
+                iconColor="var(--brand)"
+                iconBg="var(--brand-tint)"
+                value={stats?.totalJobs || 0}
+                label={tp.totalJobs}
+              />
+              <StatTile
+                icon={Award}
+                iconColor="var(--brand)"
+                iconBg="var(--brand-tint)"
+                value={stats?.completedJobs || 0}
+                label={tp.completed}
+              />
+              <StatTile
+                icon={Star}
+                iconColor="var(--warn)"
+                iconBg="var(--warn-tint)"
+                value={stats?.averageRating.toFixed(1) || '0.0'}
+                label={tp.avgRating}
+              />
+              <StatTile
+                icon={TrendingUp}
+                iconColor="var(--brand)"
+                iconBg="var(--brand-tint)"
+                value={formatCurrency(stats?.totalEarnings || 0, DEFAULT_CURRENCY)}
+                label={tp.totalEarnings}
+              />
+            </div>
+          </div>
+
+          <div className="sc-card-static">
+            <h3 className="sc-h2" style={{ marginBottom: 16 }}>{tp.currentStatus}</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
+              <div style={{ padding: 16, background: 'var(--brand-tint)', borderRadius: 'var(--radius-md)' }}>
+                <p className="sc-helper" style={{ margin: '0 0 4px' }}>{tp.upcomingJobs}</p>
+                <p style={{ fontSize: 22, fontWeight: 700, color: 'var(--brand)', margin: 0 }}>{stats?.upcomingJobs || 0}</p>
+              </div>
+              <div style={{ padding: 16, background: 'var(--warn-tint)', borderRadius: 'var(--radius-md)' }}>
+                <p className="sc-helper" style={{ margin: '0 0 4px' }}>{tp.inProgress}</p>
+                <p style={{ fontSize: 22, fontWeight: 700, color: 'var(--warn)', margin: 0 }}>{stats?.inProgressJobs || 0}</p>
+              </div>
+              <div style={{ padding: 16, background: 'var(--brand-tint)', borderRadius: 'var(--radius-md)' }}>
+                <p className="sc-helper" style={{ margin: '0 0 4px' }}>{tp.completionRate}</p>
+                <p style={{ fontSize: 22, fontWeight: 700, color: 'var(--brand)', margin: 0 }}>{stats?.completionRate || 0}%</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h2 className="sc-h2" style={{ marginBottom: 24 }}>{tp.recentReviews}</h2>
+            {recentReviews.length === 0 ? (
+              <div className="sc-card-static" style={{ textAlign: 'center', padding: '32px 16px' }}>
+                <Star className="w-10 h-10" style={{ color: 'var(--soft)', margin: '0 auto 12px' }} />
+                <p className="sc-helper">{tp.noReviewsYet}</p>
+                <p className="sc-helper" style={{ marginTop: 4 }}>{tp.reviewsWillAppear}</p>
+              </div>
+            ) : (
+              <div className="sc-stack" style={{ gap: 16 }}>
+                {recentReviews.map(review => (
+                  <div key={review.id} className="sc-card-static">
+                    <div className="sc-row-between" style={{ alignItems: 'flex-start', marginBottom: 8 }}>
+                      <div>
+                        <p className="sc-helper" style={{ fontSize: 12, margin: 0 }}>
+                          {tp.orderLabel} {review.orderId} | {formatDate(review.createdAt, 'short')}
+                        </p>
+                      </div>
+                      <div className="sc-row" style={{ alignItems: 'center', gap: 2 }}>
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <Star
+                            key={star}
+                            className="w-4 h-4"
+                            style={{
+                              color: star <= review.rating ? 'var(--warn)' : 'var(--soft)',
+                              fill: star <= review.rating ? 'var(--warn)' : 'none',
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    {review.comment && (
+                      <p className="sc-helper" style={{ color: 'var(--ink)' }}>{review.comment}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}

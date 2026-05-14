@@ -105,100 +105,158 @@ export default function PhotoGuide({ type }: PhotoGuideProps) {
 
   const guide = guides[type];
 
+  const sectionIconWrap = (bg: string): React.CSSProperties => ({
+    width: 36,
+    height: 36,
+    borderRadius: 'var(--radius-sm)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: bg,
+    flexShrink: 0,
+  });
+
   return (
     <>
-      {/* Trigger Button */}
       <button
+        type="button"
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-2 px-3 py-2 text-sm text-primary hover:text-primary-hover bg-primary/10 hover:bg-primary/20 rounded-apple transition-all"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '8px 12px',
+          fontSize: 14,
+          fontWeight: 600,
+          color: 'var(--brand)',
+          background: 'var(--brand-tint)',
+          border: 'none',
+          borderRadius: 'var(--radius-sm)',
+          cursor: 'pointer',
+          transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
       >
         <HelpCircle className="w-4 h-4" />
         View Tips
       </button>
 
-      {/* Modal */}
       {isOpen && (
-        <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="w-full max-w-2xl bg-surface rounded-apple border border-border shadow-apple max-h-[90vh] overflow-y-auto">
-            {/* Header */}
-            <div className="sticky top-0 bg-surface border-b border-border p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold mb-1">{guide.title}</h2>
-                  <p className="text-text-secondary text-sm">{guide.description}</p>
+        <div
+          className="sc"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 50,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+            background: 'rgba(0,0,0,0.6)',
+            backdropFilter: 'blur(8px)',
+            minHeight: 'auto',
+          }}
+        >
+          <div style={{ width: '100%', maxWidth: 640, maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="sc-card-static" style={{ padding: 0 }}>
+              <div
+                style={{
+                  position: 'sticky',
+                  top: 0,
+                  background: 'var(--paper)',
+                  borderBottom: '1px solid var(--hairline)',
+                  padding: 24,
+                  zIndex: 1,
+                }}
+              >
+                <div className="sc-row-between" style={{ alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
+                    <h2 className="sc-h2" style={{ marginBottom: 4 }}>{guide.title}</h2>
+                    <p className="sc-helper">{guide.description}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsOpen(false)}
+                    className="sc-cta-ghost"
+                    style={{
+                      padding: 8,
+                      width: 40,
+                      height: 40,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
+              </div>
+
+              <div className="sc-stack-lg" style={{ padding: 24, gap: 24 }}>
+                <div>
+                  <div className="sc-row" style={{ alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                    <div style={sectionIconWrap('var(--brand-tint)')}>
+                      <Check className="w-5 h-5" style={{ color: 'var(--brand)' }} />
+                    </div>
+                    <h3 style={{ fontWeight: 700, fontSize: 18, margin: 0 }}>Do&apos;s</h3>
+                  </div>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {guide.dos.map((item, index) => (
+                      <li key={index} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 14 }}>
+                        <Check className="w-4 h-4" style={{ color: 'var(--brand)', flexShrink: 0, marginTop: 2 }} />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div>
+                  <div className="sc-row" style={{ alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                    <div style={sectionIconWrap('rgba(239,68,68,0.1)')}>
+                      <XCircle className="w-5 h-5" style={{ color: '#ef4444' }} />
+                    </div>
+                    <h3 style={{ fontWeight: 700, fontSize: 18, margin: 0 }}>
+                      {t.components?.photoGuide?.donts || "Don'ts"}
+                    </h3>
+                  </div>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {guide.donts.map((item, index) => (
+                      <li key={index} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 14 }}>
+                        <XCircle className="w-4 h-4" style={{ color: '#ef4444', flexShrink: 0, marginTop: 2 }} />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div>
+                  <div className="sc-row" style={{ alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                    <div style={sectionIconWrap('var(--warn-tint)')}>
+                      <Lightbulb className="w-5 h-5" style={{ color: 'var(--warn)' }} />
+                    </div>
+                    <h3 style={{ fontWeight: 700, fontSize: 18, margin: 0 }}>
+                      {t.components?.photoGuide?.proTips || 'Pro Tips'}
+                    </h3>
+                  </div>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {guide.tips.map((item, index) => (
+                      <li key={index} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 14 }}>
+                        <Lightbulb className="w-4 h-4" style={{ color: 'var(--warn)', flexShrink: 0, marginTop: 2 }} />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
                 <button
+                  type="button"
                   onClick={() => setIsOpen(false)}
-                  className="p-2 hover:bg-surface-elevated rounded-apple transition-all"
+                  className="sc-cta"
+                  style={{ width: '100%', padding: '14px 24px' }}
                 >
-                  <X className="w-5 h-5" />
+                  Got it!
                 </button>
               </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-6 space-y-6">
-              {/* Do's */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="p-2 bg-success/10 rounded-apple">
-                    <Check className="w-5 h-5 text-success" />
-                  </div>
-                  <h3 className="font-semibold text-lg">Do's</h3>
-                </div>
-                <ul className="space-y-2">
-                  {guide.dos.map((item, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm">
-                      <Check className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Don'ts */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="p-2 bg-error/10 rounded-apple">
-                    <XCircle className="w-5 h-5 text-error" />
-                  </div>
-                  <h3 className="font-semibold text-lg">Don'ts</h3>
-                </div>
-                <ul className="space-y-2">
-                  {guide.donts.map((item, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm">
-                      <XCircle className="w-4 h-4 text-error flex-shrink-0 mt-0.5" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Tips */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="p-2 bg-warning/10 rounded-apple">
-                    <Lightbulb className="w-5 h-5 text-warning" />
-                  </div>
-                  <h3 className="font-semibold text-lg">Pro Tips</h3>
-                </div>
-                <ul className="space-y-2">
-                  {guide.tips.map((item, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm">
-                      <Lightbulb className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Close Button */}
-              <button
-                onClick={() => setIsOpen(false)}
-                className="w-full px-6 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all"
-              >
-                Got it!
-              </button>
             </div>
           </div>
         </div>
@@ -206,4 +264,3 @@ export default function PhotoGuide({ type }: PhotoGuideProps) {
     </>
   );
 }
-

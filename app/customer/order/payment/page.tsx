@@ -319,10 +319,10 @@ export default function PaymentPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">{t.common.loading}</p>
+      <div className="sc" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="sc-stack" style={{ alignItems: 'center', gap: 16 }}>
+          <div className="sc-spinner-wrap"><div className="sc-spinner" /></div>
+          <p className="sc-helper">{t.common.loading}</p>
         </div>
       </div>
     );
@@ -337,148 +337,233 @@ export default function PaymentPage() {
   const tax = subtotal * 0.1;
   const total = subtotal + tax;
 
+  const ProgressDot = ({ done, active, label }: { done: boolean; active: boolean; label: string | number }) => (
+    <div
+      style={{
+        width: 32,
+        height: 32,
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 13,
+        fontWeight: 700,
+        background: done || active ? 'var(--brand)' : 'var(--off-paper)',
+        color: done || active ? 'var(--paper)' : 'var(--soft)',
+        boxShadow: active ? '0 0 0 4px var(--brand-tint)' : 'none',
+      }}
+    >
+      {label}
+    </div>
+  );
+
+  const ProgressBar = ({ filled }: { filled: boolean }) => (
+    <div style={{ width: 48, height: 3, background: filled ? 'var(--brand)' : 'var(--hairline)' }} />
+  );
+
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <div className="bg-surface border-b border-border sticky top-0 z-10 backdrop-blur-lg bg-surface/80">
-        <div className="max-w-3xl mx-auto px-4 lg:px-8 py-4">
+    <div className="sc" style={{ minHeight: '100vh', paddingBottom: 80 }}>
+      <header
+        className="sc-nav"
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+          background: 'rgba(255,255,255,0.85)',
+          backdropFilter: 'blur(12px)',
+          borderBottom: '1px solid var(--hairline)',
+        }}
+      >
+        <div className="sc-container" style={{ maxWidth: 720, padding: '14px 16px' }}>
           <button
+            type="button"
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
+            className="sc-cta-ghost"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 10px' }}
           >
             <ArrowLeft className="w-5 h-5" />
             {t.orders.back}
           </button>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-3xl mx-auto px-4 lg:px-8 py-8">
-        <div className="space-y-8 animate-fade-in">
-          {/* Progress */}
-          <div className="flex items-center justify-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-success flex items-center justify-center text-sm font-bold">
-              ✓
-            </div>
-            <div className="w-16 h-1 bg-success"></div>
-            <div className="w-8 h-8 rounded-full bg-success flex items-center justify-center text-sm font-bold">
-              ✓
-            </div>
-            <div className="w-16 h-1 bg-success"></div>
-            <div className="w-8 h-8 rounded-full bg-success flex items-center justify-center text-sm font-bold">
-              ✓
-            </div>
-            <div className="w-16 h-1 bg-success"></div>
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-sm font-bold">
-              4
-            </div>
+      <div className="sc-container" style={{ maxWidth: 720, padding: '32px 16px' }}>
+        <div className="sc-stack-lg" style={{ gap: 32 }}>
+          <div className="sc-row" style={{ justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+            <ProgressDot done={true} active={false} label="✓" />
+            <ProgressBar filled />
+            <ProgressDot done={true} active={false} label="✓" />
+            <ProgressBar filled />
+            <ProgressDot done={true} active={false} label="✓" />
+            <ProgressBar filled />
+            <ProgressDot done={false} active={true} label={4} />
           </div>
 
-          {/* Header */}
-          <div className="text-center">
-            <h1 className="text-3xl font-bold mb-2">{t.orders.paymentTitle}</h1>
-            <p className="text-text-secondary">{t.orders.reviewOrder}</p>
+          <div style={{ textAlign: 'center' }}>
+            <h1 className="sc-h1" style={{ marginBottom: 8 }}>{t.orders.paymentTitle}</h1>
+            <p className="sc-lede">{t.orders.reviewOrder}</p>
           </div>
 
-          {/* Order Summary */}
-          <div className="apple-card">
-            <h2 className="text-xl font-semibold mb-6">{t.orders.orderSummary}</h2>
+          <div className="sc-card-static">
+            <h2 className="sc-h2" style={{ marginBottom: 20 }}>{t.orders.orderSummary}</h2>
 
-            <div className="space-y-4">
-              <div className="flex justify-between items-start">
+            <div className="sc-stack" style={{ gap: 16 }}>
+              <div className="sc-row-between" style={{ alignItems: 'flex-start' }}>
                 <div>
-                  <p className="font-medium">{product.name[lang]}</p>
-                  <p className="text-sm text-text-secondary">{product.brand}</p>
+                  <p style={{ fontWeight: 600, margin: 0 }}>{product.name[lang]}</p>
+                  <p className="sc-helper" style={{ marginTop: 2 }}>{product.brand}</p>
                 </div>
-                <p className="font-semibold">{formatCurrency(productPrice, product.currency)}</p>
+                <p style={{ fontWeight: 700, margin: 0 }}>{formatCurrency(productPrice, product.currency)}</p>
               </div>
 
               {service && (
-                <div className="flex justify-between items-start">
+                <div className="sc-row-between" style={{ alignItems: 'flex-start' }}>
                   <div>
-                    <p className="font-medium">{service.name[lang]}</p>
-                    <p className="text-sm text-text-secondary">{service.duration}h {t.orders.installationService}</p>
+                    <p style={{ fontWeight: 600, margin: 0 }}>{service.name[lang]}</p>
+                    <p className="sc-helper" style={{ marginTop: 2 }}>
+                      {service.duration}h {t.orders.installationService}
+                    </p>
                   </div>
-                  <p className="font-semibold">{formatCurrency(servicePrice, service.currency)}</p>
+                  <p style={{ fontWeight: 700, margin: 0 }}>{formatCurrency(servicePrice, service.currency)}</p>
                 </div>
               )}
 
-              <div className="pt-4 border-t border-border space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-text-secondary">{t.orders.subtotal}</span>
-                  <span>{formatCurrency(subtotal, product.currency)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-text-secondary">{t.orders.tax}</span>
-                  <span>{formatCurrency(tax, product.currency)}</span>
-                </div>
-                <div className="flex justify-between pt-3 border-t border-border">
-                  <span className="text-xl font-semibold">{t.orders.totalToPay}</span>
-                  <span className="text-2xl font-bold text-primary">
-                    {formatCurrency(total, product.currency)}
-                  </span>
+              <div style={{ paddingTop: 16, borderTop: '1px solid var(--hairline)' }}>
+                <div className="sc-stack" style={{ gap: 8 }}>
+                  <div className="sc-row-between" style={{ fontSize: 14 }}>
+                    <span className="sc-helper">{t.orders.subtotal}</span>
+                    <span>{formatCurrency(subtotal, product.currency)}</span>
+                  </div>
+                  <div className="sc-row-between" style={{ fontSize: 14 }}>
+                    <span className="sc-helper">{t.orders.tax}</span>
+                    <span>{formatCurrency(tax, product.currency)}</span>
+                  </div>
+                  <div
+                    className="sc-row-between"
+                    style={{ paddingTop: 12, borderTop: '1px solid var(--hairline)', alignItems: 'baseline' }}
+                  >
+                    <span style={{ fontSize: 18, fontWeight: 700 }}>{t.orders.totalToPay}</span>
+                    <span className="sc-price" style={{ fontSize: 28 }}>
+                      {formatCurrency(total, product.currency)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Payment Method */}
-          <div className="apple-card">
-            <h2 className="text-xl font-semibold mb-6">{t.orders.paymentMethod}</h2>
+          <div className="sc-card-static">
+            <h2 className="sc-h2" style={{ marginBottom: 20 }}>{t.orders.paymentMethod}</h2>
 
-            <div className="p-4 bg-warning/10 border border-warning/30 rounded-apple mb-6">
-              <div className="flex items-start gap-3">
-                <CreditCard className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+            <div
+              style={{
+                padding: 16,
+                background: 'var(--warn-tint)',
+                border: '1px solid var(--warn)',
+                borderRadius: 'var(--radius-md)',
+                marginBottom: 20,
+              }}
+            >
+              <div className="sc-row" style={{ alignItems: 'flex-start', gap: 12 }}>
+                <CreditCard className="w-5 h-5" style={{ color: 'var(--warn)', flexShrink: 0, marginTop: 2 }} />
                 <div>
-                  <p className="font-medium text-warning text-sm">{t.orders.sandboxMode}</p>
-                  <p className="text-xs text-text-secondary">
-                    {t.orders.sandboxDesc}
+                  <p style={{ fontWeight: 600, color: 'var(--warn)', fontSize: 14, margin: 0 }}>
+                    {t.orders.sandboxMode}
                   </p>
+                  <p className="sc-helper" style={{ fontSize: 12, marginTop: 2 }}>{t.orders.sandboxDesc}</p>
                 </div>
               </div>
             </div>
 
-            <div className="p-6 bg-surface rounded-apple border-2 border-primary">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-[#FF9900]/20 rounded-apple flex items-center justify-center">
-                    <ShoppingBag className="w-6 h-6 text-[#FF9900]" />
+            <div
+              style={{
+                padding: 20,
+                background: 'var(--paper)',
+                borderRadius: 'var(--radius-md)',
+                border: '2px solid var(--brand)',
+              }}
+            >
+              <div className="sc-row-between" style={{ alignItems: 'center', marginBottom: 16 }}>
+                <div className="sc-row" style={{ alignItems: 'center', gap: 12 }}>
+                  <div
+                    style={{
+                      width: 48,
+                      height: 48,
+                      background: 'rgba(255,153,0,0.15)',
+                      borderRadius: 'var(--radius-md)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <ShoppingBag className="w-6 h-6" style={{ color: '#FF9900' }} />
                   </div>
                   <div>
-                    <p className="font-medium">{t.orders.amazonPay}</p>
-                    <p className="text-sm text-text-secondary">{t.orders.payWithAmazon}</p>
+                    <p style={{ fontWeight: 600, margin: 0 }}>{t.orders.amazonPay}</p>
+                    <p className="sc-helper" style={{ marginTop: 2 }}>{t.orders.payWithAmazon}</p>
                   </div>
                 </div>
-                <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                  <Check className="w-4 h-4 text-white" />
+                <div
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    background: 'var(--brand)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Check className="w-4 h-4" style={{ color: 'var(--paper)' }} />
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-sm text-text-tertiary">
+              <div className="sc-row" style={{ alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--soft)' }}>
                 <Lock className="w-4 h-4" />
                 <span>{t.orders.securePayment}</span>
               </div>
             </div>
           </div>
 
-          {/* Pay Button */}
           <button
+            type="button"
             onClick={handlePayment}
             disabled={processing}
-            className="w-full px-8 py-4 bg-[#FF9900] hover:bg-[#FF9900]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple-lg"
+            style={{
+              width: '100%',
+              padding: '18px 24px',
+              background: '#FF9900',
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: 16,
+              border: 'none',
+              borderRadius: 'var(--radius-md)',
+              cursor: processing ? 'not-allowed' : 'pointer',
+              opacity: processing ? 0.6 : 1,
+              transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: 'var(--shadow-lg)',
+            }}
           >
             {processing ? (
-              <div className="flex items-center justify-center gap-3">
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                <span
+                  style={{
+                    width: 20,
+                    height: 20,
+                    border: '2px solid #fff',
+                    borderTopColor: 'transparent',
+                    borderRadius: '50%',
+                    animation: 'sc-spin 600ms linear infinite',
+                  }}
+                />
                 {t.orders.processingPayment}
-              </div>
+              </span>
             ) : (
               `${t.orders.payWithAmazonBtn} — ${formatCurrency(total, product.currency)}`
             )}
           </button>
 
-          <p className="text-center text-xs text-text-tertiary">
-            {t.orders.termsNotice}
-          </p>
+          <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--soft)' }}>{t.orders.termsNotice}</p>
         </div>
       </div>
     </div>

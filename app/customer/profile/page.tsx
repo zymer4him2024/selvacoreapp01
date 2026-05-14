@@ -98,186 +98,190 @@ export default function CustomerProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="bg-surface border-b border-border">
-        <div className="max-w-4xl mx-auto px-4 lg:px-8 py-6">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-surface-elevated rounded-apple transition-all"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div>
-              <h1 className="text-3xl font-bold">{t.customer.profile}</h1>
-              <p className="text-sm text-text-secondary mt-1">
-                {ps.manage}
-              </p>
-            </div>
+    <div className="sc">
+      <main className="sc-main" style={{ maxWidth: 880 }}>
+        <div className="sc-row" style={{ marginBottom: 24 }}>
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="sc-cta-ghost"
+            style={{ padding: 8, width: 40, height: 40, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+            aria-label="Back"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <div className="sc-eyebrow">{t.customer.profile}</div>
+            <h1 className="sc-h1">{t.customer.profile}</h1>
+            <p className="sc-lede">{ps.manage}</p>
           </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 lg:px-8 py-8">
-        <div className="space-y-6 animate-fade-in">
-          {/* Profile Picture */}
-          <div className="apple-card">
-            <div className="flex items-center gap-6">
+        <div className="sc-stack-lg">
+          <div className="sc-card-static">
+            <div className="sc-row" style={{ gap: 24 }}>
               {userData?.photoURL ? (
                 <img
                   src={userData.photoURL}
                   alt={userData.displayName || ps.defaultUser}
-                  className="w-24 h-24 rounded-full object-cover object-center border-4 border-border"
+                  style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--hairline)' }}
                 />
               ) : (
-                <div className="w-24 h-24 rounded-full bg-primary text-white flex items-center justify-center text-3xl font-bold">
+                <div
+                  style={{
+                    width: 96,
+                    height: 96,
+                    borderRadius: '50%',
+                    background: 'var(--brand)',
+                    color: 'var(--paper)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 32,
+                    fontWeight: 700,
+                  }}
+                >
                   {userData?.displayName?.[0] || ps.defaultUser.charAt(0)}
                 </div>
               )}
               <div>
-                <h2 className="text-2xl font-bold">{userData?.displayName}</h2>
-                <p className="text-text-secondary">{userData?.email}</p>
-                <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-success/10 text-success rounded-full text-xs font-medium">
-                  <div className="w-2 h-2 bg-success rounded-full"></div>
+                <h2 className="sc-h2" style={{ margin: 0 }}>{userData?.displayName}</h2>
+                <p className="sc-lede" style={{ margin: '4px 0 8px' }}>{userData?.email}</p>
+                <span className="sc-badge-inline" style={{ color: 'var(--brand)', background: 'var(--brand-tint)' }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--brand)' }} />
                   {ps.accountActive}
-                </div>
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Profile Form */}
-          <div className="apple-card space-y-6">
-            <h3 className="text-xl font-semibold mb-4">{ps.personalInformation}</h3>
+          <div className="sc-card-static">
+            <h3 className="sc-h2" style={{ marginBottom: 16 }}>{ps.personalInformation}</h3>
 
-            {/* Display Name */}
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                <UserIcon className="w-4 h-4 inline mr-2" />
-                {ps.fullName}
-              </label>
-              <input
-                type="text"
-                value={formData.displayName}
-                onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
-                placeholder={ps.fullNamePlaceholder}
-              />
-            </div>
+            <div className="sc-stack">
+              <div>
+                <label className="sc-label">
+                  <UserIcon className="w-4 h-4 inline mr-2" />
+                  {ps.fullName}
+                </label>
+                <input
+                  type="text"
+                  value={formData.displayName}
+                  onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                  className="sc-input"
+                  placeholder={ps.fullNamePlaceholder}
+                />
+              </div>
 
-            {/* Email (Read-only) */}
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                <Mail className="w-4 h-4 inline mr-2" />
-                {ps.emailAddress}
-              </label>
-              <input
-                type="email"
-                value={userData?.email || ''}
-                disabled
-                className="w-full px-4 py-3 bg-surface border border-border rounded-apple text-text-tertiary cursor-not-allowed"
-              />
-              <p className="text-xs text-text-tertiary mt-1">
-                {ps.emailLockedHint}
-              </p>
-            </div>
+              <div>
+                <label className="sc-label">
+                  <Mail className="w-4 h-4 inline mr-2" />
+                  {ps.emailAddress}
+                </label>
+                <input
+                  type="email"
+                  value={userData?.email || ''}
+                  disabled
+                  className="sc-input"
+                  style={{ opacity: 0.5, cursor: 'not-allowed' }}
+                />
+                <p className="sc-helper">{ps.emailLockedHint}</p>
+              </div>
 
-            {/* Phone */}
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                <Phone className="w-4 h-4 inline mr-2" />
-                {ps.phoneNumber}
-              </label>
-              <input
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
-                placeholder={ps.phoneNumberPlaceholder}
-              />
-            </div>
+              <div>
+                <label className="sc-label">
+                  <Phone className="w-4 h-4 inline mr-2" />
+                  {ps.phoneNumber}
+                </label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="sc-input"
+                  placeholder={ps.phoneNumberPlaceholder}
+                />
+              </div>
 
-            {/* Preferred Language */}
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                <Globe className="w-4 h-4 inline mr-2" />
-                {ps.preferredLanguage}
-              </label>
-              <select
-                value={formData.preferredLanguage}
-                onChange={(e) => setFormData({ ...formData, preferredLanguage: e.target.value })}
-                className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all"
-              >
-                {SUPPORTED_LANGUAGES.map((lang) => (
-                  <option key={lang.code} value={lang.code}>
-                    {lang.flag} {lang.name}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-text-tertiary mt-1">
-                {ps.preferredLanguageHint}
-              </p>
+              <div>
+                <label className="sc-label">
+                  <Globe className="w-4 h-4 inline mr-2" />
+                  {ps.preferredLanguage}
+                </label>
+                <select
+                  value={formData.preferredLanguage}
+                  onChange={(e) => setFormData({ ...formData, preferredLanguage: e.target.value })}
+                  className="sc-select"
+                >
+                  {SUPPORTED_LANGUAGES.map((lang) => (
+                    <option key={lang.code} value={lang.code}>
+                      {lang.flag} {lang.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="sc-helper">{ps.preferredLanguageHint}</p>
+              </div>
             </div>
           </div>
 
-          {/* Account Info */}
-          <div className="apple-card space-y-4">
-            <h3 className="text-xl font-semibold mb-4">{ps.accountInformation}</h3>
+          <div className="sc-card-static">
+            <h3 className="sc-h2" style={{ marginBottom: 16 }}>{ps.accountInformation}</h3>
 
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-2 gap-4" style={{ fontSize: 14 }}>
               <div>
-                <p className="text-text-tertiary">{ps.accountType}</p>
-                <p className="font-medium capitalize">{userData?.role || ps.accountTypeCustomer}</p>
+                <p style={{ color: 'var(--soft)', fontSize: 12, margin: '0 0 4px' }}>{ps.accountType}</p>
+                <p style={{ fontWeight: 600, textTransform: 'capitalize', margin: 0 }}>{userData?.role || ps.accountTypeCustomer}</p>
               </div>
               <div>
-                <p className="text-text-tertiary">{ps.memberSince}</p>
-                <p className="font-medium">
+                <p style={{ color: 'var(--soft)', fontSize: 12, margin: '0 0 4px' }}>{ps.memberSince}</p>
+                <p style={{ fontWeight: 600, margin: 0 }}>
                   {userData?.createdAt?.toDate ?
                     formatDate(userData.createdAt.toDate(), 'short') :
                     ps.notAvailable}
                 </p>
               </div>
               <div>
-                <p className="text-text-tertiary">{ps.lastLogin}</p>
-                <p className="font-medium">
+                <p style={{ color: 'var(--soft)', fontSize: 12, margin: '0 0 4px' }}>{ps.lastLogin}</p>
+                <p style={{ fontWeight: 600, margin: 0 }}>
                   {userData?.lastLoginAt?.toDate ?
                     formatDate(userData.lastLoginAt.toDate(), 'short') :
                     ps.notAvailable}
                 </p>
               </div>
               <div>
-                <p className="text-text-tertiary">{ps.emailVerified}</p>
-                <p className="font-medium">
+                <p style={{ color: 'var(--soft)', fontSize: 12, margin: '0 0 4px' }}>{ps.emailVerified}</p>
+                <p style={{ fontWeight: 600, margin: 0 }}>
                   {userData?.emailVerified ? (
-                    <span className="text-success">✓ {ps.verified}</span>
+                    <span style={{ color: 'var(--brand)' }}>✓ {ps.verified}</span>
                   ) : (
-                    <span className="text-warning">{ps.verificationPending}</span>
+                    <span style={{ color: 'var(--warn)' }}>{ps.verificationPending}</span>
                   )}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Save Button */}
-          <div className="flex gap-4">
+          <div className="sc-row" style={{ gap: 12 }}>
             <button
+              type="button"
               onClick={() => router.back()}
-              className="flex-1 px-6 py-3 bg-surface-elevated hover:bg-surface-secondary text-text-primary font-semibold rounded-apple transition-all"
+              className="sc-cta-ghost"
+              style={{ flex: 1 }}
             >
               {t.common.cancel}
             </button>
             <button
+              type="button"
               onClick={handleSave}
               disabled={loading}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="sc-cta"
+              style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             >
               <Save className="w-5 h-5" />
               {loading ? t.common.loading : t.common.save}
             </button>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Check, Loader2, AlertCircle } from 'lucide-react';
+import { Check, AlertCircle } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface UploadProgressProps {
   progress: number;
@@ -11,84 +12,137 @@ interface UploadProgressProps {
 }
 
 export default function UploadProgress({ progress, fileName, status, errorMessage }: UploadProgressProps) {
+  const { t } = useTranslation();
   const [displayProgress, setDisplayProgress] = useState(0);
 
   useEffect(() => {
-    // Animate progress
     const timer = setTimeout(() => {
       setDisplayProgress(progress);
     }, 100);
     return () => clearTimeout(timer);
   }, [progress]);
 
-  const circumference = 2 * Math.PI * 45; // radius = 45
+  const circumference = 2 * Math.PI * 28;
   const strokeDashoffset = circumference - (displayProgress / 100) * circumference;
 
+  const errorColor = '#ef4444';
+
   return (
-    <div className="flex items-center gap-4 p-4 bg-surface-elevated rounded-apple">
-      {/* Progress Circle */}
-      <div className="relative flex-shrink-0">
+    <div
+      className="sc-row"
+      style={{
+        alignItems: 'center',
+        gap: 16,
+        padding: 16,
+        background: 'var(--off-paper)',
+        borderRadius: 'var(--radius-md)',
+        border: '1px solid var(--hairline)',
+      }}
+    >
+      <div style={{ position: 'relative', flexShrink: 0, width: 64, height: 64 }}>
         {status === 'uploading' && (
-          <svg className="w-16 h-16 transform -rotate-90">
-            {/* Background circle */}
+          <svg width={64} height={64} style={{ transform: 'rotate(-90deg)' }}>
             <circle
               cx="32"
               cy="32"
               r="28"
-              stroke="currentColor"
+              stroke="var(--hairline)"
               strokeWidth="4"
               fill="none"
-              className="text-border"
             />
-            {/* Progress circle */}
             <circle
               cx="32"
               cy="32"
               r="28"
-              stroke="currentColor"
+              stroke="var(--brand)"
               strokeWidth="4"
               fill="none"
               strokeDasharray={circumference}
               strokeDashoffset={strokeDashoffset}
-              className="text-primary transition-all duration-300"
               strokeLinecap="round"
+              style={{ transition: 'stroke-dashoffset 300ms cubic-bezier(0.4, 0, 0.2, 1)' }}
             />
           </svg>
         )}
-        
-        <div className="absolute inset-0 flex items-center justify-center">
+
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
           {status === 'uploading' && (
-            <span className="text-sm font-bold text-primary">{Math.round(displayProgress)}%</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--brand)' }}>
+              {Math.round(displayProgress)}%
+            </span>
           )}
           {status === 'success' && (
-            <div className="w-16 h-16 bg-success rounded-full flex items-center justify-center animate-scale-in">
-              <Check className="w-8 h-8 text-white" />
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                background: 'var(--brand)',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Check className="w-8 h-8" style={{ color: 'var(--paper)' }} />
             </div>
           )}
           {status === 'error' && (
-            <div className="w-16 h-16 bg-error rounded-full flex items-center justify-center">
-              <AlertCircle className="w-8 h-8 text-white" />
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                background: errorColor,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <AlertCircle className="w-8 h-8" style={{ color: 'var(--paper)' }} />
             </div>
           )}
         </div>
       </div>
 
-      {/* Details */}
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-text-primary truncate">{fileName}</p>
-        <div className="mt-1">
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p
+          style={{
+            fontWeight: 600,
+            color: 'var(--ink)',
+            margin: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {fileName}
+        </p>
+        <div style={{ marginTop: 4 }}>
           {status === 'uploading' && (
-            <p className="text-sm text-text-secondary">Uploading...</p>
+            <p style={{ fontSize: 14, color: 'var(--soft)', margin: 0 }}>
+              {t.components?.uploadProgress?.uploading || 'Uploading...'}
+            </p>
           )}
           {status === 'success' && (
-            <p className="text-sm text-success font-medium">Upload complete!</p>
+            <p style={{ fontSize: 14, color: 'var(--brand)', fontWeight: 600, margin: 0 }}>
+              {t.components?.uploadProgress?.uploadComplete || 'Upload complete'}
+            </p>
           )}
           {status === 'error' && (
-            <p className="text-sm text-error">{errorMessage || 'Upload failed'}</p>
+            <p style={{ fontSize: 14, color: errorColor, margin: 0 }}>
+              {errorMessage || 'Upload failed'}
+            </p>
           )}
         </div>
       </div>
     </div>
   );
 }
-

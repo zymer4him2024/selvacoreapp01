@@ -229,11 +229,8 @@ export default function OrderDetailsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-text-secondary">{t.common.loading}</p>
-        </div>
+      <div className="sc">
+        <div className="sc-spinner-wrap"><div className="sc-spinner" /></div>
       </div>
     );
   }
@@ -252,113 +249,132 @@ export default function OrderDetailsPage() {
   const total = product.basePrice + (service?.price || 0);
   const maint = product.maintenanceTemplate;
 
+  const ProgressStep = ({ n, state }: { n: number; state: 'done' | 'active' | 'pending' }) => (
+    <div
+      style={{
+        width: 32,
+        height: 32,
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 14,
+        fontWeight: 700,
+        background: state === 'done' ? 'var(--brand)' : state === 'active' ? 'var(--brand)' : 'var(--paper)',
+        color: state === 'pending' ? 'var(--soft)' : 'var(--paper)',
+        border: state === 'pending' ? '2px solid var(--hairline)' : 'none',
+      }}
+    >
+      {n}
+    </div>
+  );
+  const ProgressBar = ({ filled }: { filled: boolean }) => (
+    <div style={{ width: 64, height: 4, background: filled ? 'var(--brand)' : 'var(--hairline)' }} />
+  );
+
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <div className="bg-surface border-b border-border sticky top-0 z-10 backdrop-blur-lg bg-surface/80">
-        <div className="max-w-3xl mx-auto px-4 lg:px-8 py-4">
+    <div className="sc">
+      <header className="sc-nav">
+        <div className="sc-nav-inner">
           <button
+            type="button"
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
+            className="sc-nav-link"
+            style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}
           >
             <ArrowLeft className="w-5 h-5" />
-            {t.orders.back}
+            <span className="sc-nav-text">{t.orders.back}</span>
           </button>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-3xl mx-auto px-4 lg:px-8 py-8">
-        <div className="space-y-8 animate-fade-in">
-          {/* Progress */}
-          <div className="flex items-center justify-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-success flex items-center justify-center text-sm font-bold">1</div>
-            <div className="w-16 h-1 bg-success" />
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-sm font-bold">2</div>
-            <div className="w-16 h-1 bg-border" />
-            <div className="w-8 h-8 rounded-full bg-surface border-2 border-border flex items-center justify-center text-sm font-bold text-text-tertiary">3</div>
-            <div className="w-16 h-1 bg-border" />
-            <div className="w-8 h-8 rounded-full bg-surface border-2 border-border flex items-center justify-center text-sm font-bold text-text-tertiary">4</div>
+      <main className="sc-main" style={{ maxWidth: 720 }}>
+        <div className="sc-stack-lg">
+          <div className="sc-row" style={{ justifyContent: 'center', gap: 8 }}>
+            <ProgressStep n={1} state="done" />
+            <ProgressBar filled />
+            <ProgressStep n={2} state="active" />
+            <ProgressBar filled={false} />
+            <ProgressStep n={3} state="pending" />
+            <ProgressBar filled={false} />
+            <ProgressStep n={4} state="pending" />
           </div>
 
-          {/* Heading */}
-          <div className="text-center">
-            <h1 className="text-3xl font-bold mb-2">{t.orders.installationDetails}</h1>
-            <p className="text-text-secondary">{t.orders.installationDetailsDesc}</p>
+          <div style={{ textAlign: 'center' }}>
+            <h1 className="sc-h1">{t.orders.installationDetails}</h1>
+            <p className="sc-lede">{t.orders.installationDetailsDesc}</p>
           </div>
 
-          {/* Rich Order Summary */}
-          <div className="apple-card">
-            <h2 className="text-xl font-semibold mb-5">{t.orders.yourOrder}</h2>
+          <div className="sc-card-static">
+            <h2 className="sc-h2" style={{ marginBottom: 20 }}>{t.orders.yourOrder}</h2>
 
-            {/* Product block */}
-            <div className="flex gap-4">
+            <div className="sc-row" style={{ gap: 16, alignItems: 'flex-start' }}>
               {productImage ? (
-                <div className="relative w-24 h-24 rounded-apple overflow-hidden bg-surface-elevated flex-shrink-0">
+                <div style={{ position: 'relative', width: 96, height: 96, borderRadius: 'var(--radius-sm)', overflow: 'hidden', background: 'var(--off-paper)', flexShrink: 0 }}>
                   <Image src={productImage} alt={product.name[lang]} fill className="object-cover" sizes="96px" />
                 </div>
               ) : (
-                <div className="w-24 h-24 rounded-apple bg-surface-elevated flex items-center justify-center flex-shrink-0">
-                  <Droplet className="w-8 h-8 text-text-tertiary" />
+                <div style={{ width: 96, height: 96, borderRadius: 'var(--radius-sm)', background: 'var(--off-paper)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Droplet className="w-8 h-8" style={{ color: 'var(--soft)' }} />
                 </div>
               )}
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-lg leading-tight">{product.name[lang]}</p>
-                {product.brand && <p className="text-sm text-text-secondary">{product.brand}</p>}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontWeight: 600, fontSize: 18, lineHeight: 1.2, margin: 0 }}>{product.name[lang]}</p>
+                {product.brand && <p className="sc-helper" style={{ margin: '4px 0 0' }}>{product.brand}</p>}
                 {variation && (
-                  <span className="inline-block mt-2 text-xs font-medium px-2 py-0.5 rounded bg-primary/10 text-primary">
+                  <span className="sc-badge-inline" style={{ marginTop: 8, color: 'var(--brand)', background: 'var(--brand-tint)' }}>
                     {variation.name}
                   </span>
                 )}
-                <p className="mt-2 font-semibold">
+                <p style={{ marginTop: 8, fontWeight: 600 }}>
                   {formatCurrency(product.basePrice, product.currency)}
                 </p>
               </div>
             </div>
 
             {productDescription && (
-              <p className="text-sm text-text-secondary mt-4 leading-relaxed">
+              <p className="sc-helper" style={{ marginTop: 16, lineHeight: 1.6 }}>
                 {productDescription}
               </p>
             )}
 
             {specEntries.length > 0 && (
-              <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+              <div className="grid grid-cols-2" style={{ marginTop: 16, columnGap: 24, rowGap: 8, fontSize: 14 }}>
                 {specEntries.map(([key, value]) => (
-                  <div key={key} className="flex justify-between border-b border-border/50 pb-1">
-                    <span className="text-text-secondary capitalize">{key}</span>
-                    <span className="font-medium text-right">{value}</span>
+                  <div key={key} className="sc-row-between" style={{ borderBottom: '1px solid var(--hairline)', paddingBottom: 4 }}>
+                    <span style={{ color: 'var(--soft)', textTransform: 'capitalize' }}>{key}</span>
+                    <span style={{ fontWeight: 600, textAlign: 'right' }}>{value}</span>
                   </div>
                 ))}
               </div>
             )}
 
             {product.installationTime > 0 && (
-              <div className="mt-4 flex items-center gap-2 text-sm text-text-secondary">
-                <Wrench className="w-4 h-4 text-primary" />
+              <div className="sc-row" style={{ marginTop: 16, gap: 8, fontSize: 14, color: 'var(--soft)' }}>
+                <Wrench className="w-4 h-4" style={{ color: 'var(--brand)' }} />
                 <span>
-                  {t.orders.estimatedInstallTime}: <span className="font-medium text-text-primary">{product.installationTime}h</span>
+                  {t.orders.estimatedInstallTime}: <span style={{ fontWeight: 600, color: 'var(--ink)' }}>{product.installationTime}h</span>
                 </span>
               </div>
             )}
 
-            {/* Service block */}
             {service && (
-              <div className="mt-6 pt-5 border-t border-border">
-                <div className="flex items-start justify-between gap-4">
+              <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--hairline)' }}>
+                <div className="sc-row-between" style={{ alignItems: 'flex-start', gap: 16 }}>
                   <div>
-                    <p className="font-semibold">{service.name[lang]}</p>
-                    <p className="text-sm text-text-secondary">{service.duration}h service · {service.category}</p>
+                    <p style={{ fontWeight: 600, margin: 0 }}>{service.name[lang]}</p>
+                    <p className="sc-helper" style={{ margin: '4px 0 0' }}>{service.duration}h service · {service.category}</p>
                   </div>
-                  <p className="font-semibold">{formatCurrency(service.price, service.currency)}</p>
+                  <p style={{ fontWeight: 600, margin: 0 }}>{formatCurrency(service.price, service.currency)}</p>
                 </div>
 
                 {service.includes && service.includes.length > 0 && (
-                  <div className="mt-3">
-                    <p className="text-xs uppercase tracking-wide text-text-tertiary font-semibold mb-2">{t.orders.whatsIncluded}</p>
-                    <ul className="space-y-1.5">
+                  <div style={{ marginTop: 12 }}>
+                    <p className="sc-eyebrow" style={{ marginBottom: 8 }}>{t.orders.whatsIncluded}</p>
+                    <ul className="sc-stack" style={{ gap: 6, padding: 0, margin: 0, listStyle: 'none' }}>
                       {service.includes.map((item, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm">
-                          <Check className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
+                        <li key={i} className="sc-row" style={{ gap: 8, alignItems: 'flex-start', fontSize: 14 }}>
+                          <Check className="w-4 h-4 flex-shrink-0" style={{ marginTop: 2, color: 'var(--brand)' }} />
                           <span>{item}</span>
                         </li>
                       ))}
@@ -368,23 +384,20 @@ export default function OrderDetailsPage() {
               </div>
             )}
 
-            {/* Maintenance preview */}
             {maint && (maint.ezerIntervalDays > 0 || maint.filters.length > 0) && (
-              <div className="mt-6 pt-5 border-t border-border">
-                <div className="flex items-center gap-2 mb-3">
-                  <Info className="w-4 h-4 text-primary" />
-                  <p className="text-xs uppercase tracking-wide text-text-tertiary font-semibold">
-                    {t.orders.maintenanceSchedule}
-                  </p>
+              <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--hairline)' }}>
+                <div className="sc-row" style={{ gap: 8, marginBottom: 12 }}>
+                  <Info className="w-4 h-4" style={{ color: 'var(--brand)' }} />
+                  <p className="sc-eyebrow" style={{ margin: 0 }}>{t.orders.maintenanceSchedule}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {maint.ezerIntervalDays > 0 && (
-                    <span className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary font-medium">
+                    <span className="sc-badge-inline" style={{ color: 'var(--brand)', background: 'var(--brand-tint)' }}>
                       {t.orders.ezerCheck} · {t.orders.every} {maint.ezerIntervalDays}d
                     </span>
                   )}
                   {maint.filters.map((f, i) => (
-                    <span key={i} className="text-xs px-3 py-1.5 rounded-full bg-surface-elevated border border-border font-medium">
+                    <span key={i} className="sc-badge-inline" style={{ background: 'var(--off-paper)', border: '1px solid var(--hairline)' }}>
                       {f.name} · {t.orders.every} {f.intervalDays}d
                     </span>
                   ))}
@@ -392,36 +405,34 @@ export default function OrderDetailsPage() {
               </div>
             )}
 
-            {/* Total */}
-            <div className="mt-6 pt-5 border-t border-border flex justify-between items-center">
-              <span className="text-lg font-semibold">{t.orders.total}</span>
-              <span className="text-2xl font-bold text-primary">
+            <div className="sc-row-between" style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--hairline)' }}>
+              <span style={{ fontSize: 18, fontWeight: 600 }}>{t.orders.total}</span>
+              <span className="sc-price" style={{ fontSize: 24 }}>
                 {formatCurrency(total, product.currency)}
               </span>
             </div>
           </div>
 
-          {/* Installation Address */}
-          <div className="apple-card">
-            <div className="flex items-center gap-2 mb-4">
-              <MapPin className="w-5 h-5 text-primary" />
-              <h2 className="text-xl font-semibold">{t.orders.installationAddress}</h2>
+          <div className="sc-card-static">
+            <div className="sc-row" style={{ gap: 8, marginBottom: 16 }}>
+              <MapPin className="w-5 h-5" style={{ color: 'var(--brand)' }} />
+              <h2 className="sc-h2" style={{ margin: 0 }}>{t.orders.installationAddress}</h2>
             </div>
 
             {overrideSaved && (
-              <div className="mb-4 p-3 bg-warning/10 border border-warning/30 rounded-apple flex items-start justify-between gap-3">
-                <div className="text-sm">
-                  <p className="font-medium text-warning">{t.orders.usingOneOffAddress}</p>
-                  <p className="text-text-secondary text-xs mt-0.5">
+              <div className="sc-row-between" style={{ marginBottom: 16, padding: 12, background: 'var(--warn-tint)', border: '1px solid var(--warn)', borderRadius: 'var(--radius-sm)', alignItems: 'flex-start', gap: 12 }}>
+                <div style={{ fontSize: 14 }}>
+                  <p style={{ fontWeight: 600, color: 'var(--warn)', margin: 0 }}>{t.orders.usingOneOffAddress}</p>
+                  <p className="sc-helper" style={{ marginTop: 2 }}>
                     {overrideSaved.street}, {overrideSaved.city}
                     {overrideSaved.state && `, ${overrideSaved.state}`} {overrideSaved.postalCode}
                   </p>
-                  <p className="text-text-tertiary text-xs mt-1">{t.orders.savedAddressNotChanged}</p>
+                  <p className="sc-helper" style={{ marginTop: 4, fontSize: 12 }}>{t.orders.savedAddressNotChanged}</p>
                 </div>
                 <button
                   type="button"
                   onClick={clearSavedOverride}
-                  className="text-xs text-warning hover:underline whitespace-nowrap"
+                  style={{ fontSize: 12, color: 'var(--warn)', background: 'transparent', border: 'none', cursor: 'pointer', textDecoration: 'underline', whiteSpace: 'nowrap' }}
                 >
                   {t.orders.revert}
                 </button>
@@ -429,7 +440,7 @@ export default function OrderDetailsPage() {
             )}
 
             {addresses.length > 0 && (
-              <div className="space-y-3">
+              <div className="sc-stack" style={{ gap: 12 }}>
                 {addresses.map((address) => {
                   const selected = selectedAddressId === address.id;
                   const editing = overrideForAddressId === address.id;
@@ -438,66 +449,61 @@ export default function OrderDetailsPage() {
                   return (
                     <div
                       key={address.id}
-                      className={`rounded-apple transition-all ${
-                        selected
-                          ? 'bg-primary text-white shadow-apple'
-                          : 'bg-surface hover:bg-surface-elevated border border-border'
-                      }`}
+                      style={{
+                        borderRadius: 'var(--radius-sm)',
+                        background: selected ? 'var(--brand-tint)' : 'var(--paper)',
+                        border: selected ? '2px solid var(--brand)' : '1px solid var(--hairline)',
+                        transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+                      }}
                     >
                       <button
                         type="button"
                         onClick={() => setSelectedAddressId(address.id)}
-                        className="w-full p-4 text-left"
+                        style={{ width: '100%', padding: 16, textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--ink)' }}
                       >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 mb-2 flex-wrap">
-                              <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded ${
-                                selected ? 'bg-white/20' : 'bg-surface-elevated'
-                              }`}>
+                        <div className="sc-row-between" style={{ alignItems: 'flex-start', gap: 12 }}>
+                          <div style={{ minWidth: 0 }}>
+                            <div className="flex flex-wrap gap-2" style={{ alignItems: 'center', marginBottom: 8 }}>
+                              <span className="sc-badge-inline" style={{ textTransform: 'uppercase', fontWeight: 700 }}>
                                 {address.label}
                               </span>
                               {address.isDefault && (
-                                <span className="text-xs px-2 py-0.5 rounded bg-success/20 text-success">
+                                <span className="sc-badge-inline" style={{ color: 'var(--brand)', background: 'var(--brand-tint)' }}>
                                   {o.defaultAddress}
                                 </span>
                               )}
                               {hasOverride && (
-                                <span className="text-xs px-2 py-0.5 rounded bg-warning/20 text-warning">
+                                <span className="sc-badge-inline" style={{ color: 'var(--warn)', background: 'var(--warn-tint)' }}>
                                   {o.oneOffAddress}
                                 </span>
                               )}
                             </div>
-                            <p className="font-medium mb-1 truncate">{address.street}</p>
-                            <p className={`text-sm ${selected ? 'text-white/80' : 'text-text-secondary'}`}>
+                            <p style={{ fontWeight: 600, margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{address.street}</p>
+                            <p style={{ fontSize: 14, color: 'var(--soft)', margin: 0 }}>
                               {address.city}
                               {address.state && `, ${address.state}`} {address.postalCode}
                             </p>
                             {address.landmark && (
-                              <p className={`text-xs mt-1 ${selected ? 'text-white/60' : 'text-text-tertiary'}`}>
-                                📍 {address.landmark}
-                              </p>
+                              <p style={{ fontSize: 12, marginTop: 4, color: 'var(--soft)' }}>📍 {address.landmark}</p>
                             )}
                           </div>
                           {selected && (
-                            <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center flex-shrink-0">
-                              <Check className="w-4 h-4 text-primary" />
+                            <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <Check className="w-4 h-4" style={{ color: 'var(--paper)' }} />
                             </div>
                           )}
                         </div>
                       </button>
 
                       {selected && !editing && (
-                        <div className={`px-4 pb-3 flex ${hasOverride ? 'justify-end' : 'justify-end'}`}>
+                        <div className="sc-row" style={{ padding: '0 16px 12px', justifyContent: 'flex-end' }}>
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               startOverride(address);
                             }}
-                            className={`text-xs font-medium inline-flex items-center gap-1 ${
-                              selected ? 'text-white/90 hover:text-white' : 'text-primary hover:text-primary-hover'
-                            }`}
+                            style={{ fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--brand)', background: 'transparent', border: 'none', cursor: 'pointer' }}
                           >
                             <Pencil className="w-3 h-3" />
                             {hasOverride ? t.orders.editOneOff : t.orders.useOneOff}
@@ -506,21 +512,19 @@ export default function OrderDetailsPage() {
                       )}
 
                       {editing && (
-                        <div className="bg-surface text-text-primary rounded-b-apple border-t border-border p-4 space-y-3">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-semibold text-sm">{t.orders.oneOffTitle}</h4>
+                        <div className="sc-stack" style={{ padding: 16, gap: 12, background: 'var(--paper)', borderTop: '1px solid var(--hairline)', borderRadius: '0 0 var(--radius-sm) var(--radius-sm)' }}>
+                          <div className="sc-row-between">
+                            <h4 style={{ fontWeight: 600, fontSize: 14, margin: 0 }}>{t.orders.oneOffTitle}</h4>
                             <button
                               type="button"
                               onClick={cancelOverride}
-                              className="text-text-tertiary hover:text-text-primary"
+                              style={{ color: 'var(--soft)', background: 'transparent', border: 'none', cursor: 'pointer' }}
                               aria-label={o.closeAria}
                             >
                               <X className="w-4 h-4" />
                             </button>
                           </div>
-                          <p className="text-xs text-text-secondary">
-                            {t.orders.oneOffDesc}
-                          </p>
+                          <p className="sc-helper" style={{ margin: 0 }}>{t.orders.oneOffDesc}</p>
 
                           <AddressAutocompleteField
                             value={overrideDraft}
@@ -528,18 +532,19 @@ export default function OrderDetailsPage() {
                             showLabel={false}
                           />
 
-                          <div className="flex gap-2">
+                          <div className="sc-row" style={{ gap: 8 }}>
                             <button
                               type="button"
                               onClick={saveOverride}
-                              className="flex-1 px-4 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-apple"
+                              className="sc-cta"
+                              style={{ flex: 1 }}
                             >
                               {t.orders.applyForInstallation}
                             </button>
                             <button
                               type="button"
                               onClick={cancelOverride}
-                              className="px-4 py-2 bg-surface border border-border text-sm font-semibold rounded-apple hover:bg-surface-elevated"
+                              className="sc-cta-ghost"
                             >
                               {t.common.cancel}
                             </button>
@@ -552,30 +557,31 @@ export default function OrderDetailsPage() {
               </div>
             )}
 
-            {/* Add new saved address */}
-            <div className="mt-4">
+            <div style={{ marginTop: 16 }}>
               {!showAddAddress ? (
                 <button
                   type="button"
                   onClick={() => setShowAddAddress(true)}
-                  className="w-full px-4 py-3 bg-surface hover:bg-surface-elevated border border-dashed border-border text-text-primary font-medium rounded-apple transition-all"
+                  className="sc-cta-ghost"
+                  style={{ width: '100%', borderStyle: 'dashed' }}
                 >
                   {t.orders.addNewAddress}
                 </button>
               ) : (
-                <div className="space-y-3 p-4 bg-surface-elevated rounded-apple border border-border">
-                  <h3 className="font-semibold">{t.orders.addSavedAddress}</h3>
+                <div className="sc-stack" style={{ gap: 12, padding: 16, background: 'var(--off-paper)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--hairline)' }}>
+                  <h3 style={{ fontWeight: 600, margin: 0 }}>{t.orders.addSavedAddress}</h3>
 
                   <AddressAutocompleteField
                     value={newAddress}
                     onChange={setNewAddress}
                   />
 
-                  <div className="flex gap-2">
+                  <div className="sc-row" style={{ gap: 8 }}>
                     <button
                       type="button"
                       onClick={handleAddAddress}
-                      className="flex-1 px-4 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-apple"
+                      className="sc-cta"
+                      style={{ flex: 1 }}
                     >
                       {t.orders.saveAddress}
                     </button>
@@ -585,7 +591,7 @@ export default function OrderDetailsPage() {
                         setShowAddAddress(false);
                         setNewAddress(EMPTY_ADDRESS_FORM);
                       }}
-                      className="px-4 py-2 bg-surface border border-border text-sm font-semibold rounded-apple hover:bg-surface-elevated"
+                      className="sc-cta-ghost"
                     >
                       {t.common.cancel}
                     </button>
@@ -595,55 +601,63 @@ export default function OrderDetailsPage() {
             </div>
           </div>
 
-          {/* Date */}
-          <div className="apple-card">
-            <div className="flex items-center gap-2 mb-4">
-              <Calendar className="w-5 h-5 text-primary" />
-              <h2 className="text-xl font-semibold">{t.orders.installationDate}</h2>
+          <div className="sc-card-static">
+            <div className="sc-row" style={{ gap: 8, marginBottom: 16 }}>
+              <Calendar className="w-5 h-5" style={{ color: 'var(--brand)' }} />
+              <h2 className="sc-h2" style={{ margin: 0 }}>{t.orders.installationDate}</h2>
             </div>
             <input
               type="date"
               value={installationDate}
               onChange={(e) => setInstallationDate(e.target.value)}
               min={minDate}
-              className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-apple focus:border-primary focus:outline-none transition-all text-lg"
+              className="sc-input"
+              style={{ fontSize: 16 }}
             />
           </div>
 
-          {/* Time Slot */}
-          <div className="apple-card">
-            <div className="flex items-center gap-2 mb-4">
-              <Clock className="w-5 h-5 text-primary" />
-              <h2 className="text-xl font-semibold">{t.orders.timeSlot}</h2>
+          <div className="sc-card-static">
+            <div className="sc-row" style={{ gap: 8, marginBottom: 16 }}>
+              <Clock className="w-5 h-5" style={{ color: 'var(--brand)' }} />
+              <h2 className="sc-h2" style={{ margin: 0 }}>{t.orders.timeSlot}</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {TIME_SLOTS.map((slot) => (
-                <button
-                  key={slot.value}
-                  type="button"
-                  onClick={() => setTimeSlot(slot.value)}
-                  className={`p-4 rounded-apple font-medium transition-all ${
-                    timeSlot === slot.value
-                      ? 'bg-primary text-white shadow-apple'
-                      : 'bg-surface hover:bg-surface-elevated border border-border'
-                  }`}
-                >
-                  {slot.label}
-                </button>
-              ))}
+              {TIME_SLOTS.map((slot) => {
+                const active = timeSlot === slot.value;
+                return (
+                  <button
+                    key={slot.value}
+                    type="button"
+                    onClick={() => setTimeSlot(slot.value)}
+                    style={{
+                      padding: 16,
+                      borderRadius: 'var(--radius-sm)',
+                      fontWeight: 600,
+                      background: active ? 'var(--brand-tint)' : 'var(--paper)',
+                      color: active ? 'var(--brand)' : 'var(--ink)',
+                      border: active ? '2px solid var(--brand)' : '1px solid var(--hairline)',
+                      cursor: 'pointer',
+                      transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+                    }}
+                  >
+                    {slot.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Continue */}
           <button
+            type="button"
             onClick={handleContinue}
             disabled={!selectedAddressId || !installationDate || !timeSlot}
-            className="w-full px-8 py-4 bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
+            className="sc-cta"
+            style={{ width: '100%', padding: '14px 24px', fontSize: 15 }}
           >
             {t.orders.continueToPhotos}
           </button>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

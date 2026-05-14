@@ -38,8 +38,6 @@ export default function PhotoCapture({ onCapture, onCancel, title, description }
 
   const handleUseCaptured = () => {
     if (!capturedImage) return;
-
-    // Convert base64 to File
     fetch(capturedImage)
       .then((res) => res.blob())
       .then((blob) => {
@@ -59,138 +57,144 @@ export default function PhotoCapture({ onCapture, onCancel, title, description }
     setFacingMode((prev) => (prev === 'user' ? 'environment' : 'user'));
   };
 
-  // Selection Mode
   if (mode === 'select') {
     return (
-      <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-        <div className="w-full max-w-md space-y-4">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold mb-2">{title}</h2>
-            <p className="text-text-secondary text-sm">{description}</p>
-          </div>
+      <div className="sc" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', minHeight: 'auto' }}>
+        <div style={{ width: '100%', maxWidth: 448 }}>
+          <div className="sc-card-static">
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <h2 className="sc-h1" style={{ marginBottom: 8 }}>{title}</h2>
+              <p className="sc-helper">{description}</p>
+            </div>
 
-          <div className="space-y-3">
-            {/* Take Photo Button */}
-            <button
-              onClick={() => setMode('camera')}
-              className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
-            >
-              <Camera className="w-6 h-6" />
-              {t.common?.takePhoto || 'Take Photo'}
-            </button>
+            <div className="sc-stack" style={{ gap: 12 }}>
+              <button
+                type="button"
+                onClick={() => setMode('camera')}
+                className="sc-cta"
+                style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '16px 24px' }}
+              >
+                <Camera className="w-6 h-6" />
+                {t.common?.takePhoto || 'Take Photo'}
+              </button>
 
-            {/* Choose File Button */}
-            <label className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-surface hover:bg-surface-elevated border-2 border-border hover:border-primary text-text-primary font-semibold rounded-apple transition-all hover:scale-[1.02] cursor-pointer">
-              <Upload className="w-6 h-6" />
-              {t.common?.chooseFile || 'Choose File'}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-            </label>
+              <label
+                className="sc-cta-ghost"
+                style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '16px 24px', cursor: 'pointer' }}
+              >
+                <Upload className="w-6 h-6" />
+                {t.common?.chooseFile || 'Choose File'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  style={{ display: 'none' }}
+                />
+              </label>
 
-            {/* Cancel Button */}
-            <button
-              onClick={onCancel}
-              className="w-full px-6 py-3 text-text-secondary hover:text-text-primary transition-colors"
-            >
-              {t.common.cancel}
-            </button>
+              <button
+                type="button"
+                onClick={onCancel}
+                style={{ width: '100%', padding: '12px 24px', color: 'var(--soft)', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+              >
+                {t.common.cancel}
+              </button>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  // Camera Mode
   if (mode === 'camera') {
     return (
-      <div className="fixed inset-0 bg-background z-50 flex flex-col">
-        {/* Header */}
-        <div className="p-4 flex items-center justify-between bg-surface/80 backdrop-blur-sm">
+      <div className="sc" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--paper)' }}>
+        <div className="sc-row-between" style={{ padding: 16, background: 'var(--paper)', borderBottom: '1px solid var(--hairline)' }}>
           <button
+            type="button"
             onClick={() => setMode('select')}
-            className="p-2 hover:bg-surface-elevated rounded-apple transition-all"
+            className="sc-cta-ghost"
+            style={{ padding: 8, width: 40, height: 40, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
           >
             <X className="w-6 h-6" />
           </button>
-          <h3 className="font-semibold">{title}</h3>
+          <h3 style={{ fontWeight: 600, margin: 0 }}>{title}</h3>
           <button
+            type="button"
             onClick={switchCamera}
-            className="p-2 hover:bg-surface-elevated rounded-apple transition-all"
+            className="sc-cta-ghost"
+            style={{ padding: 8, width: 40, height: 40, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
           >
             <RotateCw className="w-6 h-6" />
           </button>
         </div>
 
-        {/* Camera View */}
-        <div className="flex-1 relative bg-black">
+        <div style={{ flex: 1, position: 'relative', background: '#000' }}>
           <Webcam
             ref={webcamRef}
             audio={false}
             screenshotFormat="image/jpeg"
             videoConstraints={videoConstraints}
-            className="w-full h-full object-cover"
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
 
-          {/* Frame Guide Overlay */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-[90%] max-w-lg aspect-[4/3] border-4 border-primary/50 rounded-apple"></div>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+            <div style={{ width: '90%', maxWidth: 512, aspectRatio: '4 / 3', border: '4px solid var(--brand)', opacity: 0.5, borderRadius: 'var(--radius-sm)' }} />
           </div>
         </div>
 
-        {/* Capture Button */}
-        <div className="p-6 bg-surface/80 backdrop-blur-sm">
+        <div style={{ padding: 24, background: 'var(--paper)', borderTop: '1px solid var(--hairline)' }}>
           <button
+            type="button"
             onClick={handleCapture}
-            className="w-20 h-20 mx-auto flex items-center justify-center bg-primary hover:bg-primary-hover rounded-full transition-all hover:scale-110 shadow-apple"
+            style={{ width: 80, height: 80, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--brand)', borderRadius: '50%', border: 'none', cursor: 'pointer', transition: 'transform 150ms cubic-bezier(0.4, 0, 0.2, 1)' }}
           >
-            <div className="w-16 h-16 bg-white rounded-full"></div>
+            <div style={{ width: 64, height: 64, background: 'var(--paper)', borderRadius: '50%' }} />
           </button>
-          <p className="text-center text-sm text-text-secondary mt-3">{description}</p>
+          <p style={{ textAlign: 'center', fontSize: 14, color: 'var(--soft)', marginTop: 12 }}>{description}</p>
         </div>
       </div>
     );
   }
 
-  // Captured Mode
   if (mode === 'captured' && capturedImage) {
     return (
-      <div className="fixed inset-0 bg-background z-50 flex flex-col">
-        {/* Header */}
-        <div className="p-4 flex items-center justify-between bg-surface/80 backdrop-blur-sm">
-          <h3 className="font-semibold">Preview</h3>
+      <div className="sc" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--paper)' }}>
+        <div className="sc-row-between" style={{ padding: 16, background: 'var(--paper)', borderBottom: '1px solid var(--hairline)' }}>
+          <h3 style={{ fontWeight: 600, margin: 0 }}>Preview</h3>
           <button
+            type="button"
             onClick={() => setMode('select')}
-            className="p-2 hover:bg-surface-elevated rounded-apple transition-all"
+            className="sc-cta-ghost"
+            style={{ padding: 8, width: 40, height: 40, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
           >
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        {/* Preview */}
-        <div className="flex-1 bg-black p-4">
+        <div style={{ flex: 1, background: '#000', padding: 16 }}>
           <img
             src={capturedImage}
             alt="Captured"
-            className="w-full h-full object-contain"
+            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
           />
         </div>
 
-        {/* Actions */}
-        <div className="p-4 bg-surface/80 backdrop-blur-sm space-y-3">
+        <div className="sc-stack" style={{ padding: 16, gap: 12, background: 'var(--paper)', borderTop: '1px solid var(--hairline)' }}>
           <button
+            type="button"
             onClick={handleUseCaptured}
-            className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all"
+            className="sc-cta"
+            style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '16px 24px' }}
           >
             <Check className="w-5 h-5" />
             {t.common?.usePhoto || 'Use Photo'}
           </button>
           <button
+            type="button"
             onClick={handleRetake}
-            className="w-full px-6 py-3 bg-surface-elevated hover:bg-surface-secondary text-text-primary font-medium rounded-apple transition-all"
+            className="sc-cta-ghost"
+            style={{ width: '100%' }}
           >
             {t.common?.retake || 'Retake'}
           </button>
@@ -201,4 +205,3 @@ export default function PhotoCapture({ onCapture, onCancel, title, description }
 
   return null;
 }
-

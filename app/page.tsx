@@ -3,21 +3,23 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function Home() {
   const router = useRouter();
   const { user, userData, loading } = useAuth();
+  const { t } = useTranslation();
 
   useEffect(() => {
     // Redirect logged-in users to their dashboard
     if (user && userData && !loading) {
       const roleDashboards: Record<string, string> = {
         'admin': '/admin',
-        'sub-admin': '/sub-admin',
+        'sub-admin': '/admin',
         'technician': '/technician',
         'customer': '/customer',
       };
-      
+
       if (userData.role) {
         router.push(roleDashboards[userData.role] || '/login');
       } else {
@@ -34,7 +36,7 @@ export default function Home() {
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="text-center space-y-4">
         <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-        <p className="text-text-secondary">Loading...</p>
+        <p className="text-text-secondary">{t.common.loading}</p>
       </div>
     </div>
   );

@@ -7,13 +7,14 @@ export interface QueuedPhoto {
   filename: string;
   downloadUrl: string | null;
   queuedAt: number;
+  description?: string;
 }
 
-export async function enqueuePhoto(orderId: string, file: File): Promise<string> {
+export async function enqueuePhoto(orderId: string, file: File, description?: string): Promise<string> {
   if (typeof indexedDB === 'undefined') throw new Error('IndexedDB not available');
   const id = `p_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const blob = new Blob([await file.arrayBuffer()], { type: file.type });
-  const entry: QueuedPhoto = { id, orderId, blob, filename: file.name, downloadUrl: null, queuedAt: Date.now() };
+  const entry: QueuedPhoto = { id, orderId, blob, filename: file.name, downloadUrl: null, queuedAt: Date.now(), description };
   const db = await openDb();
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(PHOTO_QUEUE_STORE, 'readwrite');

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bell, Check, CheckCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Notification } from '@/types/notification';
 import {
   subscribeToUserNotifications,
@@ -11,24 +12,26 @@ import {
   markAllAsRead,
 } from '@/lib/services/notificationService';
 
-function timeAgo(timestamp: { toDate: () => Date } | null | undefined): string {
-  if (!timestamp) return '';
-  const date = timestamp.toDate();
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-
-  if (seconds < 60) return 'just now';
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString();
-}
-
 export default function NotificationBell() {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useTranslation();
+  const nb = t.components.notifications;
+
+  const timeAgo = (timestamp: { toDate: () => Date } | null | undefined): string => {
+    if (!timestamp) return '';
+    const date = timestamp.toDate();
+    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (seconds < 60) return nb.justNow;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return nb.minutesAgo.replace('{n}', String(minutes));
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return nb.hoursAgo.replace('{n}', String(hours));
+    const days = Math.floor(hours / 24);
+    if (days < 7) return nb.daysAgo.replace('{n}', String(days));
+    return date.toLocaleDateString();
+  };
+
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -75,7 +78,7 @@ export default function NotificationBell() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 rounded-apple hover:bg-surface-elevated transition-colors"
-        aria-label="Notifications"
+        aria-label={nb.bellAria}
       >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
@@ -89,14 +92,14 @@ export default function NotificationBell() {
         <div className="absolute right-0 mt-2 w-80 max-h-[480px] bg-surface border border-border rounded-apple shadow-apple-lg overflow-hidden z-50 flex flex-col animate-scale-in">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-            <h3 className="font-semibold">Notifications</h3>
+            <h3 className="font-semibold">{nb.title}</h3>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
                 className="flex items-center gap-1 text-xs text-primary hover:underline"
               >
                 <CheckCheck className="w-3 h-3" />
-                Mark all read
+                {nb.markAllRead}
               </button>
             )}
           </div>
@@ -106,7 +109,7 @@ export default function NotificationBell() {
             {notifications.length === 0 ? (
               <div className="text-center py-12 px-4">
                 <Bell className="w-10 h-10 text-text-tertiary mx-auto mb-2" />
-                <p className="text-sm text-text-secondary">No notifications yet</p>
+                <p className="text-sm text-text-secondary">{nb.noNotificationsYet}</p>
               </div>
             ) : (
               notifications.map((n) => (

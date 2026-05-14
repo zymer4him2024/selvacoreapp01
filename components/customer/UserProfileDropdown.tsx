@@ -15,7 +15,6 @@ export default function UserProfileDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -32,10 +31,10 @@ export default function UserProfileDropdown() {
   const handleLogout = async () => {
     try {
       await auth.signOut();
-      toast.success('Logged out successfully');
+      toast.success(t.components.profileDropdown.loggedOut);
       router.push('/login');
-    } catch (error) {
-      toast.error('Failed to log out');
+    } catch {
+      toast.error(t.components.profileDropdown.failedLogout);
     }
   };
 
@@ -62,7 +61,6 @@ export default function UserProfileDropdown() {
     },
   ];
 
-  // Get user initials for avatar
   const getInitials = () => {
     if (!userData?.displayName) return 'U';
     const names = userData.displayName.split(' ');
@@ -72,99 +70,227 @@ export default function UserProfileDropdown() {
     return names[0][0];
   };
 
+  const errorColor = '#ef4444';
+
   return (
-    <div className="relative" ref={dropdownRef}>
-      {/* User Avatar Button */}
+    <div style={{ position: 'relative' }} ref={dropdownRef}>
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 hover:bg-surface-elevated rounded-apple transition-all"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '8px 12px',
+          background: 'transparent',
+          border: 'none',
+          borderRadius: 'var(--radius-md)',
+          cursor: 'pointer',
+          transition: 'background 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
       >
-        {/* Avatar */}
-        <div className="relative">
+        <div style={{ position: 'relative' }}>
           {userData?.photoURL ? (
             <img
               src={userData.photoURL}
               alt={userData.displayName || 'User'}
-              className="w-10 h-10 rounded-full object-cover object-center border-2 border-border"
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                objectFit: 'cover',
+                border: '2px solid var(--hairline)',
+              }}
             />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-semibold text-sm">
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                background: 'var(--brand)',
+                color: 'var(--paper)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700,
+                fontSize: 14,
+              }}
+            >
               {getInitials()}
             </div>
           )}
-          {/* Online indicator */}
-          <div className="absolute bottom-0 right-0 w-3 h-3 bg-success rounded-full border-2 border-background"></div>
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              right: 0,
+              width: 12,
+              height: 12,
+              background: 'var(--brand)',
+              borderRadius: '50%',
+              border: '2px solid var(--paper)',
+            }}
+          />
         </div>
 
-        {/* User Name (hidden on mobile) */}
-        <span className="hidden md:block text-sm font-medium text-text-primary max-w-[150px] truncate">
+        <span
+          className="hidden md:block"
+          style={{
+            fontSize: 14,
+            fontWeight: 600,
+            color: 'var(--ink)',
+            maxWidth: 150,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
           {userData?.displayName?.split(' ')[0] || 'User'}
         </span>
 
-        {/* Chevron */}
         <ChevronDown
-          className={`w-4 h-4 text-text-tertiary transition-transform ${
-            isOpen ? 'rotate-180' : ''
-          }`}
+          className="w-4 h-4"
+          style={{
+            color: 'var(--soft)',
+            transition: 'transform 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+          }}
         />
       </button>
 
-      {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-surface border border-border rounded-apple shadow-apple overflow-hidden animate-slide-up z-50">
-          {/* User Info Header */}
-          <div className="p-4 border-b border-border bg-surface-elevated">
-            <div className="flex items-center gap-3">
+        <div
+          style={{
+            position: 'absolute',
+            right: 0,
+            marginTop: 8,
+            width: 264,
+            background: 'var(--paper)',
+            border: '1px solid var(--hairline)',
+            borderRadius: 'var(--radius-md)',
+            boxShadow: 'var(--shadow-lg)',
+            overflow: 'hidden',
+            zIndex: 50,
+          }}
+        >
+          <div
+            style={{
+              padding: 16,
+              borderBottom: '1px solid var(--hairline)',
+              background: 'var(--off-paper)',
+            }}
+          >
+            <div className="sc-row" style={{ alignItems: 'center', gap: 12 }}>
               {userData?.photoURL ? (
                 <img
                   src={userData.photoURL}
                   alt={userData.displayName || 'User'}
-                  className="w-12 h-12 rounded-full object-cover object-center"
+                  style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover' }}
                 />
               ) : (
-                <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-semibold">
+                <div
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: '50%',
+                    background: 'var(--brand)',
+                    color: 'var(--paper)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 700,
+                  }}
+                >
                   {getInitials()}
                 </div>
               )}
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-text-primary truncate">
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p
+                  style={{
+                    fontWeight: 700,
+                    color: 'var(--ink)',
+                    margin: 0,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
                   {userData?.displayName || 'User'}
                 </p>
-                <p className="text-sm text-text-tertiary truncate">
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: 'var(--soft)',
+                    margin: 0,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
                   {userData?.email || user?.email}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Menu Items */}
-          <div className="py-2">
+          <div style={{ padding: '8px 0' }}>
             {menuItems.map((item, index) => {
               const Icon = item.icon;
               return (
                 <button
                   key={index}
+                  type="button"
                   onClick={() => {
                     item.action();
                     setIsOpen(false);
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-elevated transition-colors text-left"
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '12px 16px',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'background 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                 >
-                  <Icon className="w-5 h-5 text-text-tertiary" />
-                  <span className="text-sm text-text-primary">{item.label}</span>
+                  <Icon className="w-5 h-5" style={{ color: 'var(--soft)' }} />
+                  <span style={{ fontSize: 14, color: 'var(--ink)' }}>{item.label}</span>
                 </button>
               );
             })}
           </div>
 
-          {/* Logout */}
-          <div className="border-t border-border">
+          <div style={{ borderTop: '1px solid var(--hairline)' }}>
             <button
+              type="button"
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-error/10 transition-colors text-left text-error"
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '12px 16px',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                textAlign: 'left',
+                color: errorColor,
+                transition: 'background 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             >
               <LogOut className="w-5 h-5" />
-              <span className="text-sm font-medium">
+              <span style={{ fontSize: 14, fontWeight: 600 }}>
                 {t.customer.logout || 'Log Out'}
               </span>
             </button>
@@ -174,4 +300,3 @@ export default function UserProfileDropdown() {
     </div>
   );
 }
-

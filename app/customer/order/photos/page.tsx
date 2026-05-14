@@ -12,9 +12,148 @@ import UploadProgress from '@/components/customer/UploadProgress';
 import OrderProgressTracker from '@/components/customer/OrderProgressTracker';
 import { validatePhoto, getQualityColor, getQualityLabel, PhotoQuality } from '@/lib/utils/photoValidator';
 import { compressImage, formatFileSize, calculateCompressionRatio } from '@/lib/utils/imageCompressor';
+import { uploadAllOrCleanup } from '@/lib/utils/storageUploader';
 import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
+
+type GuideType = 'waterSource' | 'productLocation' | 'fullShot' | 'waterRunning';
+
+interface PhotoSectionProps {
+  title: string;
+  description: string;
+  guideType: GuideType;
+  file: File | null;
+  preview: string;
+  quality: PhotoQuality | null;
+  dragging: string | null;
+  dragKey: GuideType;
+  onCameraClick: () => void;
+  onFileSelect: (file: File | null) => void;
+  onRemove: () => void;
+  onDragEnter: (e: React.DragEvent) => void;
+  onDragOver: (e: React.DragEvent) => void;
+  onDragLeave: (e: React.DragEvent) => void;
+  onDrop: (e: React.DragEvent) => void;
+  uploadedLabel: string;
+  takeLabel: string;
+  chooseLabel: string;
+  dragLabel: string;
+  altText: string;
+}
+
+function PhotoSection({
+  title,
+  description,
+  guideType,
+  file,
+  preview,
+  quality,
+  dragging,
+  dragKey,
+  onCameraClick,
+  onFileSelect,
+  onRemove,
+  onDragEnter,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  uploadedLabel,
+  takeLabel,
+  chooseLabel,
+  dragLabel,
+  altText,
+}: PhotoSectionProps) {
+  return (
+    <div className="sc-card-static">
+      <div className="sc-row-between" style={{ alignItems: 'flex-start', marginBottom: 16 }}>
+        <div style={{ flex: 1 }}>
+          <h3 style={{ fontWeight: 600, marginBottom: 4 }}>
+            {title} <span style={{ color: 'var(--warn)' }}>*</span>
+          </h3>
+          <p className="sc-helper" style={{ marginBottom: 8 }}>{description}</p>
+          <PhotoGuide type={guideType} />
+        </div>
+        {file && (
+          <div className="sc-row" style={{ gap: 8, color: 'var(--brand)' }}>
+            <Check className="w-5 h-5" />
+            <span style={{ fontSize: 14, fontWeight: 600 }}>{uploadedLabel}</span>
+          </div>
+        )}
+      </div>
+
+      {preview ? (
+        <div className="sc-stack" style={{ gap: 12 }}>
+          <div style={{ position: 'relative' }}>
+            <div style={{ width: '100%', height: 320, background: 'var(--off-paper)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+              <img
+                src={preview}
+                alt={altText}
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={onRemove}
+              style={{ position: 'absolute', top: 12, right: 12, padding: 8, background: 'var(--warn)', borderRadius: '50%', border: 'none', cursor: 'pointer' }}
+            >
+              <X className="w-4 h-4" style={{ color: 'var(--paper)' }} />
+            </button>
+          </div>
+
+          {quality && (
+            <div className={`p-3 rounded ${getQualityColor(quality.score)}`} style={{ borderRadius: 'var(--radius-sm)' }}>
+              <p style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>{getQualityLabel(quality.score)}</p>
+              <p style={{ fontSize: 12, margin: 0 }}>{quality.suggestions[0]}</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="sc-stack" style={{ gap: 12 }}>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={onCameraClick}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, border: '2px dashed var(--hairline)', borderRadius: 'var(--radius-sm)', background: 'transparent', cursor: 'pointer', color: 'var(--ink)', transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)' }}
+            >
+              <Camera className="w-8 h-8" style={{ color: 'var(--brand)', marginBottom: 8 }} />
+              <span style={{ fontSize: 14, fontWeight: 600 }}>{takeLabel}</span>
+            </button>
+            <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, border: '2px dashed var(--hairline)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)' }}>
+              <Upload className="w-8 h-8" style={{ color: 'var(--brand)', marginBottom: 8 }} />
+              <span style={{ fontSize: 14, fontWeight: 600 }}>{chooseLabel}</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => onFileSelect(e.target.files?.[0] || null)}
+                style={{ display: 'none' }}
+              />
+            </label>
+          </div>
+
+          <div
+            onDragEnter={onDragEnter}
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            onDrop={onDrop}
+            style={{
+              padding: 32,
+              border: '2px dashed',
+              borderColor: dragging === dragKey ? 'var(--brand)' : 'var(--hairline)',
+              borderRadius: 'var(--radius-sm)',
+              textAlign: 'center',
+              transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+              background: dragging === dragKey ? 'var(--brand-tint)' : 'var(--off-paper)',
+              transform: dragging === dragKey ? 'scale(1.02)' : 'scale(1)',
+            }}
+          >
+            <p style={{ fontSize: 14, color: 'var(--soft)', margin: 0 }}>{dragLabel}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function SitePhotosPage() {
   const router = useRouter();
@@ -184,30 +323,29 @@ export default function SitePhotosPage() {
       const tempOrderId = uuidv4();
       const basePath = `orders/${tempOrderId}/site-photos`;
 
-      // Upload files in parallel (only upload files that exist)
-      const uploadPromises = [];
-      const files = [waterSourceFile, productLocationFile, fullShotFile, waterRunningFile];
+      // Upload files in parallel; if any fail, already-uploaded files are deleted
+      // from Storage to prevent orphans.
+      const named = [
+        { key: 'waterSource' as const, file: waterSourceFile },
+        { key: 'productLocation' as const, file: productLocationFile },
+        { key: 'fullShot' as const, file: fullShotFile },
+        { key: 'waterRunning' as const, file: waterRunningFile },
+      ].filter((x): x is { key: 'waterSource' | 'productLocation' | 'fullShot' | 'waterRunning'; file: File } => x.file !== null);
 
-      for (let i = 0; i < files.length; i++) {
-        if (files[i]) {
-          uploadPromises.push(uploadFile(files[i]!, basePath));
-        } else {
-          uploadPromises.push(Promise.resolve(null));
-        }
-      }
-      
-      const [waterSourceUrl, productLocationUrl, fullShotUrl, waterRunningUrl] = await Promise.all(uploadPromises);
+      const urls = await uploadAllOrCleanup(named, ({ file }) => uploadFile(file, basePath));
 
-      // Store URLs in sessionStorage
+      const sitePhotos: Record<'waterSource' | 'productLocation' | 'fullShot' | 'waterRunning', string | null> = {
+        waterSource: null,
+        productLocation: null,
+        fullShot: null,
+        waterRunning: null,
+      };
+      named.forEach((nf, i) => { sitePhotos[nf.key] = urls[i]; });
+
       const orderData = JSON.parse(sessionStorage.getItem('orderData') || '{}');
       sessionStorage.setItem('orderData', JSON.stringify({
         ...orderData,
-        sitePhotos: {
-          waterSource: waterSourceUrl,
-          productLocation: productLocationUrl,
-          fullShot: fullShotUrl,
-          waterRunning: waterRunningUrl,
-        },
+        sitePhotos,
       }));
 
       toast.success(t.orders.photosUploaded);
@@ -221,388 +359,182 @@ export default function SitePhotosPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <div className="bg-surface border-b border-border sticky top-0 z-10 backdrop-blur-lg bg-surface/80">
-        <div className="max-w-3xl mx-auto px-4 lg:px-8 py-4">
+    <div className="sc">
+      <header className="sc-nav">
+        <div className="sc-nav-inner">
           <button
+            type="button"
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
+            className="sc-nav-link"
+            style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}
           >
             <ArrowLeft className="w-5 h-5" />
-            {t.common.back}
+            <span className="sc-nav-text">{t.common.back}</span>
           </button>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-3xl mx-auto px-4 lg:px-8 py-8">
-        <div className="space-y-8 animate-fade-in">
-          {/* Progress Tracker */}
+      <main className="sc-main" style={{ maxWidth: 720 }}>
+        <div className="sc-stack-lg">
           <OrderProgressTracker currentStep={3} />
 
-          {/* Header */}
-          <div className="text-center">
-            <h1 className="text-3xl font-bold mb-2">{t.orders.sitePhotos}</h1>
-            <p className="text-text-secondary">
-              {t.orders.sitePhotosDesc}
-            </p>
+          <div style={{ textAlign: 'center' }}>
+            <h1 className="sc-h1">{t.orders.sitePhotos}</h1>
+            <p className="sc-lede">{t.orders.sitePhotosDesc}</p>
           </div>
 
-          {/* Upload Instructions */}
-          <div className="apple-card bg-primary/5 border-primary/20">
-            <p className="text-sm text-text-secondary">
-              {t.orders.sitePhotosInstruction}
-            </p>
+          <div className="sc-card-static" style={{ background: 'var(--brand-tint)', border: '1px solid var(--brand)' }}>
+            <p className="sc-helper" style={{ margin: 0 }}>{t.orders.sitePhotosInstruction}</p>
           </div>
 
-          {/* Photo Uploads */}
-          <div className="space-y-6">
+          <div className="sc-stack-lg">
             {/* 1. Water Source */}
-            <div className="apple-card">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="font-semibold mb-1">
-                    {t.orders.waterSource} <span className="text-error">*</span>
+            <PhotoSection
+              title={t.orders.waterSource}
+              description={t.orders.waterSourceDesc}
+              guideType="waterSource"
+              file={waterSourceFile}
+              preview={waterSourcePreview}
+              quality={waterSourceQuality}
+              dragging={dragging}
+              dragKey="waterSource"
+              onCameraClick={() => setShowPhotoCapture('waterSource')}
+              onFileSelect={(f) => handleFileChange(f, 'waterSource')}
+              onRemove={() => removeFile('waterSource')}
+              onDragEnter={(e) => handleDragEnter(e, 'waterSource')}
+              onDragOver={(e) => e.preventDefault()}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, 'waterSource')}
+              uploadedLabel={t.orders.uploaded}
+              takeLabel={t.common.takePhoto}
+              chooseLabel={t.common.chooseFile}
+              dragLabel={t.orders.dragDropPhoto}
+              altText={t.orders.waterSourceAlt}
+            />
+
+            <PhotoSection
+              title={t.orders.placeForEquipment}
+              description={t.orders.placeForEquipmentDesc}
+              guideType="productLocation"
+              file={productLocationFile}
+              preview={productLocationPreview}
+              quality={productLocationQuality}
+              dragging={dragging}
+              dragKey="productLocation"
+              onCameraClick={() => setShowPhotoCapture('productLocation')}
+              onFileSelect={(f) => handleFileChange(f, 'productLocation')}
+              onRemove={() => removeFile('productLocation')}
+              onDragEnter={(e) => handleDragEnter(e, 'productLocation')}
+              onDragOver={(e) => e.preventDefault()}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, 'productLocation')}
+              uploadedLabel={t.orders.uploaded}
+              takeLabel={t.common.takePhoto}
+              chooseLabel={t.common.chooseFile}
+              dragLabel={t.orders.dragDropPhoto}
+              altText={t.orders.productLocationAlt}
+            />
+
+            <PhotoSection
+              title={t.orders.fullShotPhoto}
+              description={t.orders.fullShotDesc}
+              guideType="fullShot"
+              file={fullShotFile}
+              preview={fullShotPreview}
+              quality={fullShotQuality}
+              dragging={dragging}
+              dragKey="fullShot"
+              onCameraClick={() => setShowPhotoCapture('fullShot')}
+              onFileSelect={(f) => handleFileChange(f, 'fullShot')}
+              onRemove={() => removeFile('fullShot')}
+              onDragEnter={(e) => handleDragEnter(e, 'fullShot')}
+              onDragOver={(e) => e.preventDefault()}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, 'fullShot')}
+              uploadedLabel={t.orders.uploaded}
+              takeLabel={t.common.takePhoto}
+              chooseLabel={t.common.chooseFile}
+              dragLabel={t.orders.dragDropPhoto}
+              altText={t.orders.fullShotAlt}
+            />
+
+            <div className="sc-card-static">
+              <div className="sc-row-between" style={{ alignItems: 'flex-start', marginBottom: 16 }}>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ fontWeight: 600, marginBottom: 4 }}>
+                    {t.orders.waterRunningVideo} <span style={{ color: 'var(--warn)' }}>*</span>
                   </h3>
-                  <p className="text-sm text-text-secondary mb-2">
-                    {t.orders.waterSourceDesc}
-                  </p>
-                  <PhotoGuide type="waterSource" />
-                </div>
-                {waterSourceFile && (
-                  <div className="flex items-center gap-2 text-success">
-                    <Check className="w-5 h-5" />
-                    <span className="text-sm font-medium">{t.orders.uploaded}</span>
-                  </div>
-                )}
-              </div>
-
-              {waterSourcePreview ? (
-                <div className="space-y-3">
-                  <div className="relative">
-                    <div className="w-full h-80 bg-surface-elevated rounded-apple overflow-hidden">
-                      <img
-                        src={waterSourcePreview}
-                        alt={t.orders.waterSourceAlt}
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                    <button
-                      onClick={() => removeFile('waterSource')}
-                      className="absolute top-3 right-3 p-2 bg-error rounded-full hover:bg-error/80 transition-colors shadow-apple"
-                    >
-                      <X className="w-4 h-4 text-white" />
-                    </button>
-                  </div>
-                  
-                  {/* Quality Indicator */}
-                  {waterSourceQuality && (
-                    <div className={`p-3 rounded-apple ${getQualityColor(waterSourceQuality.score)}`}>
-                      <p className="text-sm font-medium mb-1">{getQualityLabel(waterSourceQuality.score)}</p>
-                      <p className="text-xs">{waterSourceQuality.suggestions[0]}</p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {/* Camera & Upload Buttons */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => setShowPhotoCapture('waterSource')}
-                      className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-border rounded-apple hover:border-primary hover:bg-primary/5 transition-all"
-                    >
-                      <Camera className="w-8 h-8 text-primary mb-2" />
-                      <span className="text-sm font-medium">{t.common.takePhoto}</span>
-                    </button>
-                    <label className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-border rounded-apple hover:border-primary hover:bg-primary/5 transition-all cursor-pointer">
-                      <Upload className="w-8 h-8 text-primary mb-2" />
-                      <span className="text-sm font-medium">{t.common.chooseFile}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleFileChange(e.target.files?.[0] || null, 'waterSource')}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                  
-                  {/* Drag & Drop Zone */}
-                  <div
-                    onDragEnter={(e) => handleDragEnter(e, 'waterSource')}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, 'waterSource')}
-                    className={`
-                      p-8 border-2 border-dashed rounded-apple text-center transition-all
-                      ${dragging === 'waterSource' 
-                        ? 'border-primary bg-primary/10 scale-105' 
-                        : 'border-border/50 bg-surface-elevated/50'
-                      }
-                    `}
-                  >
-                    <p className="text-sm text-text-tertiary">
-                      {t.orders.dragDropPhoto}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 2. Product Location */}
-            <div className="apple-card">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="font-semibold mb-1">
-                    {t.orders.placeForEquipment} <span className="text-error">*</span>
-                  </h3>
-                  <p className="text-sm text-text-secondary mb-2">
-                    {t.orders.placeForEquipmentDesc}
-                  </p>
-                  <PhotoGuide type="productLocation" />
-                </div>
-                {productLocationFile && (
-                  <div className="flex items-center gap-2 text-success">
-                    <Check className="w-5 h-5" />
-                    <span className="text-sm font-medium">{t.orders.uploaded}</span>
-                  </div>
-                )}
-              </div>
-
-              {productLocationPreview ? (
-                <div className="space-y-3">
-                  <div className="relative">
-                    <div className="w-full h-80 bg-surface-elevated rounded-apple overflow-hidden">
-                      <img
-                        src={productLocationPreview}
-                        alt={t.orders.productLocationAlt}
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                    <button
-                      onClick={() => removeFile('productLocation')}
-                      className="absolute top-3 right-3 p-2 bg-error rounded-full hover:bg-error/80 transition-colors shadow-apple"
-                    >
-                      <X className="w-4 h-4 text-white" />
-                    </button>
-                  </div>
-                  
-                  {/* Quality Indicator */}
-                  {productLocationQuality && (
-                    <div className={`p-3 rounded-apple ${getQualityColor(productLocationQuality.score)}`}>
-                      <p className="text-sm font-medium mb-1">{getQualityLabel(productLocationQuality.score)}</p>
-                      <p className="text-xs">{productLocationQuality.suggestions[0]}</p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {/* Camera & Upload Buttons */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => setShowPhotoCapture('productLocation')}
-                      className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-border rounded-apple hover:border-primary hover:bg-primary/5 transition-all"
-                    >
-                      <Camera className="w-8 h-8 text-primary mb-2" />
-                      <span className="text-sm font-medium">{t.common.takePhoto}</span>
-                    </button>
-                    <label className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-border rounded-apple hover:border-primary hover:bg-primary/5 transition-all cursor-pointer">
-                      <Upload className="w-8 h-8 text-primary mb-2" />
-                      <span className="text-sm font-medium">{t.common.chooseFile}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleFileChange(e.target.files?.[0] || null, 'productLocation')}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                  
-                  {/* Drag & Drop Zone */}
-                  <div
-                    onDragEnter={(e) => handleDragEnter(e, 'productLocation')}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, 'productLocation')}
-                    className={`
-                      p-8 border-2 border-dashed rounded-apple text-center transition-all
-                      ${dragging === 'productLocation' 
-                        ? 'border-primary bg-primary/10 scale-105' 
-                        : 'border-border/50 bg-surface-elevated/50'
-                      }
-                    `}
-                  >
-                    <p className="text-sm text-text-tertiary">
-                      {t.orders.dragDropPhoto}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 3. Full Shot Photo */}
-            <div className="apple-card">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="font-semibold mb-1">
-                    {t.orders.fullShotPhoto} <span className="text-error">*</span>
-                  </h3>
-                  <p className="text-sm text-text-secondary mb-2">
-                    {t.orders.fullShotDesc}
-                  </p>
-                  <PhotoGuide type="fullShot" />
-                </div>
-                {fullShotFile && (
-                  <div className="flex items-center gap-2 text-success">
-                    <Check className="w-5 h-5" />
-                    <span className="text-sm font-medium">{t.orders.uploaded}</span>
-                  </div>
-                )}
-              </div>
-
-              {fullShotPreview ? (
-                <div className="space-y-3">
-                  <div className="relative">
-                    <div className="w-full h-80 bg-surface-elevated rounded-apple overflow-hidden">
-                      <img
-                        src={fullShotPreview}
-                        alt={t.orders.fullShotAlt}
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                    <button
-                      onClick={() => removeFile('fullShot')}
-                      className="absolute top-3 right-3 p-2 bg-error rounded-full hover:bg-error/80 transition-colors shadow-apple"
-                    >
-                      <X className="w-4 h-4 text-white" />
-                    </button>
-                  </div>
-                  
-                  {/* Quality Indicator */}
-                  {fullShotQuality && (
-                    <div className={`p-3 rounded-apple ${getQualityColor(fullShotQuality.score)}`}>
-                      <p className="text-sm font-medium mb-1">{getQualityLabel(fullShotQuality.score)}</p>
-                      <p className="text-xs">{fullShotQuality.suggestions[0]}</p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {/* Camera & Upload Buttons */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => setShowPhotoCapture('fullShot')}
-                      className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-border rounded-apple hover:border-primary hover:bg-primary/5 transition-all"
-                    >
-                      <Camera className="w-8 h-8 text-primary mb-2" />
-                      <span className="text-sm font-medium">{t.common.takePhoto}</span>
-                    </button>
-                    <label className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-border rounded-apple hover:border-primary hover:bg-primary/5 transition-all cursor-pointer">
-                      <Upload className="w-8 h-8 text-primary mb-2" />
-                      <span className="text-sm font-medium">{t.common.chooseFile}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleFileChange(e.target.files?.[0] || null, 'fullShot')}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                  
-                  {/* Drag & Drop Zone */}
-                  <div
-                    onDragEnter={(e) => handleDragEnter(e, 'fullShot')}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, 'fullShot')}
-                    className={`
-                      p-8 border-2 border-dashed rounded-apple text-center transition-all
-                      ${dragging === 'fullShot' 
-                        ? 'border-primary bg-primary/10 scale-105' 
-                        : 'border-border/50 bg-surface-elevated/50'
-                      }
-                    `}
-                  >
-                    <p className="text-sm text-text-tertiary">
-                      {t.orders.dragDropPhoto}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 4. Water Running Video */}
-            <div className="apple-card">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="font-semibold mb-1">
-                    {t.orders.waterRunningVideo} <span className="text-error">*</span>
-                  </h3>
-                  <p className="text-sm text-text-secondary mb-2">
-                    {t.orders.waterRunningDesc}
-                  </p>
+                  <p className="sc-helper" style={{ marginBottom: 8 }}>{t.orders.waterRunningDesc}</p>
                   <PhotoGuide type="waterRunning" />
                 </div>
                 {waterRunningFile && (
-                  <div className="flex items-center gap-2 text-success">
+                  <div className="sc-row" style={{ gap: 8, color: 'var(--brand)' }}>
                     <Check className="w-5 h-5" />
-                    <span className="text-sm font-medium">{t.orders.uploaded}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>{t.orders.uploaded}</span>
                   </div>
                 )}
               </div>
 
               {waterRunningPreview ? (
-                <div className="relative">
+                <div style={{ position: 'relative' }}>
                   <video
                     src={waterRunningPreview}
                     controls
-                    className="w-full h-64 rounded-apple bg-black"
+                    style={{ width: '100%', height: 256, borderRadius: 'var(--radius-sm)', background: '#000' }}
                   />
                   <button
+                    type="button"
                     onClick={() => removeFile('waterRunning')}
-                    className="absolute top-3 right-3 p-2 bg-error rounded-full hover:bg-error/80 transition-colors shadow-apple"
+                    style={{ position: 'absolute', top: 12, right: 12, padding: 8, background: 'var(--warn)', borderRadius: '50%', border: 'none', cursor: 'pointer' }}
                   >
-                    <X className="w-4 h-4 text-white" />
+                    <X className="w-4 h-4" style={{ color: 'var(--paper)' }} />
                   </button>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {/* Camera & Upload Buttons */}
+                <div className="sc-stack" style={{ gap: 12 }}>
                   <div className="grid grid-cols-2 gap-3">
                     <button
+                      type="button"
                       onClick={() => setShowPhotoCapture('waterRunning')}
-                      className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-border rounded-apple hover:border-primary hover:bg-primary/5 transition-all"
+                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, border: '2px dashed var(--hairline)', borderRadius: 'var(--radius-sm)', background: 'transparent', cursor: 'pointer', color: 'var(--ink)', transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)' }}
                     >
-                      <Camera className="w-8 h-8 text-primary mb-2" />
-                      <span className="text-sm font-medium">{t.orders.takeVideo}</span>
+                      <Camera className="w-8 h-8" style={{ color: 'var(--brand)', marginBottom: 8 }} />
+                      <span style={{ fontSize: 14, fontWeight: 600 }}>{t.orders.takeVideo}</span>
                     </button>
-                    <label className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-border rounded-apple hover:border-primary hover:bg-primary/5 transition-all cursor-pointer">
-                      <Upload className="w-8 h-8 text-primary mb-2" />
-                      <span className="text-sm font-medium">{t.common.chooseFile}</span>
+                    <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, border: '2px dashed var(--hairline)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)' }}>
+                      <Upload className="w-8 h-8" style={{ color: 'var(--brand)', marginBottom: 8 }} />
+                      <span style={{ fontSize: 14, fontWeight: 600 }}>{t.common.chooseFile}</span>
                       <input
                         type="file"
                         accept="video/*"
                         onChange={(e) => handleFileChange(e.target.files?.[0] || null, 'waterRunning')}
-                        className="hidden"
+                        style={{ display: 'none' }}
                       />
                     </label>
                   </div>
-                  
-                  {/* Drag & Drop Zone */}
+
                   <div
                     onDragEnter={(e) => handleDragEnter(e, 'waterRunning')}
                     onDragOver={(e) => e.preventDefault()}
                     onDragLeave={handleDragLeave}
                     onDrop={(e) => handleDrop(e, 'waterRunning')}
-                    className={`h-32 border-2 border-dashed rounded-apple transition-all cursor-pointer flex items-center justify-center ${
-                      dragging === 'waterRunning'
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary hover:bg-surface-elevated'
-                    }`}
+                    style={{
+                      height: 128,
+                      border: '2px dashed',
+                      borderColor: dragging === 'waterRunning' ? 'var(--brand)' : 'var(--hairline)',
+                      borderRadius: 'var(--radius-sm)',
+                      transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: dragging === 'waterRunning' ? 'var(--brand-tint)' : 'transparent',
+                    }}
                   >
-                    <div className="text-center">
-                      <Upload className="w-8 h-8 text-text-tertiary mx-auto mb-2" />
-                      <span className="text-sm text-text-secondary">{t.orders.dragDropVideo}</span>
-                      <span className="text-xs text-text-tertiary block mt-1">{t.orders.videoFormatHint}</span>
+                    <div style={{ textAlign: 'center' }}>
+                      <Upload className="w-8 h-8 mx-auto" style={{ color: 'var(--soft)', marginBottom: 8 }} />
+                      <span style={{ fontSize: 14, color: 'var(--soft)' }}>{t.orders.dragDropVideo}</span>
+                      <span style={{ fontSize: 12, color: 'var(--soft)', display: 'block', marginTop: 4 }}>{t.orders.videoFormatHint}</span>
                     </div>
                   </div>
                 </div>
@@ -610,16 +542,17 @@ export default function SitePhotosPage() {
             </div>
           </div>
 
-          {/* Continue Button */}
           <button
+            type="button"
             onClick={handleContinue}
             disabled={(!waterSourceFile && !productLocationFile && !fullShotFile && !waterRunningFile) || uploading}
-            className="w-full px-8 py-4 bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
+            className="sc-cta"
+            style={{ width: '100%', padding: '14px 24px', fontSize: 15 }}
           >
             {uploading ? t.orders.uploadingPhotos : t.orders.continueToPayment}
           </button>
         </div>
-      </div>
+      </main>
 
       {/* Photo/Video Capture Modal */}
       {showPhotoCapture && showPhotoCapture === 'waterRunning' ? (

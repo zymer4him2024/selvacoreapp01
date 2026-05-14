@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Order } from '@/types/order';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOfflineQueue } from '@/contexts/OfflineQueueContext';
 import { declineJob } from '@/lib/services/technicianService';
-import { X, MapPin, Calendar, Clock, DollarSign, User, Phone, Image as ImageIcon, Video, Loader2, ExternalLink } from 'lucide-react';
+import { X, MapPin, Calendar, Clock, DollarSign, User, Phone, Image as ImageIcon, Video, Loader2 } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils/formatters';
 import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
@@ -26,6 +26,15 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const lang = userData?.preferredLanguage || 'en';
 
+  useEffect(() => {
+    if (!previewImage) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPreviewImage(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [previewImage]);
+
   const handleAccept = async () => {
     if (!user || !userData) return;
 
@@ -44,7 +53,6 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
         technicianId: user.uid,
         technicianInfo,
       });
-      // Optimistic — navigate immediately, flush happens in background
       toast.success(tj.jobAccepted);
       onJobAccepted();
     } catch (error: unknown) {
@@ -77,238 +85,310 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
     window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
   };
 
+  const PhotoTile = ({ url, label, isVideo }: { url: string; label: string; isVideo?: boolean }) => (
+    <div style={{ position: 'relative' }}>
+      <div
+        style={{
+          aspectRatio: '1 / 1',
+          background: 'var(--off-paper)',
+          borderRadius: 'var(--radius-sm)',
+          overflow: 'hidden',
+          cursor: isVideo ? 'default' : 'pointer',
+        }}
+      >
+        {isVideo ? (
+          <video src={url} style={{ width: '100%', height: '100%', objectFit: 'contain' }} controls />
+        ) : (
+          <img
+            src={url}
+            alt={label}
+            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            onClick={() => setPreviewImage(url)}
+          />
+        )}
+      </div>
+      <p
+        className="sc-helper"
+        style={{ fontSize: 12, marginTop: 8, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+      >
+        {isVideo && <Video className="w-3 h-3" />}
+        {label}
+      </p>
+    </div>
+  );
+
   return (
     <>
-      {/* Modal Overlay */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in"
         onClick={onClose}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 50,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 16,
+        }}
       >
-        {/* Modal Content */}
         <div
-          className="bg-white rounded-apple max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-apple-xl"
+          className="sc"
           onClick={(e) => e.stopPropagation()}
+          style={{
+            background: 'var(--paper)',
+            borderRadius: 'var(--radius-md)',
+            maxWidth: 1024,
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: 'var(--shadow-lg)',
+          }}
         >
-          {/* Header */}
-          <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-gray-200 p-6 flex items-center justify-between z-10">
+          <div
+            style={{
+              position: 'sticky',
+              top: 0,
+              background: 'rgba(255,255,255,0.95)',
+              backdropFilter: 'blur(8px)',
+              borderBottom: '1px solid var(--hairline)',
+              padding: 24,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              zIndex: 10,
+            }}
+          >
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">{tj.title}</h2>
-              <p className="text-sm text-gray-500">{tj.orderNumber} #{job.orderNumber}</p>
+              <h2 className="sc-h2" style={{ margin: 0 }}>{tj.title}</h2>
+              <p className="sc-helper" style={{ margin: '4px 0 0' }}>{tj.orderNumber} #{job.orderNumber}</p>
             </div>
             <button
+              type="button"
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-apple transition-all"
+              aria-label={t.common.close}
+              style={{
+                padding: 8,
+                background: 'transparent',
+                border: 'none',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'pointer',
+                color: 'var(--ink)',
+                transition: 'background 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             >
               <X className="w-6 h-6" />
             </button>
           </div>
 
-          {/* Content */}
-          <div className="p-6 space-y-6 text-gray-900">
-            {/* Customer Site Photos */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <ImageIcon className="w-5 h-5" />
-                {tj.customerSitePhotos}
-              </h3>
+          <div style={{ padding: 24 }}>
+            <div className="sc-stack-lg" style={{ gap: 24 }}>
+              <div>
+                <h3 className="sc-row" style={{ alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 17, marginBottom: 16 }}>
+                  <ImageIcon className="w-5 h-5" />
+                  {tj.customerSitePhotos}
+                </h3>
 
-              <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
-                {/* Water Source Photo */}
-                {job.sitePhotos?.waterSource && (
-                  <div className="group relative">
-                    <div className="aspect-square bg-gray-100 rounded-apple overflow-hidden cursor-pointer">
-                      <img
-                        src={job.sitePhotos.waterSource.url}
-                        alt={tj.waterSource}
-                        className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300"
-                        onClick={() => setPreviewImage(job.sitePhotos.waterSource!.url)}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2 text-center">{tj.waterSource}</p>
-                  </div>
-                )}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 16 }}>
+                  {job.sitePhotos?.waterSource && (
+                    <PhotoTile url={job.sitePhotos.waterSource.url} label={tj.waterSource} />
+                  )}
+                  {job.sitePhotos?.productLocation && (
+                    <PhotoTile url={job.sitePhotos.productLocation.url} label={tj.equipmentLocation} />
+                  )}
+                  {job.sitePhotos?.fullShot && (
+                    <PhotoTile url={job.sitePhotos.fullShot.url} label={tj.fullShot} />
+                  )}
+                  {job.sitePhotos?.waterRunningVideo && (
+                    <PhotoTile url={job.sitePhotos.waterRunningVideo.url} label={tj.waterRunning} isVideo />
+                  )}
+                </div>
 
-                {/* Product Location Photo */}
-                {job.sitePhotos?.productLocation && (
-                  <div className="group relative">
-                    <div className="aspect-square bg-gray-100 rounded-apple overflow-hidden cursor-pointer">
-                      <img
-                        src={job.sitePhotos.productLocation.url}
-                        alt={tj.equipmentLocation}
-                        className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300"
-                        onClick={() => setPreviewImage(job.sitePhotos.productLocation!.url)}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2 text-center">{tj.equipmentLocation}</p>
-                  </div>
-                )}
-
-                {/* Full Shot Photo */}
-                {job.sitePhotos?.fullShot && (
-                  <div className="group relative">
-                    <div className="aspect-square bg-gray-100 rounded-apple overflow-hidden cursor-pointer">
-                      <img
-                        src={job.sitePhotos.fullShot.url}
-                        alt={tj.fullShot}
-                        className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300"
-                        onClick={() => setPreviewImage(job.sitePhotos.fullShot!.url)}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2 text-center">{tj.fullShot}</p>
-                  </div>
-                )}
-
-                {/* Water Running Video */}
-                {job.sitePhotos?.waterRunningVideo && (
-                  <div className="group relative">
-                    <div className="aspect-square bg-gray-100 rounded-apple overflow-hidden cursor-pointer">
-                      <video
-                        src={job.sitePhotos.waterRunningVideo.url}
-                        className="w-full h-full object-contain"
-                        controls
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2 text-center flex items-center justify-center gap-1">
-                      <Video className="w-3 h-3" />
-                      {tj.waterRunning}
-                    </p>
-                  </div>
+                {!job.sitePhotos?.waterSource && !job.sitePhotos?.productLocation && !job.sitePhotos?.fullShot && !job.sitePhotos?.waterRunningVideo && (
+                  <p className="sc-helper" style={{ textAlign: 'center', padding: '32px 0' }}>{tj.noSitePhotos}</p>
                 )}
               </div>
 
-              {!job.sitePhotos?.waterSource && !job.sitePhotos?.productLocation && !job.sitePhotos?.fullShot && !job.sitePhotos?.waterRunningVideo && (
-                <p className="text-gray-500 text-center py-8">{tj.noSitePhotos}</p>
-              )}
-            </div>
-
-            {/* Product Details */}
-            <div className="border border-gray-200 rounded-apple p-5">
-              <h3 className="text-lg font-semibold mb-4">{tj.productInformation}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">{tj.product}</p>
-                  <p className="font-semibold">{job.productSnapshot.name[lang] || job.productSnapshot.name.en}</p>
+              <div className="sc-card-static">
+                <h3 style={{ fontWeight: 600, fontSize: 17, marginTop: 0, marginBottom: 16 }}>{tj.productInformation}</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+                  <div>
+                    <p className="sc-helper" style={{ margin: 0 }}>{tj.product}</p>
+                    <p style={{ fontWeight: 600, margin: '4px 0 0' }}>{job.productSnapshot.name[lang] || job.productSnapshot.name.en}</p>
+                  </div>
+                  <div>
+                    <p className="sc-helper" style={{ margin: 0 }}>{tj.variation}</p>
+                    <p style={{ fontWeight: 600, margin: '4px 0 0' }}>{job.productSnapshot.variation}</p>
+                  </div>
+                  {job.serviceSnapshot && (
+                    <>
+                      <div>
+                        <p className="sc-helper" style={{ margin: 0 }}>{tj.service}</p>
+                        <p style={{ fontWeight: 600, margin: '4px 0 0' }}>{job.serviceSnapshot.name[lang] || job.serviceSnapshot.name.en}</p>
+                      </div>
+                      <div>
+                        <p className="sc-helper" style={{ margin: 0 }}>{tj.estimatedDuration}</p>
+                        <p style={{ fontWeight: 600, margin: '4px 0 0' }}>{job.serviceSnapshot.duration} {tj.hours}</p>
+                      </div>
+                    </>
+                  )}
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500">{tj.variation}</p>
-                  <p className="font-semibold">{job.productSnapshot.variation}</p>
-                </div>
-                {job.serviceSnapshot && (
-                  <>
-                    <div>
-                      <p className="text-sm text-gray-500">{tj.service}</p>
-                      <p className="font-semibold">{job.serviceSnapshot.name[lang] || job.serviceSnapshot.name.en}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">{tj.estimatedDuration}</p>
-                      <p className="font-semibold">{job.serviceSnapshot.duration} {tj.hours}</p>
-                    </div>
-                  </>
-                )}
               </div>
-            </div>
 
-            {/* Installation Details */}
-            <div className="border border-gray-200 rounded-apple p-5">
-              <h3 className="text-lg font-semibold mb-4">{tj.installationDetails}</h3>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-primary mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-500">{tj.address}</p>
-                    <p className="font-medium">
-                      {job.installationAddress.street}<br />
-                      {job.installationAddress.city}, {job.installationAddress.state} {job.installationAddress.postalCode}
-                    </p>
-                    {job.installationAddress.landmark && (
-                      <p className="text-sm text-gray-500 mt-1">
-                        {tj.landmark}: {job.installationAddress.landmark}
+              <div className="sc-card-static">
+                <h3 style={{ fontWeight: 600, fontSize: 17, marginTop: 0, marginBottom: 16 }}>{tj.installationDetails}</h3>
+                <div className="sc-stack" style={{ gap: 12 }}>
+                  <div className="sc-row" style={{ alignItems: 'flex-start', gap: 12 }}>
+                    <MapPin className="w-5 h-5" style={{ color: 'var(--brand)', marginTop: 2, flexShrink: 0 }} />
+                    <div style={{ flex: 1 }}>
+                      <p className="sc-helper" style={{ margin: 0 }}>{tj.address}</p>
+                      <p style={{ fontWeight: 500, margin: '4px 0 0' }}>
+                        {job.installationAddress.street}<br />
+                        {job.installationAddress.city}, {job.installationAddress.state} {job.installationAddress.postalCode}
                       </p>
-                    )}
-                    <button
-                      onClick={openMapLink}
-                      className="mt-2 text-sm text-primary hover:underline flex items-center gap-1"
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                      {tj.openInMaps}
-                    </button>
+                      {job.installationAddress.landmark && (
+                        <p className="sc-helper" style={{ marginTop: 4 }}>
+                          {tj.landmark}: {job.installationAddress.landmark}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-3">
-                  <Calendar className="w-5 h-5 text-primary" />
-                  <div>
-                    <p className="text-sm text-gray-500">{tj.installationDate}</p>
-                    <p className="font-medium">{formatDate(job.installationDate, 'long')}</p>
+                  <button
+                    type="button"
+                    onClick={openMapLink}
+                    className="sc-cta"
+                    style={{
+                      width: '100%',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      padding: '12px 16px',
+                    }}
+                  >
+                    <MapPin className="w-5 h-5" />
+                    {tj.openInMaps}
+                  </button>
+
+                  <div className="sc-row" style={{ alignItems: 'center', gap: 12 }}>
+                    <Calendar className="w-5 h-5" style={{ color: 'var(--brand)' }} />
+                    <div>
+                      <p className="sc-helper" style={{ margin: 0 }}>{tj.installationDate}</p>
+                      <p style={{ fontWeight: 500, margin: '2px 0 0' }}>{formatDate(job.installationDate, 'long')}</p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-3">
-                  <Clock className="w-5 h-5 text-primary" />
-                  <div>
-                    <p className="text-sm text-gray-500">{tj.timeSlot}</p>
-                    <p className="font-medium">{job.timeSlot}</p>
+                  <div className="sc-row" style={{ alignItems: 'center', gap: 12 }}>
+                    <Clock className="w-5 h-5" style={{ color: 'var(--brand)' }} />
+                    <div>
+                      <p className="sc-helper" style={{ margin: 0 }}>{tj.timeSlot}</p>
+                      <p style={{ fontWeight: 500, margin: '2px 0 0' }}>{job.timeSlot}</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Customer Information */}
-            <div className="border border-gray-200 rounded-apple p-5">
-              <h3 className="text-lg font-semibold mb-4">{tj.customerInformation}</h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <User className="w-5 h-5 text-primary" />
-                  <div>
-                    <p className="text-sm text-gray-500">{tj.name}</p>
-                    <p className="font-medium">{job.customerInfo.name}</p>
+              <div className="sc-card-static">
+                <h3 style={{ fontWeight: 600, fontSize: 17, marginTop: 0, marginBottom: 16 }}>{tj.customerInformation}</h3>
+                <div className="sc-stack" style={{ gap: 12 }}>
+                  <div className="sc-row" style={{ alignItems: 'center', gap: 12 }}>
+                    <User className="w-5 h-5" style={{ color: 'var(--brand)' }} />
+                    <div>
+                      <p className="sc-helper" style={{ margin: 0 }}>{tj.name}</p>
+                      <p style={{ fontWeight: 500, margin: '2px 0 0' }}>{job.customerInfo.name}</p>
+                    </div>
                   </div>
+
+                  <a
+                    href={`tel:${(job.customerInfo.phone || '').replace(/[^\d+]/g, '')}`}
+                    className="sc-row"
+                    style={{
+                      alignItems: 'center',
+                      gap: 12,
+                      margin: '0 -8px',
+                      padding: '8px',
+                      borderRadius: 'var(--radius-sm)',
+                      textDecoration: 'none',
+                      color: 'inherit',
+                      transition: 'background 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    <Phone className="w-5 h-5" style={{ color: 'var(--brand)' }} />
+                    <div>
+                      <p className="sc-helper" style={{ margin: 0 }}>{t.common.phone}</p>
+                      <p style={{ fontWeight: 500, color: 'var(--brand)', margin: '2px 0 0' }}>{job.customerInfo.phone}</p>
+                    </div>
+                  </a>
+
+                  {job.customerNotes && (
+                    <div>
+                      <p className="sc-helper" style={{ marginBottom: 4 }}>{tj.customerNotes}</p>
+                      <p style={{ fontSize: 14, background: 'var(--off-paper)', padding: 12, borderRadius: 'var(--radius-sm)', margin: 0 }}>
+                        {job.customerNotes}
+                      </p>
+                    </div>
+                  )}
                 </div>
-
-                <div className="flex items-center gap-3">
-                  <Phone className="w-5 h-5 text-primary" />
-                  <div>
-                    <p className="text-sm text-gray-500">{t.common.phone}</p>
-                    <p className="font-medium">{job.customerInfo.phone}</p>
-                  </div>
-                </div>
-
-                {job.customerNotes && (
-                  <div>
-                    <p className="text-sm text-gray-500 mb-1">{tj.customerNotes}</p>
-                    <p className="text-sm bg-gray-50 p-3 rounded-apple">{job.customerNotes}</p>
-                  </div>
-                )}
               </div>
-            </div>
 
-            {/* Earnings */}
-            <div className="border-2 border-success/20 rounded-apple p-5 bg-success/5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">{tj.yourEarnings}</p>
-                  <p className="text-3xl font-bold text-success">
-                    {formatCurrency(job.serviceSnapshot?.price || 0, job.payment.currency)}
-                  </p>
+              <div
+                className="sc-card-static"
+                style={{ background: 'var(--brand-tint)', borderColor: 'var(--brand)' }}
+              >
+                <div className="sc-row-between" style={{ alignItems: 'center' }}>
+                  <div>
+                    <p className="sc-helper" style={{ margin: 0 }}>{tj.yourEarnings}</p>
+                    <p className="sc-price" style={{ color: 'var(--brand)', margin: 0 }}>
+                      {formatCurrency(job.serviceSnapshot?.price || 0, job.payment.currency)}
+                    </p>
+                  </div>
+                  <DollarSign className="w-12 h-12" style={{ color: 'var(--brand)' }} />
                 </div>
-                <DollarSign className="w-12 h-12 text-success" />
               </div>
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 p-6 flex gap-3">
+          <div
+            style={{
+              position: 'sticky',
+              bottom: 0,
+              background: 'rgba(255,255,255,0.95)',
+              backdropFilter: 'blur(8px)',
+              borderTop: '1px solid var(--hairline)',
+              padding: 24,
+              display: 'flex',
+              gap: 12,
+            }}
+          >
             <button
+              type="button"
               onClick={handleDecline}
               disabled={declining || accepting}
-              className="flex-1 px-6 py-4 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-900 font-semibold rounded-apple transition-all"
+              className="sc-cta-ghost"
+              style={{ flex: 1, padding: '16px 24px', opacity: (declining || accepting) ? 0.5 : 1 }}
             >
               {declining ? tj.declining : tj.decline}
             </button>
             <button
+              type="button"
               onClick={handleAccept}
               disabled={accepting || declining}
-              className="flex-1 px-6 py-4 bg-primary hover:bg-primary-hover disabled:opacity-50 text-white font-semibold rounded-apple transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
+              className="sc-cta"
+              style={{
+                flex: 1,
+                padding: '16px 24px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                opacity: (accepting || declining) ? 0.5 : 1,
+              }}
             >
               {accepting ? (
                 <>
@@ -323,23 +403,45 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
         </div>
       </div>
 
-      {/* Image Preview Modal */}
       {previewImage && (
         <div
-          className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4 animate-fade-in"
           onClick={() => setPreviewImage(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.9)',
+            zIndex: 60,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
         >
           <button
+            type="button"
             onClick={() => setPreviewImage(null)}
-            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-all"
+            aria-label={tj.closePreview}
+            style={{
+              position: 'absolute',
+              top: 16,
+              right: 16,
+              padding: 8,
+              background: 'rgba(255,255,255,0.1)',
+              border: 'none',
+              borderRadius: 9999,
+              cursor: 'pointer',
+              transition: 'background 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.2)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
           >
-            <X className="w-6 h-6 text-white" />
+            <X className="w-6 h-6" style={{ color: '#fff' }} />
           </button>
 
           <img
             src={previewImage}
             alt={tj.previewAlt}
-            className="max-w-full max-h-full object-contain rounded-apple"
+            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 'var(--radius-md)' }}
             onClick={(e) => e.stopPropagation()}
           />
         </div>

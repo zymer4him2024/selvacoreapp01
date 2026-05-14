@@ -5,6 +5,7 @@ import { Upload, X, ImageIcon } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/lib/firebase/config';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -24,6 +25,7 @@ export default function LogoUpload({
   hint = 'Upload your company or business logo. Recommended size: 256x256px.',
 }: LogoUploadProps) {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -32,12 +34,12 @@ export default function LogoUpload({
     if (!file || !user) return;
 
     if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
+      toast.error(t.components.logoUpload.selectImageFile);
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be under 5MB');
+      toast.error(t.components.logoUpload.imageMaxSize);
       return;
     }
 
@@ -48,7 +50,7 @@ export default function LogoUpload({
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
       onLogoUploaded(downloadURL);
-      toast.success('Logo uploaded');
+      toast.success(t.components.logoUpload.logoUploaded);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to upload logo';
       toast.error(message);

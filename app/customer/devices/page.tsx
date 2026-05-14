@@ -70,208 +70,210 @@ export default function CustomerDevicesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">{t.common.loading}</p>
-        </div>
+      <div className="sc">
+        <div className="sc-spinner-wrap"><div className="sc-spinner" /></div>
       </div>
     );
   }
 
+  const statusColor = (s: 'overdue' | 'due-soon' | 'ok'): { color: string; bg: string } => {
+    if (s === 'overdue') return { color: 'var(--warn)', bg: 'var(--warn-tint)' };
+    if (s === 'due-soon') return { color: 'var(--warn)', bg: 'var(--warn-tint)' };
+    return { color: 'var(--brand)', bg: 'var(--brand-tint)' };
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto px-4 lg:px-8 py-8">
-        <div className="space-y-8 animate-fade-in">
-          {/* Header */}
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push('/customer')}
-              className="p-2 hover:bg-surface-elevated rounded-apple transition-colors"
-            >
-              <ArrowLeft className="w-6 h-6" />
-            </button>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">{d.title}</h1>
-              <p className="text-text-secondary mt-1">{d.subtitle}</p>
-            </div>
+    <div className="sc">
+      <main className="sc-main" style={{ maxWidth: 880 }}>
+        <div className="sc-row" style={{ marginBottom: 24 }}>
+          <button
+            type="button"
+            onClick={() => router.push('/customer')}
+            className="sc-cta-ghost"
+            style={{ padding: 8, width: 40, height: 40, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+            aria-label="Back"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <div className="sc-eyebrow">{t.customer.myDevices}</div>
+            <h1 className="sc-h1">{d.title}</h1>
+            <p className="sc-lede">{d.subtitle}</p>
           </div>
+        </div>
 
-          {/* Devices List */}
-          {devices.length === 0 ? (
-            <div className="apple-card text-center py-16">
-              <Cpu className="w-16 h-16 mx-auto mb-4 text-text-tertiary" />
-              <h3 className="text-xl font-semibold mb-2">{d.noDevices}</h3>
-              <p className="text-text-secondary">{d.noDevicesDesc}</p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {devices.map((device) => {
-                const ezerSchedule = device.schedules.find((s) => s.type === 'ezer_maintenance');
-                const filterSchedules = device.schedules.filter((s) => s.type === 'filter_replacement');
-
-                return (
-                  <div key={device.id} className="apple-card">
-                    {/* Device Header */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="text-lg font-bold">
-                          {device.productSnapshot.name?.en || d.defaultDeviceName}
-                        </h3>
-                        {device.productSnapshot.variation && (
-                          <p className="text-sm text-text-secondary">{device.productSnapshot.variation}</p>
-                        )}
-                      </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        device.status === 'active' ? 'bg-success/20 text-success' :
-                        device.status === 'inactive' ? 'bg-warning/20 text-warning' :
-                        'bg-text-tertiary/20 text-text-tertiary'
-                      }`}>
-                        {device.status.toUpperCase()}
-                      </span>
-                    </div>
-
-                    {/* Device Info */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 text-sm">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-text-tertiary flex-shrink-0" />
-                        <span className="text-text-secondary">
-                          {device.installationAddress.city}, {device.installationAddress.state}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-text-tertiary flex-shrink-0" />
-                        <span className="text-text-secondary">
-                          {d.installedOn} {formatDate(device.registeredAt, 'short')}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Maintenance Schedules */}
+        {devices.length === 0 ? (
+          <div className="sc-empty">
+            <Cpu className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--soft)' }} />
+            <h3 className="sc-h2" style={{ marginBottom: 8 }}>{d.noDevices}</h3>
+            <p className="sc-lede">{d.noDevicesDesc}</p>
+          </div>
+        ) : (
+          <div className="sc-stack-lg">
+            {devices.map((device) => {
+              const statusBadge = statusColor(
+                device.status === 'active' ? 'ok' : device.status === 'inactive' ? 'due-soon' : 'overdue',
+              );
+              return (
+                <div key={device.id} className="sc-card-static">
+                  <div className="sc-row-between" style={{ marginBottom: 16, alignItems: 'flex-start' }}>
                     <div>
-                      <h4 className="font-semibold text-sm mb-3">{d.maintenanceSchedules}</h4>
-                      {device.schedules.length === 0 ? (
-                        <p className="text-sm text-text-tertiary">{d.noSchedules}</p>
-                      ) : (
-                        <div className="space-y-3">
-                          {device.schedules.map((schedule) => {
-                            const dueDate = schedule.nextDueDate.toDate();
-                            const status = getMaintenanceStatus(dueDate);
-                            const overdueDays = getDaysOverdue(dueDate);
-
-                            return (
-                              <div key={schedule.id} className="flex items-center justify-between p-3 bg-surface-elevated rounded-apple">
-                                <div className="flex items-center gap-3">
-                                  {status === 'overdue' ? (
-                                    <AlertTriangle className="w-5 h-5 text-error flex-shrink-0" />
-                                  ) : status === 'due-soon' ? (
-                                    <Clock className="w-5 h-5 text-warning flex-shrink-0" />
-                                  ) : (
-                                    <CheckCircle className="w-5 h-5 text-success flex-shrink-0" />
-                                  )}
-                                  <div>
-                                    <p className="font-medium text-sm">
-                                      {schedule.type === 'ezer_maintenance'
-                                        ? d.ezerMaintenance
-                                        : `${d.filterReplacement}: ${schedule.filterName}`}
-                                    </p>
-                                    <p className="text-xs text-text-tertiary">
-                                      {status === 'overdue'
-                                        ? `${d.overdueBy} ${overdueDays} ${d.days}`
-                                        : `${d.dueOn} ${formatDate(dueDate, 'short')}`}
-                                    </p>
-                                  </div>
-                                </div>
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                  status === 'overdue' ? 'bg-error/20 text-error' :
-                                  status === 'due-soon' ? 'bg-warning/20 text-warning' :
-                                  'bg-success/20 text-success'
-                                }`}>
-                                  {status === 'overdue' ? d.overdue :
-                                   status === 'due-soon' ? d.dueSoon : d.upToDate}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
+                      <h3 className="sc-h2" style={{ margin: 0 }}>
+                        {device.productSnapshot.name?.en || d.defaultDeviceName}
+                      </h3>
+                      {device.productSnapshot.variation && (
+                        <p className="sc-helper" style={{ margin: '4px 0 0' }}>{device.productSnapshot.variation}</p>
                       )}
                     </div>
+                    <span
+                      className="sc-badge-inline"
+                      style={{ color: statusBadge.color, background: statusBadge.bg }}
+                    >
+                      {device.status.toUpperCase()}
+                    </span>
+                  </div>
 
-                    {/* Recent Visits */}
-                    {device.visits.length > 0 && (
-                      <div className="mt-4 pt-4 border-t border-border">
-                        <button
-                          onClick={() => setExpandedVisits((prev) => ({ ...prev, [device.id]: !prev[device.id] }))}
-                          className="flex items-center gap-2 text-sm font-semibold mb-3 hover:text-primary transition-colors"
-                        >
-                          {expandedVisits[device.id] ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                          {d.recentVisits} ({device.visits.length})
-                        </button>
-                        {expandedVisits[device.id] && (
-                          <div className="space-y-2">
-                            {device.visits.slice(0, 5).map((visit) => (
-                              <div key={visit.id} className="p-3 bg-surface-elevated rounded-apple">
-                                <div className="flex items-center justify-between mb-2">
-                                  <p className="text-sm font-medium">{visit.technicianName}</p>
-                                  <p className="text-xs text-text-tertiary">{formatDate(visit.createdAt, 'short')}</p>
-                                </div>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {visit.checks.installationOk && (
-                                    <span className="flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs">
-                                      <Wrench className="w-3 h-3" /> {d.checkInstallOk}
-                                    </span>
-                                  )}
-                                  {visit.checks.operationOk && (
-                                    <span className="flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs">
-                                      <CheckCircle className="w-3 h-3" /> {d.checkOperationOk}
-                                    </span>
-                                  )}
-                                  {visit.checks.waterPressureOk && (
-                                    <span className="flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs">
-                                      <Gauge className="w-3 h-3" /> {d.checkPressureOk}
-                                    </span>
-                                  )}
-                                  {visit.checks.sedimentFilterReplaced && (
-                                    <span className="flex items-center gap-1 px-2 py-0.5 bg-warning/10 text-warning rounded-full text-xs">
-                                      <Droplets className="w-3 h-3" /> {d.checkSediment}
-                                    </span>
-                                  )}
-                                  {visit.checks.carbonFilterReplaced && (
-                                    <span className="flex items-center gap-1 px-2 py-0.5 bg-warning/10 text-warning rounded-full text-xs">
-                                      <FilterIcon className="w-3 h-3" /> {d.checkCarbon}
-                                    </span>
-                                  )}
-                                </div>
-                                {(visit.beforePhotoUrl || visit.afterPhotoUrl) && (
-                                  <div className="grid grid-cols-2 gap-1.5 mt-2">
-                                    {visit.beforePhotoUrl && (
-                                      <a href={visit.beforePhotoUrl} target="_blank" rel="noopener noreferrer">
-                                        <img src={visit.beforePhotoUrl} alt={d.beforePhotoAlt} className="w-full h-20 object-cover rounded-apple border border-border" />
-                                      </a>
-                                    )}
-                                    {visit.afterPhotoUrl && (
-                                      <a href={visit.afterPhotoUrl} target="_blank" rel="noopener noreferrer">
-                                        <img src={visit.afterPhotoUrl} alt={d.afterPhotoAlt} className="w-full h-20 object-cover rounded-apple border border-border" />
-                                      </a>
-                                    )}
-                                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ fontSize: 13, color: 'var(--soft)', marginBottom: 24 }}>
+                    <div className="sc-row" style={{ gap: 8 }}>
+                      <MapPin className="w-4 h-4 flex-shrink-0" />
+                      <span>{device.installationAddress.city}, {device.installationAddress.state}</span>
+                    </div>
+                    <div className="sc-row" style={{ gap: 8 }}>
+                      <Calendar className="w-4 h-4 flex-shrink-0" />
+                      <span>{d.installedOn} {formatDate(device.registeredAt, 'short')}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="sc-eyebrow" style={{ marginBottom: 12 }}>{d.maintenanceSchedules}</h4>
+                    {device.schedules.length === 0 ? (
+                      <p className="sc-helper">{d.noSchedules}</p>
+                    ) : (
+                      <div className="sc-stack" style={{ gap: 8 }}>
+                        {device.schedules.map((schedule) => {
+                          const dueDate = schedule.nextDueDate.toDate();
+                          const status = getMaintenanceStatus(dueDate);
+                          const overdueDays = getDaysOverdue(dueDate);
+                          const badge = statusColor(status);
+
+                          return (
+                            <div key={schedule.id} className="sc-row-between" style={{ padding: 12, background: 'var(--off-paper)', borderRadius: 'var(--radius-sm)' }}>
+                              <div className="sc-row" style={{ gap: 12 }}>
+                                {status === 'overdue' ? (
+                                  <AlertTriangle className="w-5 h-5 flex-shrink-0" style={{ color: 'var(--warn)' }} />
+                                ) : status === 'due-soon' ? (
+                                  <Clock className="w-5 h-5 flex-shrink-0" style={{ color: 'var(--warn)' }} />
+                                ) : (
+                                  <CheckCircle className="w-5 h-5 flex-shrink-0" style={{ color: 'var(--brand)' }} />
                                 )}
-                                {visit.notes && (
-                                  <p className="text-xs text-text-secondary mt-2">{visit.notes}</p>
-                                )}
+                                <div>
+                                  <p style={{ fontWeight: 600, fontSize: 14, margin: 0 }}>
+                                    {schedule.type === 'ezer_maintenance'
+                                      ? d.ezerMaintenance
+                                      : `${d.filterReplacement}: ${schedule.filterName}`}
+                                  </p>
+                                  <p style={{ fontSize: 12, color: 'var(--soft)', margin: '2px 0 0' }}>
+                                    {status === 'overdue'
+                                      ? `${d.overdueBy} ${overdueDays} ${d.days}`
+                                      : `${d.dueOn} ${formatDate(dueDate, 'short')}`}
+                                  </p>
+                                </div>
                               </div>
-                            ))}
-                          </div>
-                        )}
+                              <span className="sc-badge-inline" style={{ color: badge.color, background: badge.bg }}>
+                                {status === 'overdue' ? d.overdue : status === 'due-soon' ? d.dueSoon : d.upToDate}
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
+
+                  {device.visits.length > 0 && (
+                    <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--hairline)' }}>
+                      <button
+                        type="button"
+                        onClick={() => setExpandedVisits((prev) => ({ ...prev, [device.id]: !prev[device.id] }))}
+                        className="sc-row"
+                        style={{
+                          gap: 8,
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: 'var(--ink)',
+                          background: 'transparent',
+                          border: 'none',
+                          padding: 0,
+                          marginBottom: 12,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {expandedVisits[device.id] ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        {d.recentVisits} ({device.visits.length})
+                      </button>
+                      {expandedVisits[device.id] && (
+                        <div className="sc-stack" style={{ gap: 8 }}>
+                          {device.visits.slice(0, 5).map((visit) => (
+                            <div key={visit.id} style={{ padding: 12, background: 'var(--off-paper)', borderRadius: 'var(--radius-sm)' }}>
+                              <div className="sc-row-between" style={{ marginBottom: 8 }}>
+                                <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>{visit.technicianName}</p>
+                                <p style={{ fontSize: 12, color: 'var(--soft)', margin: 0 }}>{formatDate(visit.createdAt, 'short')}</p>
+                              </div>
+                              <div className="flex flex-wrap gap-1.5">
+                                {visit.checks.installationOk && (
+                                  <span className="sc-badge-inline" style={{ color: 'var(--brand)', background: 'var(--brand-tint)' }}>
+                                    <Wrench className="w-3 h-3" /> {d.checkInstallOk}
+                                  </span>
+                                )}
+                                {visit.checks.operationOk && (
+                                  <span className="sc-badge-inline" style={{ color: 'var(--brand)', background: 'var(--brand-tint)' }}>
+                                    <CheckCircle className="w-3 h-3" /> {d.checkOperationOk}
+                                  </span>
+                                )}
+                                {visit.checks.waterPressureOk && (
+                                  <span className="sc-badge-inline" style={{ color: 'var(--brand)', background: 'var(--brand-tint)' }}>
+                                    <Gauge className="w-3 h-3" /> {d.checkPressureOk}
+                                  </span>
+                                )}
+                                {visit.checks.sedimentFilterReplaced && (
+                                  <span className="sc-badge-inline">
+                                    <Droplets className="w-3 h-3" /> {d.checkSediment}
+                                  </span>
+                                )}
+                                {visit.checks.carbonFilterReplaced && (
+                                  <span className="sc-badge-inline">
+                                    <FilterIcon className="w-3 h-3" /> {d.checkCarbon}
+                                  </span>
+                                )}
+                              </div>
+                              {(visit.beforePhotoUrl || visit.afterPhotoUrl) && (
+                                <div className="grid grid-cols-2 gap-1.5" style={{ marginTop: 8 }}>
+                                  {visit.beforePhotoUrl && (
+                                    <a href={visit.beforePhotoUrl} target="_blank" rel="noopener noreferrer">
+                                      <img src={visit.beforePhotoUrl} alt={d.beforePhotoAlt} style={{ width: '100%', height: 80, objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: '1px solid var(--hairline)' }} />
+                                    </a>
+                                  )}
+                                  {visit.afterPhotoUrl && (
+                                    <a href={visit.afterPhotoUrl} target="_blank" rel="noopener noreferrer">
+                                      <img src={visit.afterPhotoUrl} alt={d.afterPhotoAlt} style={{ width: '100%', height: 80, objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: '1px solid var(--hairline)' }} />
+                                    </a>
+                                  )}
+                                </div>
+                              )}
+                              {visit.notes && (
+                                <p style={{ fontSize: 12, color: 'var(--soft)', marginTop: 8 }}>{visit.notes}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </main>
     </div>
   );
 }

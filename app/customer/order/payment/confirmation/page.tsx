@@ -62,7 +62,7 @@ export default function PaymentConfirmationPage() {
 
   const handleDownloadReceipt = () => {
     // Generate and download receipt PDF
-    toast.success('Receipt downloaded successfully!');
+    toast.success(t.components.paymentConfirmation.receiptDownloaded);
   };
 
   const handleViewOrder = () => {
@@ -73,10 +73,10 @@ export default function PaymentConfirmationPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-text-secondary">{t.common.loading}</p>
+      <div className="sc" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="sc-stack" style={{ alignItems: 'center', gap: 16 }}>
+          <div className="sc-spinner-wrap"><div className="sc-spinner" /></div>
+          <p className="sc-helper">{t.common.loading}</p>
         </div>
       </div>
     );
@@ -84,13 +84,15 @@ export default function PaymentConfirmationPage() {
 
   if (!confirmationData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold">{t.orders.confirmationNotFound}</h1>
-          <p className="text-text-secondary">{t.orders.confirmationNotFoundDesc}</p>
+      <div className="sc" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+        <div className="sc-stack" style={{ alignItems: 'center', gap: 16, textAlign: 'center', maxWidth: 480 }}>
+          <h1 className="sc-h1">{t.orders.confirmationNotFound}</h1>
+          <p className="sc-lede">{t.orders.confirmationNotFoundDesc}</p>
           <button
+            type="button"
             onClick={() => router.push('/customer')}
-            className="px-6 py-3 bg-primary text-white rounded-apple hover:bg-primary-hover transition-colors"
+            className="sc-cta"
+            style={{ padding: '12px 24px' }}
           >
             {t.orders.goToDashboard}
           </button>
@@ -99,145 +101,205 @@ export default function PaymentConfirmationPage() {
     );
   }
 
+  const StepNumber = ({ n }: { n: number }) => (
+    <div
+      style={{
+        width: 28,
+        height: 28,
+        background: 'var(--brand)',
+        color: 'var(--paper)',
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 13,
+        fontWeight: 700,
+        flexShrink: 0,
+        marginTop: 2,
+      }}
+    >
+      {n}
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="bg-surface border-b border-border sticky top-0 z-10 backdrop-blur-lg bg-surface/80">
-        <div className="max-w-4xl mx-auto px-4 lg:px-8 py-4">
+    <div className="sc" style={{ minHeight: '100vh' }}>
+      <header
+        className="sc-nav"
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+          background: 'rgba(255,255,255,0.85)',
+          backdropFilter: 'blur(12px)',
+          borderBottom: '1px solid var(--hairline)',
+        }}
+      >
+        <div className="sc-container" style={{ maxWidth: 800, padding: '14px 16px' }}>
           <button
+            type="button"
             onClick={() => router.push('/customer')}
-            className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
+            className="sc-cta-ghost"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 10px' }}
           >
             <ArrowLeft className="w-5 h-5" />
             {t.orders.backToDashboard}
           </button>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-4xl mx-auto px-4 lg:px-8 py-8">
-        <div className="space-y-6 animate-fade-in">
-          {/* Success Header */}
-          <div className="text-center py-8">
-            <div className="w-20 h-20 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="w-12 h-12 text-success" />
+      <div className="sc-container" style={{ maxWidth: 800, padding: '32px 16px' }}>
+        <div className="sc-stack-lg" style={{ gap: 24 }}>
+          <div style={{ textAlign: 'center', padding: '32px 0' }}>
+            <div
+              style={{
+                width: 80,
+                height: 80,
+                background: 'var(--brand-tint)',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 24px',
+              }}
+            >
+              <CheckCircle className="w-12 h-12" style={{ color: 'var(--brand)' }} />
             </div>
-            <h1 className="text-3xl font-bold mb-2">{t.payment.paymentSuccessful}</h1>
-            <p className="text-text-secondary text-lg">
-              {t.payment.orderPlaced}
-            </p>
+            <h1 className="sc-h1" style={{ marginBottom: 8 }}>{t.payment.paymentSuccessful}</h1>
+            <p className="sc-lede">{t.payment.orderPlaced}</p>
           </div>
 
-          {/* Order Summary Card */}
-          <div className="apple-card bg-success/5 border-success/30">
-            <h2 className="text-xl font-semibold mb-4">{t.orders.orderSummaryTitle}</h2>
+          <div
+            className="sc-card-static"
+            style={{ background: 'var(--brand-tint)', borderColor: 'var(--brand)' }}
+          >
+            <h2 className="sc-h2" style={{ marginBottom: 16 }}>{t.orders.orderSummaryTitle}</h2>
 
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-text-secondary">{t.orders.orderNumber}</span>
-                <span className="font-mono font-semibold">{confirmationData.orderNumber}</span>
+            <div className="sc-stack" style={{ gap: 16 }}>
+              <div className="sc-row-between" style={{ alignItems: 'center' }}>
+                <span className="sc-helper">{t.orders.orderNumber}</span>
+                <span style={{ fontFamily: 'var(--font-jetbrains-mono), monospace', fontWeight: 700 }}>
+                  {confirmationData.orderNumber}
+                </span>
               </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="text-text-secondary">{t.orders.transactionId}</span>
-                <span className="font-mono text-sm">{confirmationData.transactionId}</span>
+
+              <div className="sc-row-between" style={{ alignItems: 'center' }}>
+                <span className="sc-helper">{t.orders.transactionId}</span>
+                <span style={{ fontFamily: 'var(--font-jetbrains-mono), monospace', fontSize: 13 }}>
+                  {confirmationData.transactionId}
+                </span>
               </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="text-text-secondary">{t.orders.amountPaid}</span>
-                <span className="text-2xl font-bold text-success">
+
+              <div className="sc-row-between" style={{ alignItems: 'center' }}>
+                <span className="sc-helper">{t.orders.amountPaid}</span>
+                <span className="sc-price" style={{ fontSize: 28 }}>
                   {formatCurrency(confirmationData.amount, confirmationData.currency)}
                 </span>
               </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="text-text-secondary">{t.orders.paymentMethod}</span>
-                <div className="flex items-center gap-2">
+
+              <div className="sc-row-between" style={{ alignItems: 'center' }}>
+                <span className="sc-helper">{t.orders.paymentMethod}</span>
+                <div className="sc-row" style={{ alignItems: 'center', gap: 8 }}>
                   <CreditCard className="w-4 h-4" />
                   <span>{confirmationData.paymentMethod}</span>
                 </div>
               </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="text-text-secondary">{t.orders.paymentDate}</span>
+
+              <div className="sc-row-between" style={{ alignItems: 'center' }}>
+                <span className="sc-helper">{t.orders.paymentDate}</span>
                 <span>{formatDateTime(confirmationData.paidAt)}</span>
               </div>
             </div>
           </div>
 
-          {/* Installation Details */}
-          <div className="apple-card">
-            <h2 className="text-xl font-semibold mb-4">{t.orders.installationDetailsTitle}</h2>
+          <div className="sc-card-static">
+            <h2 className="sc-h2" style={{ marginBottom: 16 }}>{t.orders.installationDetailsTitle}</h2>
 
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <Clock className="w-5 h-5 text-primary mt-1" />
+            <div className="sc-stack" style={{ gap: 16 }}>
+              <div className="sc-row" style={{ alignItems: 'flex-start', gap: 12 }}>
+                <Clock className="w-5 h-5" style={{ color: 'var(--brand)', marginTop: 4, flexShrink: 0 }} />
                 <div>
-                  <p className="font-medium">{confirmationData.installationDate}</p>
-                  <p className="text-sm text-text-secondary">{t.orders.time}: {confirmationData.timeSlot}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <Shield className="w-5 h-5 text-primary mt-1" />
-                <div>
-                  <p className="font-medium">{confirmationData.productName}</p>
-                  <p className="text-sm text-text-secondary">{confirmationData.serviceName}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-primary mt-1" />
-                <div>
-                  <p className="font-medium">{t.orders.installationAddressLabel}</p>
-                  <p className="text-sm text-text-secondary">{confirmationData.address}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Next Steps */}
-          <div className="apple-card bg-primary/5 border-primary/30">
-            <h2 className="text-xl font-semibold mb-4">{t.orders.whatsNext}</h2>
-
-            <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">1</div>
-                <div>
-                  <p className="font-medium">{t.orders.step1Title}</p>
-                  <p className="text-sm text-text-secondary">{t.orders.step1Desc}</p>
+                  <p style={{ fontWeight: 600, margin: 0 }}>{confirmationData.installationDate}</p>
+                  <p className="sc-helper" style={{ marginTop: 2 }}>
+                    {t.orders.time}: {confirmationData.timeSlot}
+                  </p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">2</div>
+              <div className="sc-row" style={{ alignItems: 'flex-start', gap: 12 }}>
+                <Shield className="w-5 h-5" style={{ color: 'var(--brand)', marginTop: 4, flexShrink: 0 }} />
                 <div>
-                  <p className="font-medium">{t.orders.step2Title}</p>
-                  <p className="text-sm text-text-secondary">{t.orders.step2Desc}</p>
+                  <p style={{ fontWeight: 600, margin: 0 }}>{confirmationData.productName}</p>
+                  <p className="sc-helper" style={{ marginTop: 2 }}>{confirmationData.serviceName}</p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">3</div>
+              <div className="sc-row" style={{ alignItems: 'flex-start', gap: 12 }}>
+                <MapPin className="w-5 h-5" style={{ color: 'var(--brand)', marginTop: 4, flexShrink: 0 }} />
                 <div>
-                  <p className="font-medium">{t.orders.step3Title}</p>
-                  <p className="text-sm text-text-secondary">{t.orders.step3Desc}</p>
+                  <p style={{ fontWeight: 600, margin: 0 }}>{t.orders.installationAddressLabel}</p>
+                  <p className="sc-helper" style={{ marginTop: 2 }}>{confirmationData.address}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div
+            className="sc-card-static"
+            style={{ background: 'var(--brand-tint)', borderColor: 'var(--brand)' }}
+          >
+            <h2 className="sc-h2" style={{ marginBottom: 16 }}>{t.orders.whatsNext}</h2>
+
+            <div className="sc-stack" style={{ gap: 12 }}>
+              <div className="sc-row" style={{ alignItems: 'flex-start', gap: 12 }}>
+                <StepNumber n={1} />
+                <div>
+                  <p style={{ fontWeight: 600, margin: 0 }}>{t.orders.step1Title}</p>
+                  <p className="sc-helper" style={{ marginTop: 2 }}>{t.orders.step1Desc}</p>
+                </div>
+              </div>
+
+              <div className="sc-row" style={{ alignItems: 'flex-start', gap: 12 }}>
+                <StepNumber n={2} />
+                <div>
+                  <p style={{ fontWeight: 600, margin: 0 }}>{t.orders.step2Title}</p>
+                  <p className="sc-helper" style={{ marginTop: 2 }}>{t.orders.step2Desc}</p>
+                </div>
+              </div>
+
+              <div className="sc-row" style={{ alignItems: 'flex-start', gap: 12 }}>
+                <StepNumber n={3} />
+                <div>
+                  <p style={{ fontWeight: 600, margin: 0 }}>{t.orders.step3Title}</p>
+                  <p className="sc-helper" style={{ marginTop: 2 }}>{t.orders.step3Desc}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="sc-row" style={{ gap: 16, flexWrap: 'wrap' }}>
             <button
+              type="button"
               onClick={handleViewOrder}
-              className="flex-1 px-8 py-4 bg-primary hover:bg-primary-hover text-white font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple"
+              className="sc-cta"
+              style={{ flex: 1, minWidth: 200, padding: '18px 24px' }}
             >
               {t.orders.viewOrderDetails}
             </button>
-            
+
             <button
+              type="button"
               onClick={handleDownloadReceipt}
-              className="flex-1 px-8 py-4 bg-surface hover:bg-surface-elevated border border-border text-text-primary font-semibold rounded-apple transition-all hover:scale-[1.02] shadow-apple flex items-center justify-center gap-2"
+              className="sc-cta-ghost"
+              style={{
+                flex: 1,
+                minWidth: 200,
+                padding: '18px 24px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+              }}
             >
               <Download className="w-5 h-5" />
               {t.orders.downloadReceipt}
