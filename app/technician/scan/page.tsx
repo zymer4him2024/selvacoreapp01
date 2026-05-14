@@ -362,7 +362,7 @@ export default function TechnicianScanPage() {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 8,
-    color: 'var(--ink-soft)',
+    color: 'var(--soft)',
     background: 'transparent',
     border: 'none',
     fontSize: 14,
@@ -506,7 +506,7 @@ export default function TechnicianScanPage() {
                             {phone && (
                               <p style={{ margin: 0, fontSize: 12, color: 'var(--soft)' }}>{phone}</p>
                             )}
-                            <div style={{ fontSize: 14, color: 'var(--ink-soft)' }}>
+                            <div style={{ fontSize: 14, color: 'var(--soft)' }}>
                               <p style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{addressLine1}</p>
                               {addressLine2 && <p style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{addressLine2}</p>}
                             </div>
@@ -735,7 +735,7 @@ export default function TechnicianScanPage() {
                   padding: '8px 24px',
                   fontSize: 14,
                   fontWeight: 500,
-                  color: 'var(--ink-soft)',
+                  color: 'var(--soft)',
                   background: 'transparent',
                   border: 'none',
                   cursor: 'pointer',
@@ -834,7 +834,7 @@ function PhotoSlot({ label, slotKey, file, onChange, removeAriaLabel, photoAltLa
           }}
         >
           <Camera className="w-6 h-6" style={{ color: 'var(--soft)' }} />
-          <span style={{ fontSize: 14, color: 'var(--ink-soft)' }}>{tapToCapture}</span>
+          <span style={{ fontSize: 14, color: 'var(--soft)' }}>{tapToCapture}</span>
         </label>
       )}
       <input

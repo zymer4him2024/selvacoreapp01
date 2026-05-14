@@ -65,7 +65,7 @@ export default function TechnicianLayoutClient({
                   </div>
                   <div>
                     <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>Selvacore</h1>
-                    <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-soft)' }}>{tl.portalSubtitle}</p>
+                    <p style={{ margin: 0, fontSize: 12, color: 'var(--soft)' }}>{tl.portalSubtitle}</p>
                   </div>
                 </div>
 
@@ -85,7 +85,7 @@ export default function TechnicianLayoutClient({
                           fontWeight: 500,
                           border: 'none',
                           background: item.current ? 'var(--brand)' : 'transparent',
-                          color: item.current ? '#fff' : 'var(--ink-soft)',
+                          color: item.current ? '#fff' : 'var(--soft)',
                           cursor: 'pointer',
                           transition: 'all 0.15s ease',
                         }}
@@ -98,7 +98,7 @@ export default function TechnicianLayoutClient({
                         onMouseLeave={(e) => {
                           if (!item.current) {
                             e.currentTarget.style.background = 'transparent';
-                            e.currentTarget.style.color = 'var(--ink-soft)';
+                            e.currentTarget.style.color = 'var(--soft)';
                           }
                         }}
                       >
@@ -155,7 +155,7 @@ export default function TechnicianLayoutClient({
                       borderRadius: 'var(--radius-sm)',
                       border: 'none',
                       background: item.current ? 'var(--brand)' : 'transparent',
-                      color: item.current ? '#fff' : 'var(--ink-soft)',
+                      color: item.current ? '#fff' : 'var(--soft)',
                       cursor: 'pointer',
                       transition: 'transform 0.2s ease',
                     }}

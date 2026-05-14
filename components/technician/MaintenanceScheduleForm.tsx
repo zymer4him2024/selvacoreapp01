@@ -89,7 +89,7 @@ export default function MaintenanceScheduleForm({
     borderRadius: 'var(--radius-sm)',
     border: '1px solid var(--line)',
     background: active ? 'var(--brand)' : 'var(--paper)',
-    color: active ? '#fff' : 'var(--ink-soft)',
+    color: active ? '#fff' : 'var(--soft)',
     cursor: 'pointer',
     transition: 'all 0.15s ease',
   });
@@ -219,7 +219,7 @@ export default function MaintenanceScheduleForm({
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink-soft)' }}>
+                <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--soft)' }}>
                   Filter {index + 1}
                 </span>
                 {filters.length > 1 && (
