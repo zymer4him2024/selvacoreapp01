@@ -109,7 +109,7 @@ export default function CustomerHomePage() {
 
       <main className="sc-main">
         <div>
-          <div className="sc-eyebrow">Customer Portal</div>
+          <div className="sc-eyebrow">{t.customer.portalLabel}</div>
           <h1 className="sc-h1">
             {t.customer.welcome}, {userData?.displayName?.split(' ')[0] || ''}
           </h1>
@@ -144,7 +144,7 @@ export default function CustomerHomePage() {
               <div>
                 {filteredProducts.length === 0 ? (
                   <div className="sc-empty">
-                    <div className="sc-eyebrow">No Results</div>
+                    <div className="sc-eyebrow">{t.customer.noResultsLabel}</div>
                     <h3 className="sc-card-title">{t.customer.noProductsFound}</h3>
                     <p className="sc-lede" style={{ marginTop: 8 }}>
                       {searchTerm || categoryFilter !== 'all'

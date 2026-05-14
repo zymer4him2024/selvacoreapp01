@@ -145,6 +145,8 @@ export const es = {
   },
   customer: {
     welcome: 'Bienvenido de nuevo',
+    portalLabel: 'Portal del Cliente',
+    noResultsLabel: 'Sin Resultados',
     browseProducts: 'Explore nuestros productos y programe su instalacion',
     searchPlaceholder: 'Buscar productos...',
     allCategories: 'Todas las Categorias',
@@ -1992,6 +1994,7 @@ export const es = {
       noRecentActivity: 'Sin actividad reciente',
     },
     photoGuide: {
+      dos: 'Qué hacer',
       donts: 'Qué evitar',
       proTips: 'Consejos Profesionales',
     },
@@ -2024,6 +2027,7 @@ export const es = {
       filterName: 'Nombre del Filtro',
       filterPlaceholder: 'ej. Filtro de Sedimentos',
       replacementInterval: 'Intervalo de Reemplazo',
+      removeFilter: 'Eliminar filtro',
     },
     qrScanner: {
       title: 'Escanear Código QR',

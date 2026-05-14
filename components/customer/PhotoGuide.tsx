@@ -198,7 +198,9 @@ export default function PhotoGuide({ type }: PhotoGuideProps) {
                     <div style={sectionIconWrap('var(--brand-tint)')}>
                       <Check className="w-5 h-5" style={{ color: 'var(--brand)' }} />
                     </div>
-                    <h3 style={{ fontWeight: 700, fontSize: 18, margin: 0 }}>Do&apos;s</h3>
+                    <h3 style={{ fontWeight: 700, fontSize: 18, margin: 0 }}>
+                      {t.components?.photoGuide?.dos || "Do's"}
+                    </h3>
                   </div>
                   <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {guide.dos.map((item, index) => (

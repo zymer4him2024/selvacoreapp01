@@ -145,6 +145,8 @@ export const ko = {
   },
   customer: {
     welcome: '환영합니다',
+    portalLabel: '고객 포털',
+    noResultsLabel: '결과 없음',
     browseProducts: '제품을 탐색하고 설치를 예약하세요',
     searchPlaceholder: '제품 검색...',
     allCategories: '모든 카테고리',
@@ -1992,6 +1994,7 @@ export const ko = {
       noRecentActivity: '최근 활동이 없습니다',
     },
     photoGuide: {
+      dos: '권장 사항',
       donts: '피해야 할 것',
       proTips: '전문가 팁',
     },
@@ -2024,6 +2027,7 @@ export const ko = {
       filterName: '필터 이름',
       filterPlaceholder: '예: 침전물 필터',
       replacementInterval: '교체 주기',
+      removeFilter: '필터 제거',
     },
     qrScanner: {
       title: 'QR 코드 스캔',

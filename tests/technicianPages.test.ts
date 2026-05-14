@@ -57,7 +57,7 @@ describe('app/admin/services/page.tsx — admin services list', () => {
   });
 
   it('hides per-row Edit and Delete actions from sub-admin', () => {
-    expect(src).toMatch(/\{!isSubAdmin && \(\s*\n?\s*<div className=["'][^"']*flex gap-2[^"']*ml-4["']/);
+    expect(src).toMatch(/\{!isSubAdmin && \(\s*\n?\s*<div style=\{\{[^}]*display:\s*['"]flex['"][^}]*gap:\s*8[^}]*marginLeft:\s*16/);
   });
 
   it('uses role-aware subtitle (sv.subtitle vs sv.subtitleSubAdmin)', () => {

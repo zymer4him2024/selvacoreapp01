@@ -226,7 +226,7 @@ export default function MaintenanceScheduleForm({
                   <button
                     type="button"
                     onClick={() => removeFilter(index)}
-                    aria-label="Remove filter"
+                    aria-label={t.components.maintenanceForm.removeFilter}
                     style={{
                       padding: 4,
                       color: 'var(--soft)',

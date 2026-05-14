@@ -147,6 +147,8 @@ export const en = {
   },
   customer: {
     welcome: 'Welcome back',
+    portalLabel: 'Customer Portal',
+    noResultsLabel: 'No Results',
     browseProducts: 'Browse our products and schedule your installation',
     searchPlaceholder: 'Search products...',
     allCategories: 'All Categories',
@@ -2028,6 +2030,7 @@ export const en = {
       noRecentActivity: 'No recent activity',
     },
     photoGuide: {
+      dos: "Do's",
       donts: "Don'ts",
       proTips: 'Pro Tips',
     },
@@ -2060,6 +2063,7 @@ export const en = {
       filterName: 'Filter Name',
       filterPlaceholder: 'e.g. Sediment Filter',
       replacementInterval: 'Replacement Interval',
+      removeFilter: 'Remove filter',
     },
     qrScanner: {
       title: 'Scan QR Code',
