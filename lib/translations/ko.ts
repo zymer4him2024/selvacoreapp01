@@ -147,6 +147,12 @@ export const ko = {
     welcome: '환영합니다',
     portalLabel: '고객 포털',
     noResultsLabel: '결과 없음',
+    bottomNav: {
+      home: '홈',
+      orders: '주문',
+      devices: '기기',
+      profile: '프로필',
+    },
     browseProducts: '제품을 탐색하고 설치를 예약하세요',
     searchPlaceholder: '제품 검색...',
     allCategories: '모든 카테고리',

@@ -149,6 +149,12 @@ export const en = {
     welcome: 'Welcome back',
     portalLabel: 'Customer Portal',
     noResultsLabel: 'No Results',
+    bottomNav: {
+      home: 'Home',
+      orders: 'Orders',
+      devices: 'Devices',
+      profile: 'Profile',
+    },
     browseProducts: 'Browse our products and schedule your installation',
     searchPlaceholder: 'Search products...',
     allCategories: 'All Categories',

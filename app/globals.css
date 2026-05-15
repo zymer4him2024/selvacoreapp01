@@ -119,6 +119,7 @@
   .sc .sc-nav-desktop { display: flex; }
   .sc .sc-nav-mobile { display: none; }
   .sc .sc-tech-main { padding-bottom: 32px !important; }
+  .sc-customer-shell { padding-bottom: 0 !important; }
 }
 
 .sc-main {

@@ -6,9 +6,26 @@ import ProtectedRoute from '@/components/common/ProtectedRoute';
 import UserProfileDropdown from '@/components/customer/UserProfileDropdown';
 import NotificationBell from '@/components/common/NotificationBell';
 import NetworkStatusBar from '@/components/common/NetworkStatusBar';
-import { OfflineQueueProvider } from '@/contexts/OfflineQueueContext';
+import BottomNav, { BottomNavItem } from '@/components/common/BottomNav';
+import { OfflineQueueProvider, useOfflineQueue } from '@/contexts/OfflineQueueContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
+
+function TechnicianMobileBottomNav() {
+  const pathname = usePathname();
+  const { t } = useTranslation();
+  const { pendingCount } = useOfflineQueue();
+  const tl = t.technician.layout;
+
+  const items: BottomNavItem[] = [
+    { label: tl.navAvailableJobs, href: '/technician', icon: Home, active: pathname === '/technician' },
+    { label: tl.navMyJobs, href: '/technician/jobs', icon: Briefcase, active: pathname.startsWith('/technician/jobs') },
+    { label: tl.navScan, href: '/technician/scan', icon: QrCode, active: pathname === '/technician/scan', badge: pendingCount },
+    { label: tl.navProfile, href: '/technician/profile', icon: User, active: pathname === '/technician/profile' },
+  ];
+
+  return <BottomNav items={items} />;
+}
 
 export default function TechnicianLayoutClient({
   children,
@@ -117,58 +134,7 @@ export default function TechnicianLayoutClient({
             </div>
           </nav>
 
-          <nav
-            className="sc-nav-mobile"
-            style={{
-              position: 'fixed',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              zIndex: 40,
-              background: 'var(--paper)',
-              backdropFilter: 'blur(20px)',
-              borderTop: '1px solid var(--line)',
-              paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-            }}
-          >
-            <div
-              style={{
-                display: 'grid',
-                gap: 4,
-                padding: '4px 8px',
-                gridTemplateColumns: `repeat(${Math.max(navigation.length, 1)}, minmax(0, 1fr))`,
-              }}
-            >
-              {navigation.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.name}
-                    onClick={() => router.push(item.href)}
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 2,
-                      minHeight: 48,
-                      borderRadius: 'var(--radius-sm)',
-                      border: 'none',
-                      background: item.current ? 'var(--brand)' : 'transparent',
-                      color: item.current ? '#fff' : 'var(--soft)',
-                      cursor: 'pointer',
-                      transition: 'transform 0.2s ease',
-                    }}
-                    onTouchStart={(e) => { e.currentTarget.style.transform = 'scale(0.95)'; }}
-                    onTouchEnd={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-                  >
-                    <Icon className="w-6 h-6" />
-                    <span style={{ fontSize: 10, fontWeight: 500 }}>{item.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </nav>
+          <TechnicianMobileBottomNav />
 
           <main
             style={{

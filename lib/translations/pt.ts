@@ -147,6 +147,12 @@ export const pt = {
     welcome: 'Bem-vindo de volta',
     portalLabel: 'Portal do Cliente',
     noResultsLabel: 'Sem Resultados',
+    bottomNav: {
+      home: 'Início',
+      orders: 'Pedidos',
+      devices: 'Dispositivos',
+      profile: 'Perfil',
+    },
     browseProducts: 'Navegue por nossos produtos e agende sua instalação',
     searchPlaceholder: 'Pesquisar produtos...',
     allCategories: 'Todas as Categorias',
