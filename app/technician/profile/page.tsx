@@ -420,7 +420,7 @@ export default function TechnicianProfilePage() {
 
           <div>
             <h2 className="sc-h2" style={{ marginBottom: 24 }}>{tp.performanceStats}</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
               <StatTile
                 icon={Briefcase}
                 iconColor="var(--brand)"
@@ -454,7 +454,7 @@ export default function TechnicianProfilePage() {
 
           <div className="sc-card-static">
             <h3 className="sc-h2" style={{ marginBottom: 16 }}>{tp.currentStatus}</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
               <div style={{ padding: 16, background: 'var(--brand-tint)', borderRadius: 'var(--radius-md)' }}>
                 <p className="sc-helper" style={{ margin: '0 0 4px' }}>{tp.upcomingJobs}</p>
                 <p style={{ fontSize: 22, fontWeight: 700, color: 'var(--brand)', margin: 0 }}>{stats?.upcomingJobs || 0}</p>

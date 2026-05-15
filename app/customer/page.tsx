@@ -95,10 +95,10 @@ export default function CustomerHomePage() {
             priority
           />
           <div className="sc-nav-right">
-            <Link href="/customer/devices" className="sc-nav-link">
+            <Link href="/customer/devices" className="sc-nav-link sc-nav-link--text-only">
               <span className="sc-nav-text">{t.customer.myDevices}</span>
             </Link>
-            <Link href="/customer/orders" className="sc-nav-link">
+            <Link href="/customer/orders" className="sc-nav-link sc-nav-link--text-only">
               <span className="sc-nav-text">{t.customer.myOrders}</span>
             </Link>
             <NotificationBell />

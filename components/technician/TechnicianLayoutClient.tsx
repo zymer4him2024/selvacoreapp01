@@ -140,8 +140,7 @@ export default function TechnicianLayoutClient({
             style={{
               maxWidth: 1280,
               margin: '0 auto',
-              padding: '32px 16px',
-              paddingBottom: 96,
+              padding: '20px 16px 96px',
             }}
             className="sc-tech-main"
           >

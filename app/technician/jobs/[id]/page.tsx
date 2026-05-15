@@ -459,7 +459,7 @@ export default function JobDetailPage() {
 
             <div className="sc-card-static" style={{ gridColumn: '1 / -1' }}>
               <h3 style={{ fontWeight: 600, fontSize: 17, marginTop: 0, marginBottom: 16 }}>{tj.productInformation}</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', columnGap: 24, rowGap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', columnGap: 16, rowGap: 12 }}>
                 {labelCol(tj.product, job.productSnapshot.name[lang] || job.productSnapshot.name.en)}
                 {labelCol(tj.variation, job.productSnapshot.variation)}
                 {job.serviceSnapshot && labelCol(tj.service, job.serviceSnapshot.name[lang] || job.serviceSnapshot.name.en)}
@@ -837,7 +837,7 @@ export default function JobDetailPage() {
                     <span style={{ color: 'var(--soft)' }}>{tj.by} {latestVisit.technicianName}</span>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 8, marginBottom: 16 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 8, marginBottom: 16 }}>
                     {[
                       { key: 'installationOk' as const, label: tj.installationOk },
                       { key: 'operationOk' as const, label: tj.operationOk },

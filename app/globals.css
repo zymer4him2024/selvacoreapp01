@@ -89,11 +89,14 @@
 .sc-nav-inner {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 16px 24px;
+  padding: 12px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
+}
+@media (min-width: 768px) {
+  .sc-nav-inner { padding: 16px 24px; gap: 16px; }
 }
 .sc-logo { height: 36px; width: auto; }
 .sc-nav-right { display: flex; align-items: center; gap: 4px; }
@@ -110,7 +113,11 @@
 }
 .sc-nav-link:hover { background: var(--hover-bg); }
 .sc-nav-link .sc-nav-text { display: none; }
-@media (min-width: 640px) { .sc-nav-link .sc-nav-text { display: inline; } }
+.sc-nav-link--text-only { display: none; }
+@media (min-width: 640px) {
+  .sc-nav-link .sc-nav-text { display: inline; }
+  .sc-nav-link--text-only { display: inline-flex; }
+}
 
 /* Technician portal responsive nav */
 .sc .sc-nav-desktop { display: none; }
@@ -118,14 +125,17 @@
 @media (min-width: 768px) {
   .sc .sc-nav-desktop { display: flex; }
   .sc .sc-nav-mobile { display: none; }
-  .sc .sc-tech-main { padding-bottom: 32px !important; }
+  .sc .sc-tech-main { padding: 40px 24px 32px !important; }
   .sc-customer-shell { padding-bottom: 0 !important; }
 }
 
 .sc-main {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 40px 24px 64px;
+  padding: 20px 16px 96px;
+}
+@media (min-width: 768px) {
+  .sc-main { padding: 40px 24px 64px; }
 }
 
 .sc-eyebrow {
@@ -137,7 +147,7 @@
   margin-bottom: 8px;
 }
 .sc-h1 {
-  font-size: 30px;
+  font-size: 24px;
   line-height: 1.2;
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -146,12 +156,16 @@
   text-wrap: pretty;
 }
 .sc-h2 {
-  font-size: 22px;
+  font-size: 18px;
   line-height: 1.3;
   font-weight: 700;
   letter-spacing: -0.005em;
   color: var(--ink);
   margin: 0 0 8px;
+}
+@media (min-width: 768px) {
+  .sc-h1 { font-size: 30px; }
+  .sc-h2 { font-size: 22px; }
 }
 .sc-lede {
   font-size: 14px;

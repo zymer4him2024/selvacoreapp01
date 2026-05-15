@@ -125,7 +125,7 @@ export default function TechnicianDashboard() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
               <StatCardSkeleton />
               <StatCardSkeleton />
               <StatCardSkeleton />
@@ -346,7 +346,7 @@ export default function TechnicianDashboard() {
           </div>
 
           {stats && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
               {[
                 { icon: Briefcase, iconColor: 'var(--brand)', iconBg: 'var(--brand-tint)', value: stats.totalJobs, label: td.totalJobs },
                 { icon: Award, iconColor: 'var(--brand)', iconBg: 'var(--brand-tint)', value: stats.completedJobs, label: td.completedLabel },
