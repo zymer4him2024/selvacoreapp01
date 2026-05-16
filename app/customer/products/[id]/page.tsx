@@ -168,7 +168,7 @@ export default function ProductDetailPage() {
             {product.variations && product.variations.length > 0 && (
               <div>
                 <label className="sc-label">
-                  {o.selectOption} <span style={{ color: 'var(--warn)' }}>*</span>
+                  {o.selectOption} <span className="sc-required">*</span>
                 </label>
                 <div className="sc-stack">
                   {product.variations.map((variation) => {

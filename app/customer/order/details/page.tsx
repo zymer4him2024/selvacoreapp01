@@ -26,6 +26,7 @@ import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getFallbackAddresses, saveFallbackAddress } from '@/lib/services/fallbackAddressService';
 import AddressAutocompleteField from '@/components/common/AddressAutocompleteField';
+import OrderProgressTracker from '@/components/customer/OrderProgressTracker';
 import toast from 'react-hot-toast';
 
 type AddressForm = Omit<Address, 'id'>;
@@ -249,29 +250,6 @@ export default function OrderDetailsPage() {
   const total = product.basePrice + (service?.price || 0);
   const maint = product.maintenanceTemplate;
 
-  const ProgressStep = ({ n, state }: { n: number; state: 'done' | 'active' | 'pending' }) => (
-    <div
-      style={{
-        width: 32,
-        height: 32,
-        borderRadius: '50%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: 14,
-        fontWeight: 700,
-        background: state === 'done' ? 'var(--brand)' : state === 'active' ? 'var(--brand)' : 'var(--paper)',
-        color: state === 'pending' ? 'var(--soft)' : 'var(--paper)',
-        border: state === 'pending' ? '2px solid var(--hairline)' : 'none',
-      }}
-    >
-      {n}
-    </div>
-  );
-  const ProgressBar = ({ filled }: { filled: boolean }) => (
-    <div style={{ width: 64, height: 4, background: filled ? 'var(--brand)' : 'var(--hairline)' }} />
-  );
-
   return (
     <div className="sc">
       <header className="sc-nav">
@@ -290,15 +268,7 @@ export default function OrderDetailsPage() {
 
       <main className="sc-main" style={{ maxWidth: 720 }}>
         <div className="sc-stack-lg">
-          <div className="sc-row" style={{ justifyContent: 'center', gap: 8 }}>
-            <ProgressStep n={1} state="done" />
-            <ProgressBar filled />
-            <ProgressStep n={2} state="active" />
-            <ProgressBar filled={false} />
-            <ProgressStep n={3} state="pending" />
-            <ProgressBar filled={false} />
-            <ProgressStep n={4} state="pending" />
-          </div>
+          <OrderProgressTracker currentStep={2} />
 
           <div style={{ textAlign: 'center' }}>
             <h1 className="sc-h1">{t.orders.installationDetails}</h1>
@@ -489,7 +459,7 @@ export default function OrderDetailsPage() {
                           </div>
                           {selected && (
                             <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              <Check className="w-4 h-4" style={{ color: 'var(--paper)' }} />
+                              <Check className="w-4 h-4" style={{ color: '#fff' }} />
                             </div>
                           )}
                         </div>

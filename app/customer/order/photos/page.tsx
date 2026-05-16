@@ -69,7 +69,7 @@ function PhotoSection({
       <div className="sc-row-between" style={{ alignItems: 'flex-start', marginBottom: 16 }}>
         <div style={{ flex: 1 }}>
           <h3 style={{ fontWeight: 600, marginBottom: 4 }}>
-            {title} <span style={{ color: 'var(--warn)' }}>*</span>
+            {title} <span className="sc-required">*</span>
           </h3>
           <p className="sc-helper" style={{ marginBottom: 8 }}>{description}</p>
           <PhotoGuide type={guideType} />
@@ -462,7 +462,7 @@ export default function SitePhotosPage() {
               <div className="sc-row-between" style={{ alignItems: 'flex-start', marginBottom: 16 }}>
                 <div style={{ flex: 1 }}>
                   <h3 style={{ fontWeight: 600, marginBottom: 4 }}>
-                    {t.orders.waterRunningVideo} <span style={{ color: 'var(--warn)' }}>*</span>
+                    {t.orders.waterRunningVideo} <span className="sc-required">*</span>
                   </h3>
                   <p className="sc-helper" style={{ marginBottom: 8 }}>{t.orders.waterRunningDesc}</p>
                   <PhotoGuide type="waterRunning" />

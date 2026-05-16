@@ -141,7 +141,7 @@ export default function CustomerRegistrationPage() {
 
               <div>
                 <label className="sc-label">
-                  {t.customer.profileScreen.phoneNumber} <span style={{ color: 'var(--warn)' }}>*</span>
+                  {t.customer.profileScreen.phoneNumber} <span className="sc-required">*</span>
                 </label>
                 <input
                   type="tel"
@@ -190,7 +190,7 @@ export default function CustomerRegistrationPage() {
 
               <div>
                 <label className="sc-label">
-                  {rs.streetAddress} <span style={{ color: 'var(--warn)' }}>*</span>
+                  {rs.streetAddress} <span className="sc-required">*</span>
                 </label>
                 <input
                   type="text"
@@ -205,7 +205,7 @@ export default function CustomerRegistrationPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="sc-label">
-                    {t.orders.city} <span style={{ color: 'var(--warn)' }}>*</span>
+                    {t.orders.city} <span className="sc-required">*</span>
                   </label>
                   <input
                     type="text"

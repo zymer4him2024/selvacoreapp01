@@ -300,7 +300,7 @@ export default function OrderDetailPage() {
                     height: 64,
                     borderRadius: '50%',
                     background: 'var(--brand)',
-                    color: 'var(--paper)',
+                    color: '#fff',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',

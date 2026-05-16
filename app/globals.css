@@ -218,6 +218,10 @@
   color: var(--soft);
   margin-top: 4px;
 }
+.sc-required {
+  color: var(--warn);
+  margin-left: 2px;
+}
 
 .sc-grid {
   display: grid;

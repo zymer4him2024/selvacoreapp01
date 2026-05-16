@@ -19,10 +19,10 @@ export default function OrderProgressTracker({ currentStep }: OrderProgressTrack
 
   const circleStyle = (step: number): React.CSSProperties => {
     if (step < currentStep) {
-      return { background: 'var(--brand)', color: 'var(--paper)', border: 'none' };
+      return { background: 'var(--brand)', color: '#fff', border: 'none' };
     }
     if (step === currentStep) {
-      return { background: 'var(--brand)', color: 'var(--paper)', border: 'none', boxShadow: '0 0 0 4px var(--brand-tint)' };
+      return { background: 'var(--brand)', color: '#fff', border: 'none', boxShadow: '0 0 0 4px var(--brand-tint)' };
     }
     return { background: 'var(--paper)', color: 'var(--soft)', border: '2px solid var(--hairline)' };
   };

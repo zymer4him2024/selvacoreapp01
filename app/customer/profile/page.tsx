@@ -133,7 +133,7 @@ export default function CustomerProfilePage() {
                     height: 96,
                     borderRadius: '50%',
                     background: 'var(--brand)',
-                    color: 'var(--paper)',
+                    color: '#fff',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',

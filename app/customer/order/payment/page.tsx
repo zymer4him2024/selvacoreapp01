@@ -17,6 +17,7 @@ import { addCustomerHistoryRecord } from '@/lib/services/customerHistoryService'
 import { saveFallbackOrder } from '@/lib/services/fallbackOrderService';
 import { getFallbackAddress } from '@/lib/services/fallbackAddressService';
 import { useTranslation } from '@/hooks/useTranslation';
+import OrderProgressTracker from '@/components/customer/OrderProgressTracker';
 import toast from 'react-hot-toast';
 
 export default function PaymentPage() {
@@ -337,30 +338,6 @@ export default function PaymentPage() {
   const tax = subtotal * 0.1;
   const total = subtotal + tax;
 
-  const ProgressDot = ({ done, active, label }: { done: boolean; active: boolean; label: string | number }) => (
-    <div
-      style={{
-        width: 32,
-        height: 32,
-        borderRadius: '50%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: 13,
-        fontWeight: 700,
-        background: done || active ? 'var(--brand)' : 'var(--off-paper)',
-        color: done || active ? 'var(--paper)' : 'var(--soft)',
-        boxShadow: active ? '0 0 0 4px var(--brand-tint)' : 'none',
-      }}
-    >
-      {label}
-    </div>
-  );
-
-  const ProgressBar = ({ filled }: { filled: boolean }) => (
-    <div style={{ width: 48, height: 3, background: filled ? 'var(--brand)' : 'var(--hairline)' }} />
-  );
-
   return (
     <div className="sc" style={{ minHeight: '100vh', paddingBottom: 80 }}>
       <header
@@ -389,15 +366,7 @@ export default function PaymentPage() {
 
       <div className="sc-container" style={{ maxWidth: 720, padding: '32px 16px' }}>
         <div className="sc-stack-lg" style={{ gap: 32 }}>
-          <div className="sc-row" style={{ justifyContent: 'center', alignItems: 'center', gap: 8 }}>
-            <ProgressDot done={true} active={false} label="✓" />
-            <ProgressBar filled />
-            <ProgressDot done={true} active={false} label="✓" />
-            <ProgressBar filled />
-            <ProgressDot done={true} active={false} label="✓" />
-            <ProgressBar filled />
-            <ProgressDot done={false} active={true} label={4} />
-          </div>
+          <OrderProgressTracker currentStep={4} />
 
           <div style={{ textAlign: 'center' }}>
             <h1 className="sc-h1" style={{ marginBottom: 8 }}>{t.orders.paymentTitle}</h1>
@@ -514,7 +483,7 @@ export default function PaymentPage() {
                     justifyContent: 'center',
                   }}
                 >
-                  <Check className="w-4 h-4" style={{ color: 'var(--paper)' }} />
+                  <Check className="w-4 h-4" style={{ color: '#fff' }} />
                 </div>
               </div>
 

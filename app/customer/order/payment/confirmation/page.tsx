@@ -179,7 +179,7 @@ export default function PaymentConfirmationPage() {
         width: 28,
         height: 28,
         background: 'var(--brand)',
-        color: 'var(--paper)',
+        color: '#fff',
         borderRadius: '50%',
         display: 'flex',
         alignItems: 'center',
