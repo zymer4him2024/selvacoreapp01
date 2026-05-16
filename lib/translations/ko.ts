@@ -210,6 +210,9 @@ export const ko = {
       checkCarbon: '카본',
       beforePhotoAlt: '이전',
       afterPhotoAlt: '이후',
+      statusActive: '활성',
+      statusInactive: '비활성',
+      statusDecommissioned: '폐기됨',
     },
     profileScreen: {
       manage: '계정 정보를 관리하세요',
@@ -293,6 +296,7 @@ export const ko = {
       tbd: '미정',
       startBrowsing: '제품을 둘러보며 시작하세요',
       savedLocally: '개의 주문이 로컬에 저장됨. 가능할 때 동기화됩니다.',
+      productFallback: '제품',
     },
     homeScreen: {
       loadProductsError: '제품을 불러오지 못했습니다',

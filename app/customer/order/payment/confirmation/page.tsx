@@ -2,13 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { CheckCircle, Download, ArrowLeft, Clock, CreditCard, Shield, MapPin } from 'lucide-react';
+import { CheckCircle, ArrowLeft, Clock, CreditCard, Shield, MapPin } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { formatCurrency, formatDateTime } from '@/lib/utils/formatters';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
+import { Order } from '@/types';
+import { MultiLanguageText } from '@/types/product';
+import { TIME_SLOTS } from '@/lib/utils/constants';
+import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import { useTranslation } from '@/hooks/useTranslation';
-import toast from 'react-hot-toast';
 
-interface PaymentConfirmationData {
+interface ConfirmationView {
   orderId: string;
   orderNumber: string;
   transactionId: string;
@@ -28,46 +32,112 @@ export default function PaymentConfirmationPage() {
   const searchParams = useSearchParams();
   const { userData } = useAuth();
   const { t } = useTranslation();
-  
-  const [confirmationData, setConfirmationData] = useState<PaymentConfirmationData | null>(null);
+  const { formatCurrency, formatDate, formatDateTime } = useLocaleFormatters();
+
+  const [view, setView] = useState<ConfirmationView | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get confirmation data from URL params
     const orderId = searchParams.get('orderId');
     const orderNumber = searchParams.get('orderNumber');
     const transactionId = searchParams.get('transactionId');
-    const amount = parseFloat(searchParams.get('amount') || '0');
-    const currency = searchParams.get('currency') || 'USD';
-    
-    if (orderId && orderNumber && transactionId) {
-      setConfirmationData({
-        orderId,
-        orderNumber,
-        transactionId,
-        amount,
-        currency,
-        productName: 'Water Purifier System', // This should come from order data
-        serviceName: 'Self Installation',
-        installationDate: '2024-01-15',
-        timeSlot: '10:00 AM - 12:00 PM',
-        address: '123 Main Street, City, State',
-        paymentMethod: 'Credit Card',
-        paidAt: new Date()
-      });
-    }
-    
-    setLoading(false);
-  }, [searchParams]);
+    const amountParam = searchParams.get('amount');
+    const currencyParam = searchParams.get('currency') || 'USD';
 
-  const handleDownloadReceipt = () => {
-    // Generate and download receipt PDF
-    toast.success(t.components.paymentConfirmation.receiptDownloaded);
-  };
+    if (!orderId || !orderNumber || !transactionId) {
+      setLoading(false);
+      return;
+    }
+
+    const lang = userData?.preferredLanguage || 'en';
+
+    const pickLang = (text: MultiLanguageText | undefined | null): string => {
+      if (!text) return '';
+      return text[lang] || text.en || text.pt || text.es || text.ko || Object.values(text)[0] || '';
+    };
+
+    const timeSlotLabel = (slot: string | undefined): string => {
+      if (!slot) return '';
+      return TIME_SLOTS.find((s) => s.value === slot)?.label || slot;
+    };
+
+    const paymentMethodLabel = (method: string | undefined): string => {
+      if (method === 'amazon_pay') return t.orders.amazonPay;
+      if (method === 'credit_card') return t.orders.paymentMethod;
+      return t.orders.amazonPay;
+    };
+
+    const formatAddress = (addr: Order['installationAddress'] | undefined): string => {
+      if (!addr) return '';
+      const parts = [addr.street, addr.city, addr.state, addr.postalCode].filter(Boolean);
+      return parts.join(', ');
+    };
+
+    (async () => {
+      try {
+        const orderDoc = await getDoc(doc(db, 'orders', orderId));
+
+        if (orderDoc.exists()) {
+          const order = { id: orderDoc.id, ...orderDoc.data() } as Order;
+          const paidAt = order.payment.paidAt?.toDate() ?? new Date();
+
+          setView({
+            orderId,
+            orderNumber: order.orderNumber || orderNumber,
+            transactionId: order.payment.transactionId || transactionId,
+            amount: order.payment.amount ?? parseFloat(amountParam || '0'),
+            currency: order.payment.currency || currencyParam,
+            productName: pickLang(order.productSnapshot?.name),
+            serviceName: pickLang(order.serviceSnapshot?.name),
+            installationDate: order.installationDate
+              ? formatDate(order.installationDate, 'full')
+              : '',
+            timeSlot: timeSlotLabel(order.timeSlot),
+            address: formatAddress(order.installationAddress),
+            paymentMethod: paymentMethodLabel(order.payment.method),
+            paidAt,
+          });
+        } else {
+          // Order doc missing (e.g. offline-saved fallback). Render with URL params only.
+          setView({
+            orderId,
+            orderNumber,
+            transactionId,
+            amount: parseFloat(amountParam || '0'),
+            currency: currencyParam,
+            productName: '',
+            serviceName: '',
+            installationDate: '',
+            timeSlot: '',
+            address: '',
+            paymentMethod: t.orders.amazonPay,
+            paidAt: new Date(),
+          });
+        }
+      } catch {
+        setView({
+          orderId,
+          orderNumber,
+          transactionId,
+          amount: parseFloat(amountParam || '0'),
+          currency: currencyParam,
+          productName: '',
+          serviceName: '',
+          installationDate: '',
+          timeSlot: '',
+          address: '',
+          paymentMethod: t.orders.amazonPay,
+          paidAt: new Date(),
+        });
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [searchParams, userData?.preferredLanguage]);
 
   const handleViewOrder = () => {
-    if (confirmationData) {
-      router.push(`/customer/orders/${confirmationData.orderId}`);
+    if (view) {
+      router.push(`/customer/orders/${view.orderId}`);
     }
   };
 
@@ -82,7 +152,7 @@ export default function PaymentConfirmationPage() {
     );
   }
 
-  if (!confirmationData) {
+  if (!view) {
     return (
       <div className="sc" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
         <div className="sc-stack" style={{ alignItems: 'center', gap: 16, textAlign: 'center', maxWidth: 480 }}>
@@ -100,6 +170,8 @@ export default function PaymentConfirmationPage() {
       </div>
     );
   }
+
+  const hasInstallationDetails = Boolean(view.productName || view.installationDate || view.address);
 
   const StepNumber = ({ n }: { n: number }) => (
     <div
@@ -130,7 +202,7 @@ export default function PaymentConfirmationPage() {
           position: 'sticky',
           top: 0,
           zIndex: 10,
-          background: 'rgba(255,255,255,0.85)',
+          background: 'var(--paper)',
           backdropFilter: 'blur(12px)',
           borderBottom: '1px solid var(--hairline)',
         }}
@@ -179,21 +251,21 @@ export default function PaymentConfirmationPage() {
               <div className="sc-row-between" style={{ alignItems: 'center' }}>
                 <span className="sc-helper">{t.orders.orderNumber}</span>
                 <span style={{ fontFamily: 'var(--font-jetbrains-mono), monospace', fontWeight: 700 }}>
-                  {confirmationData.orderNumber}
+                  {view.orderNumber}
                 </span>
               </div>
 
               <div className="sc-row-between" style={{ alignItems: 'center' }}>
                 <span className="sc-helper">{t.orders.transactionId}</span>
                 <span style={{ fontFamily: 'var(--font-jetbrains-mono), monospace', fontSize: 13 }}>
-                  {confirmationData.transactionId}
+                  {view.transactionId}
                 </span>
               </div>
 
               <div className="sc-row-between" style={{ alignItems: 'center' }}>
                 <span className="sc-helper">{t.orders.amountPaid}</span>
                 <span className="sc-price" style={{ fontSize: 28 }}>
-                  {formatCurrency(confirmationData.amount, confirmationData.currency)}
+                  {formatCurrency(view.amount, view.currency)}
                 </span>
               </div>
 
@@ -201,48 +273,60 @@ export default function PaymentConfirmationPage() {
                 <span className="sc-helper">{t.orders.paymentMethod}</span>
                 <div className="sc-row" style={{ alignItems: 'center', gap: 8 }}>
                   <CreditCard className="w-4 h-4" />
-                  <span>{confirmationData.paymentMethod}</span>
+                  <span>{view.paymentMethod}</span>
                 </div>
               </div>
 
               <div className="sc-row-between" style={{ alignItems: 'center' }}>
                 <span className="sc-helper">{t.orders.paymentDate}</span>
-                <span>{formatDateTime(confirmationData.paidAt)}</span>
+                <span>{formatDateTime(view.paidAt)}</span>
               </div>
             </div>
           </div>
 
-          <div className="sc-card-static">
-            <h2 className="sc-h2" style={{ marginBottom: 16 }}>{t.orders.installationDetailsTitle}</h2>
+          {hasInstallationDetails && (
+            <div className="sc-card-static">
+              <h2 className="sc-h2" style={{ marginBottom: 16 }}>{t.orders.installationDetailsTitle}</h2>
 
-            <div className="sc-stack" style={{ gap: 16 }}>
-              <div className="sc-row" style={{ alignItems: 'flex-start', gap: 12 }}>
-                <Clock className="w-5 h-5" style={{ color: 'var(--brand)', marginTop: 4, flexShrink: 0 }} />
-                <div>
-                  <p style={{ fontWeight: 600, margin: 0 }}>{confirmationData.installationDate}</p>
-                  <p className="sc-helper" style={{ marginTop: 2 }}>
-                    {t.orders.time}: {confirmationData.timeSlot}
-                  </p>
-                </div>
-              </div>
+              <div className="sc-stack" style={{ gap: 16 }}>
+                {view.installationDate && (
+                  <div className="sc-row" style={{ alignItems: 'flex-start', gap: 12 }}>
+                    <Clock className="w-5 h-5" style={{ color: 'var(--brand)', marginTop: 4, flexShrink: 0 }} />
+                    <div>
+                      <p style={{ fontWeight: 600, margin: 0 }}>{view.installationDate}</p>
+                      {view.timeSlot && (
+                        <p className="sc-helper" style={{ marginTop: 2 }}>
+                          {t.orders.time}: {view.timeSlot}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
 
-              <div className="sc-row" style={{ alignItems: 'flex-start', gap: 12 }}>
-                <Shield className="w-5 h-5" style={{ color: 'var(--brand)', marginTop: 4, flexShrink: 0 }} />
-                <div>
-                  <p style={{ fontWeight: 600, margin: 0 }}>{confirmationData.productName}</p>
-                  <p className="sc-helper" style={{ marginTop: 2 }}>{confirmationData.serviceName}</p>
-                </div>
-              </div>
+                {view.productName && (
+                  <div className="sc-row" style={{ alignItems: 'flex-start', gap: 12 }}>
+                    <Shield className="w-5 h-5" style={{ color: 'var(--brand)', marginTop: 4, flexShrink: 0 }} />
+                    <div>
+                      <p style={{ fontWeight: 600, margin: 0 }}>{view.productName}</p>
+                      {view.serviceName && (
+                        <p className="sc-helper" style={{ marginTop: 2 }}>{view.serviceName}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
 
-              <div className="sc-row" style={{ alignItems: 'flex-start', gap: 12 }}>
-                <MapPin className="w-5 h-5" style={{ color: 'var(--brand)', marginTop: 4, flexShrink: 0 }} />
-                <div>
-                  <p style={{ fontWeight: 600, margin: 0 }}>{t.orders.installationAddressLabel}</p>
-                  <p className="sc-helper" style={{ marginTop: 2 }}>{confirmationData.address}</p>
-                </div>
+                {view.address && (
+                  <div className="sc-row" style={{ alignItems: 'flex-start', gap: 12 }}>
+                    <MapPin className="w-5 h-5" style={{ color: 'var(--brand)', marginTop: 4, flexShrink: 0 }} />
+                    <div>
+                      <p style={{ fontWeight: 600, margin: 0 }}>{t.orders.installationAddressLabel}</p>
+                      <p className="sc-helper" style={{ marginTop: 2 }}>{view.address}</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
+          )}
 
           <div
             className="sc-card-static"
@@ -277,34 +361,14 @@ export default function PaymentConfirmationPage() {
             </div>
           </div>
 
-          <div className="sc-row" style={{ gap: 16, flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              onClick={handleViewOrder}
-              className="sc-cta"
-              style={{ flex: 1, minWidth: 200, padding: '18px 24px' }}
-            >
-              {t.orders.viewOrderDetails}
-            </button>
-
-            <button
-              type="button"
-              onClick={handleDownloadReceipt}
-              className="sc-cta-ghost"
-              style={{
-                flex: 1,
-                minWidth: 200,
-                padding: '18px 24px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-              }}
-            >
-              <Download className="w-5 h-5" />
-              {t.orders.downloadReceipt}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleViewOrder}
+            className="sc-cta"
+            style={{ width: '100%', padding: '18px 24px' }}
+          >
+            {t.orders.viewOrderDetails}
+          </button>
         </div>
       </div>
     </div>

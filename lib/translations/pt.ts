@@ -210,6 +210,9 @@ export const pt = {
       checkCarbon: 'Carbono',
       beforePhotoAlt: 'Antes',
       afterPhotoAlt: 'Depois',
+      statusActive: 'Ativo',
+      statusInactive: 'Inativo',
+      statusDecommissioned: 'Desativado',
     },
     profileScreen: {
       manage: 'Gerencie as informações da sua conta',
@@ -293,6 +296,7 @@ export const pt = {
       tbd: 'A definir',
       startBrowsing: 'Comece navegando em nossos produtos',
       savedLocally: 'pedidos salvos localmente. Serão sincronizados quando possível.',
+      productFallback: 'Produto',
     },
     homeScreen: {
       loadProductsError: 'Falha ao carregar produtos',

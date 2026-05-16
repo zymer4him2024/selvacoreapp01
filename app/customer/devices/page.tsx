@@ -8,6 +8,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { getDevicesByCustomerId } from '@/lib/services/deviceService';
 import { getSchedulesByDeviceId, getVisitsByDeviceId } from '@/lib/services/maintenanceService';
 import { Device, MaintenanceSchedule, MaintenanceVisit } from '@/types/device';
+import { MultiLanguageText } from '@/types/product';
 import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import toast from 'react-hot-toast';
 
@@ -33,10 +34,15 @@ function getDaysOverdue(nextDueDate: Date): number {
 
 export default function CustomerDevicesPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
   const { t } = useTranslation();
   const { formatDate } = useLocaleFormatters();
   const d = t.customer.devices;
+  const lang = userData?.preferredLanguage || 'en';
+  const deviceName = (name: MultiLanguageText | undefined | null): string => {
+    if (!name) return d.defaultDeviceName;
+    return name[lang] || name.en || name.pt || name.es || name.ko || Object.values(name)[0] || d.defaultDeviceName;
+  };
   const [devices, setDevices] = useState<DeviceWithSchedules[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedVisits, setExpandedVisits] = useState<Record<string, boolean>>({});
@@ -119,7 +125,7 @@ export default function CustomerDevicesPage() {
                   <div className="sc-row-between" style={{ marginBottom: 16, alignItems: 'flex-start' }}>
                     <div>
                       <h3 className="sc-h2" style={{ margin: 0 }}>
-                        {device.productSnapshot.name?.en || d.defaultDeviceName}
+                        {deviceName(device.productSnapshot.name)}
                       </h3>
                       {device.productSnapshot.variation && (
                         <p className="sc-helper" style={{ margin: '4px 0 0' }}>{device.productSnapshot.variation}</p>
@@ -129,7 +135,11 @@ export default function CustomerDevicesPage() {
                       className="sc-badge-inline"
                       style={{ color: statusBadge.color, background: statusBadge.bg }}
                     >
-                      {device.status.toUpperCase()}
+                      {device.status === 'active'
+                        ? d.statusActive
+                        : device.status === 'inactive'
+                          ? d.statusInactive
+                          : d.statusDecommissioned}
                     </span>
                   </div>
 

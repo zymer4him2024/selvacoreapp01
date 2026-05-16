@@ -369,7 +369,7 @@ export default function PaymentPage() {
           position: 'sticky',
           top: 0,
           zIndex: 10,
-          background: 'rgba(255,255,255,0.85)',
+          background: 'var(--paper)',
           backdropFilter: 'blur(12px)',
           borderBottom: '1px solid var(--hairline)',
         }}

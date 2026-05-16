@@ -7,6 +7,7 @@ import { ArrowLeft, Package as PackageIcon, Calendar, Star } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Order, OrderStatus, Review } from '@/types';
+import { MultiLanguageText } from '@/types/product';
 import { getReviewForOrder } from '@/lib/services/reviewService';
 
 // Simple display type for fallback orders
@@ -22,7 +23,7 @@ interface FallbackOrderDisplay {
   installationDate?: Date;
   timeSlot?: string;
   productSnapshot?: {
-    name: { en: string };
+    name: Partial<MultiLanguageText>;
     variation: string;
     price: number;
     image: string;
@@ -178,6 +179,12 @@ export default function CustomerOrdersPage() {
 
   const getStatusLabel = (status: string) => getOrderStatusLabel(status, 'customer', t);
 
+  const lang = userData?.preferredLanguage || 'en';
+  const productName = (name: Partial<MultiLanguageText> | undefined | null): string => {
+    if (!name) return t.customer.ordersListScreen.productFallback;
+    return name[lang] || name.en || name.pt || name.es || name.ko || Object.values(name)[0] || t.customer.ordersListScreen.productFallback;
+  };
+
   if (loading) {
     return (
       <div className="sc">
@@ -279,7 +286,7 @@ export default function CustomerOrdersPage() {
                         {order.productSnapshot?.image ? (
                           <img
                             src={order.productSnapshot.image}
-                            alt={order.productSnapshot.name?.en || 'Product'}
+                            alt={productName(order.productSnapshot.name)}
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
                         ) : (
@@ -291,7 +298,7 @@ export default function CustomerOrdersPage() {
                         <div className="sc-row-between" style={{ alignItems: 'flex-start', marginBottom: 8 }}>
                           <div>
                             <h3 className="sc-card-title">
-                              {order.productSnapshot?.name?.en || 'Product'}
+                              {productName(order.productSnapshot?.name)}
                             </h3>
                             <p className="sc-helper" style={{ margin: 0 }}>
                               {t.orders.orderNumber} {order.orderNumber}

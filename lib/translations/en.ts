@@ -212,6 +212,9 @@ export const en = {
       checkCarbon: 'Carbon',
       beforePhotoAlt: 'Before',
       afterPhotoAlt: 'After',
+      statusActive: 'Active',
+      statusInactive: 'Inactive',
+      statusDecommissioned: 'Decommissioned',
     },
     profileScreen: {
       manage: 'Manage your account information',
@@ -295,6 +298,7 @@ export const en = {
       tbd: 'TBD',
       startBrowsing: 'Start by browsing our products',
       savedLocally: 'orders saved locally. Will sync when possible.',
+      productFallback: 'Product',
     },
     homeScreen: {
       loadProductsError: 'Failed to load products',
