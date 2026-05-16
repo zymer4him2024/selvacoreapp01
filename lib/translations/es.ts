@@ -453,6 +453,7 @@ export const es = {
     placedOn: 'Realizado el',
     orderDetails: 'Detalles del Pedido',
     installationSchedule: 'Agenda de Instalacion',
+    timeLabel: 'Hora',
     yourTechnician: 'Su Tecnico',
     rating: 'calificacion',
     contactWhatsApp: 'Contactar Tecnico por WhatsApp',

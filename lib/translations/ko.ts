@@ -453,6 +453,7 @@ export const ko = {
     placedOn: '주문일',
     orderDetails: '주문 상세',
     installationSchedule: '설치 일정',
+    timeLabel: '시간',
     yourTechnician: '담당 기술자',
     rating: '평점',
     contactWhatsApp: 'WhatsApp으로 기술자 연락',

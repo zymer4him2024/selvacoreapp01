@@ -270,7 +270,7 @@ export default function OrderDetailPage() {
                 <Calendar className="w-5 h-5" style={{ color: 'var(--brand)', marginTop: 2 }} />
                 <div>
                   <p style={{ fontWeight: 600, margin: 0 }}>{formatDate(order.installationDate, 'full')}</p>
-                  <p className="sc-helper" style={{ margin: '4px 0 0' }}>Time: {order.timeSlot}</p>
+                  <p className="sc-helper" style={{ margin: '4px 0 0' }}>{o.timeLabel}: {order.timeSlot}</p>
                 </div>
               </div>
 
@@ -282,7 +282,10 @@ export default function OrderDetailPage() {
                     {order.installationAddress.city}, {order.installationAddress.state} {order.installationAddress.postalCode}
                   </p>
                   {order.installationAddress.landmark && (
-                    <p className="sc-helper" style={{ margin: '4px 0 0' }}>📍 {order.installationAddress.landmark}</p>
+                    <p className="sc-helper sc-row" style={{ margin: '4px 0 0', gap: 4, alignItems: 'center' }}>
+                      <MapPin className="w-3 h-3" aria-hidden />
+                      {order.installationAddress.landmark}
+                    </p>
                   )}
                 </div>
               </div>
@@ -452,7 +455,9 @@ export default function OrderDetailPage() {
             <h2 className="sc-h2" style={{ marginBottom: 16 }}>{o.orderTimeline}</h2>
 
             <div className="sc-stack">
-              {order.statusHistory?.map((history, index) => (
+              {order.statusHistory?.map((history, index) => {
+                const isLatest = index === order.statusHistory.length - 1;
+                return (
                 <div key={index} className="sc-row" style={{ gap: 16, alignItems: 'stretch' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <div
@@ -460,12 +465,12 @@ export default function OrderDetailPage() {
                         width: 12,
                         height: 12,
                         borderRadius: '50%',
-                        background: index === order.statusHistory.length - 1 ? 'var(--brand)' : 'var(--brand)',
-                        opacity: index === order.statusHistory.length - 1 ? 1 : 0.6,
+                        background: 'var(--brand)',
+                        boxShadow: isLatest ? '0 0 0 4px var(--brand-tint)' : 'none',
                       }}
                     />
                     {index < order.statusHistory.length - 1 && (
-                      <div style={{ width: 2, flex: 1, background: 'var(--hairline)', marginTop: 4 }} />
+                      <div style={{ width: 2, flex: 1, background: 'var(--brand)', opacity: 0.3, marginTop: 4 }} />
                     )}
                   </div>
                   <div style={{ flex: 1, paddingBottom: 24 }}>
@@ -476,7 +481,8 @@ export default function OrderDetailPage() {
                     <p className="sc-helper" style={{ margin: '8px 0 0', fontSize: 11 }}>{formatDateTime(history.timestamp)}</p>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -535,7 +541,6 @@ export default function OrderDetailPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 8,
-                background: 'var(--warn)',
               }}
             >
               <Star className="w-5 h-5" />

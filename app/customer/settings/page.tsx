@@ -78,10 +78,13 @@ export default function CustomerSettingsPage() {
     cursor: 'pointer',
   };
 
-  const renderToggle = (checked: boolean, onChange: (v: boolean) => void) => (
+  const renderToggle = (checked: boolean, onChange: (v: boolean) => void, ariaLabel: string) => (
     <label style={toggleStyle}>
       <input
         type="checkbox"
+        role="switch"
+        aria-checked={checked}
+        aria-label={ariaLabel}
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
         style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}
@@ -190,7 +193,7 @@ export default function CustomerSettingsPage() {
                   <p style={{ fontWeight: 600, margin: 0 }}>{ss.emailNotifications}</p>
                   <p className="sc-helper" style={{ margin: '4px 0 0' }}>{ss.emailNotificationsDesc}</p>
                 </div>
-                {renderToggle(settings.emailNotifications, (v) => setSettings({ ...settings, emailNotifications: v }))}
+                {renderToggle(settings.emailNotifications, (v) => setSettings({ ...settings, emailNotifications: v }), ss.emailNotifications)}
               </div>
 
               <div className="sc-row-between" style={{ padding: 16, background: 'var(--off-paper)', borderRadius: 'var(--radius-sm)' }}>
@@ -198,7 +201,7 @@ export default function CustomerSettingsPage() {
                   <p style={{ fontWeight: 600, margin: 0 }}>{ss.smsNotifications}</p>
                   <p className="sc-helper" style={{ margin: '4px 0 0' }}>{ss.smsNotificationsDesc}</p>
                 </div>
-                {renderToggle(settings.smsNotifications, (v) => setSettings({ ...settings, smsNotifications: v }))}
+                {renderToggle(settings.smsNotifications, (v) => setSettings({ ...settings, smsNotifications: v }), ss.smsNotifications)}
               </div>
 
               <div className="sc-row-between" style={{ padding: 16, background: 'var(--off-paper)', borderRadius: 'var(--radius-sm)' }}>
@@ -206,7 +209,7 @@ export default function CustomerSettingsPage() {
                   <p style={{ fontWeight: 600, margin: 0 }}>{ss.promotionalEmails}</p>
                   <p className="sc-helper" style={{ margin: '4px 0 0' }}>{ss.promotionalEmailsDesc}</p>
                 </div>
-                {renderToggle(settings.promotionalEmails, (v) => setSettings({ ...settings, promotionalEmails: v }))}
+                {renderToggle(settings.promotionalEmails, (v) => setSettings({ ...settings, promotionalEmails: v }), ss.promotionalEmails)}
               </div>
             </div>
           </div>

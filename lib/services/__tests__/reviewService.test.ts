@@ -160,7 +160,7 @@ describe('createReview', () => {
 
 describe('updateReview', () => {
   it('updates review within edit window', async () => {
-    const futureDate = createMockTimestamp(new Date('2026-05-06T00:00:00Z'));
+    const futureDate = createMockTimestamp(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
     mockGetDoc.mockResolvedValueOnce(
       createMockDocSnapshot('review-1', {
         customerId: 'cust-1',
@@ -208,7 +208,7 @@ describe('updateReview', () => {
   });
 
   it('logs transaction on update', async () => {
-    const futureDate = createMockTimestamp(new Date('2026-05-06T00:00:00Z'));
+    const futureDate = createMockTimestamp(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
     mockGetDoc.mockResolvedValueOnce(
       createMockDocSnapshot('review-1', {
         customerId: 'cust-1',

@@ -462,6 +462,7 @@ export const en = {
     placedOn: 'Placed on',
     orderDetails: 'Order Details',
     installationSchedule: 'Installation Schedule',
+    timeLabel: 'Time',
     yourTechnician: 'Your Technician',
     rating: 'rating',
     contactWhatsApp: 'Contact Technician on WhatsApp',

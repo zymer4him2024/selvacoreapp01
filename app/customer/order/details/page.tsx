@@ -454,7 +454,10 @@ export default function OrderDetailsPage() {
                               {address.state && `, ${address.state}`} {address.postalCode}
                             </p>
                             {address.landmark && (
-                              <p style={{ fontSize: 12, marginTop: 4, color: 'var(--soft)' }}>📍 {address.landmark}</p>
+                              <p className="sc-row" style={{ fontSize: 12, marginTop: 4, color: 'var(--soft)', gap: 4, alignItems: 'center' }}>
+                                <MapPin className="w-3 h-3" aria-hidden />
+                                {address.landmark}
+                              </p>
                             )}
                           </div>
                           {selected && (

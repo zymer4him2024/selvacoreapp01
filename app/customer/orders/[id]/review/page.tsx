@@ -38,6 +38,7 @@ export default function ReviewPage() {
 
   const [score, setScore] = useState(0);
   const [poppedStar, setPoppedStar] = useState<number | null>(null);
+  const [hoveredStar, setHoveredStar] = useState<number | null>(null);
   const [commentText, setCommentText] = useState('');
 
   const editableUntilDate = useMemo(() => {
@@ -319,9 +320,11 @@ export default function ReviewPage() {
               style={{ justifyContent: 'center', gap: 12, marginTop: 20, marginBottom: 8 }}
               role="radiogroup"
               aria-label={t.orders.reviewFlow.howWasInstallation}
+              onMouseLeave={() => setHoveredStar(null)}
             >
               {[1, 2, 3, 4, 5].map((n) => {
-                const active = n <= score;
+                const displayScore = hoveredStar ?? score;
+                const active = n <= displayScore;
                 const ariaLabel = t.orders.reviewFlow.starAriaLabel.replace('{n}', String(n));
                 return (
                   <button
@@ -331,6 +334,9 @@ export default function ReviewPage() {
                     aria-checked={score === n}
                     aria-label={ariaLabel}
                     onClick={() => handleRate(n)}
+                    onMouseEnter={() => setHoveredStar(n)}
+                    onFocus={() => setHoveredStar(n)}
+                    onBlur={() => setHoveredStar(null)}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -350,6 +356,7 @@ export default function ReviewPage() {
                       style={{
                         color: active ? 'var(--warn)' : 'var(--soft)',
                         fill: active ? 'var(--warn)' : 'none',
+                        transition: 'color 150ms, fill 150ms',
                       }}
                       aria-hidden
                     />
