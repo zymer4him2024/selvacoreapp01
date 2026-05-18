@@ -211,7 +211,7 @@ export default function CustomerOrdersPage() {
         </div>
       </header>
 
-      <main className="sc-main" style={{ maxWidth: 880 }}>
+      <main className="sc-main">
         {orders.length === 0 ? (
           <div className="sc-empty">
             <PackageIcon className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--soft)' }} />

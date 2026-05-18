@@ -226,7 +226,7 @@ describe('Translation parity for orders.timeLabel', () => {
     ] as const;
     for (const [ns, key] of keys) {
       for (const [name, dict] of [['en', en], ['es', es], ['pt', pt], ['ko', ko]] as const) {
-        const cust = (dict as Record<string, Record<string, Record<string, unknown>>>).customer;
+        const cust = (dict as unknown as Record<string, Record<string, Record<string, unknown>>>).customer;
         expect(cust?.[ns]?.[key], `${name}.customer.${ns}.${key} must be a string`).toBeTypeOf('string');
       }
     }

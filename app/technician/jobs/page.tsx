@@ -192,7 +192,11 @@ export default function MyJobsPage() {
                     setSearchQuery('');
                   }}
                   style={{
-                    padding: '12px 24px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    flexShrink: 0,
+                    padding: '12px 16px',
                     minHeight: 44,
                     fontWeight: 600,
                     borderTop: 'none',
@@ -210,7 +214,7 @@ export default function MyJobsPage() {
                   {tab.count > 0 && (
                     <span
                       style={{
-                        marginLeft: 8,
+                        flexShrink: 0,
                         padding: '2px 8px',
                         fontSize: 12,
                         borderRadius: 9999,
@@ -332,7 +336,7 @@ export default function MyJobsPage() {
                       />
                     </div>
 
-                    <div className="sc-stack" style={{ flex: 1, gap: 12, minWidth: 240 }}>
+                    <div className="sc-stack" style={{ flex: 1, gap: 12, minWidth: 0 }}>
                       <div className="sc-row-between" style={{ alignItems: 'flex-start', gap: 8 }}>
                         <div>
                           <h3 style={{ fontWeight: 600, fontSize: 17, margin: 0 }}>
@@ -345,7 +349,7 @@ export default function MyJobsPage() {
                         <JobStatusBadge status={job.status} size="sm" />
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
                         <div className="sc-row" style={{ alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--soft)' }}>
                           <MapPin className="w-4 h-4" />
                           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

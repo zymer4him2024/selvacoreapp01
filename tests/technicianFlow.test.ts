@@ -183,7 +183,7 @@ describe('Technician translation parity', () => {
       const enVal = resolveTechnician(`dashboard.${key}`);
       if (typeof enVal !== 'string') continue; // skip if key absent in en
       for (const [name, dict] of [['es', es], ['pt', pt], ['ko', ko]] as const) {
-        const tech = (dict as Record<string, Record<string, Record<string, unknown>>>).technician;
+        const tech = (dict as unknown as Record<string, Record<string, Record<string, unknown>>>).technician;
         expect(tech?.dashboard?.[key], `${name}.technician.dashboard.${key} must be a string`).toBeTypeOf('string');
       }
     }

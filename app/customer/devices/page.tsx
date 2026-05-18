@@ -90,7 +90,7 @@ export default function CustomerDevicesPage() {
 
   return (
     <div className="sc">
-      <main className="sc-main" style={{ maxWidth: 880 }}>
+      <main className="sc-main">
         <div className="sc-row" style={{ marginBottom: 24 }}>
           <button
             type="button"

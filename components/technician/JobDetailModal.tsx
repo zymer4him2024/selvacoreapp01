@@ -141,7 +141,7 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
             borderRadius: 'var(--radius-md)',
             maxWidth: 1024,
             width: '100%',
-            maxHeight: '90vh',
+            maxHeight: '95vh',
             overflowY: 'auto',
             boxShadow: 'var(--shadow-lg)',
           }}
