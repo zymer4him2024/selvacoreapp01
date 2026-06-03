@@ -364,7 +364,7 @@ export default function JobDetailPage() {
             )}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 24 }}>
             <div className="sc-card-static">
               <h3 style={{ fontWeight: 600, fontSize: 17, marginTop: 0, marginBottom: 16 }}>{tj.installationDetails}</h3>
               <div className="sc-stack" style={{ gap: 16 }}>
@@ -459,7 +459,7 @@ export default function JobDetailPage() {
 
             <div className="sc-card-static" style={{ gridColumn: '1 / -1' }}>
               <h3 style={{ fontWeight: 600, fontSize: 17, marginTop: 0, marginBottom: 16 }}>{tj.productInformation}</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', columnGap: 16, rowGap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))', columnGap: 16, rowGap: 12 }}>
                 {labelCol(tj.product, job.productSnapshot.name[lang] || job.productSnapshot.name.en)}
                 {labelCol(tj.variation, job.productSnapshot.variation)}
                 {job.serviceSnapshot && labelCol(tj.service, job.serviceSnapshot.name[lang] || job.serviceSnapshot.name.en)}
@@ -480,7 +480,7 @@ export default function JobDetailPage() {
               {tj.customerSitePhotos}
             </h2>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: 16 }}>
               {job.sitePhotos?.waterSource && (
                 <div>
                   <div
@@ -584,7 +584,7 @@ export default function JobDetailPage() {
                         style={{ display: 'none' }}
                       />
 
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 12, marginLeft: 28 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 100px), 1fr))', gap: 12, marginLeft: 28 }}>
                         {items.map((item, index) => (
                           <div key={index} style={{ position: 'relative' }}>
                             <div style={{ aspectRatio: '1 / 1', background: 'var(--off-paper)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
@@ -714,7 +714,7 @@ export default function JobDetailPage() {
                     {installationPhotoGroups.map(group => (
                       <div key={group.label}>
                         <p className="sc-helper" style={{ fontWeight: 500, marginBottom: 8 }}>{group.label} ({group.photos.length})</p>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 16 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 100px), 1fr))', gap: 16 }}>
                           {group.photos.map((photo, index) => (
                             <div key={`${group.label}-${index}`} style={{ position: 'relative' }}>
                               <div
@@ -732,7 +732,7 @@ export default function JobDetailPage() {
                   {isEditing && newPhotoPreview.length > 0 && (
                     <div style={{ marginTop: 16 }}>
                       <p className="sc-helper" style={{ fontWeight: 500, marginBottom: 8 }}>{tj.photoAdditional}</p>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 16 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 100px), 1fr))', gap: 16 }}>
                         {newPhotoPreview.map((preview, index) => (
                           <div key={`new-${index}`} style={{ position: 'relative' }}>
                             <div style={{ aspectRatio: '1 / 1', background: 'var(--off-paper)', borderRadius: 'var(--radius-sm)', overflow: 'hidden', border: '2px solid var(--brand-tint)' }}>
@@ -837,7 +837,7 @@ export default function JobDetailPage() {
                     <span style={{ color: 'var(--soft)' }}>{tj.by} {latestVisit.technicianName}</span>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 8, marginBottom: 16 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))', gap: 8, marginBottom: 16 }}>
                     {[
                       { key: 'installationOk' as const, label: tj.installationOk },
                       { key: 'operationOk' as const, label: tj.operationOk },

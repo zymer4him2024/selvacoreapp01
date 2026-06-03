@@ -17,12 +17,14 @@ import {
   Star,
   LogOut,
   Menu,
-  X
+  X,
+  UserCircle2
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
+import { isDualModeUser } from '@/lib/auth/dualMode';
 import NotificationBell from '@/components/common/NotificationBell';
 import toast from 'react-hot-toast';
 
@@ -56,13 +58,14 @@ const navigationItems: NavItem[] = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { userData, signOut } = useAuth();
+  const { user, userData, signOut } = useAuth();
   const { t } = useTranslation();
   const { visibility } = useRolePermissions();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const s = t.admin.sidebar;
   const isSubAdmin = userData?.role === 'sub-admin';
+  const showCustomerMode = isDualModeUser(userData, user?.email);
 
   const visibleItems = navigationItems.filter((item) => {
     if (!isSubAdmin) return true;
@@ -258,6 +261,38 @@ export default function Sidebar() {
             </div>
             <NotificationBell />
           </div>
+
+          {showCustomerMode && (
+            <Link
+              href="/customer"
+              onClick={() => setIsMobileMenuOpen(false)}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '12px 16px',
+                borderRadius: 'var(--radius-md)',
+                color: 'var(--soft)',
+                background: 'transparent',
+                textDecoration: 'none',
+                fontWeight: 500,
+                fontSize: 14,
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--hover-bg)';
+                e.currentTarget.style.color = 'var(--ink)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = 'var(--soft)';
+              }}
+            >
+              <UserCircle2 size={20} />
+              <span>Customer mode</span>
+            </Link>
+          )}
 
           <button
             onClick={handleSignOut}

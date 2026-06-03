@@ -1,6 +1,7 @@
 {
   "projects": {
-    "default": "selvacoreapp01"
+    "default": "selvacoreapp01",
+    "prod": "selvacoreapp01",
+    "staging": "selvacoreapp-staging"
   }
 }
-

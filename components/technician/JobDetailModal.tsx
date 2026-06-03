@@ -192,7 +192,7 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
                   {tj.customerSitePhotos}
                 </h3>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 120px), 1fr))', gap: 16 }}>
                   {job.sitePhotos?.waterSource && (
                     <PhotoTile url={job.sitePhotos.waterSource.url} label={tj.waterSource} />
                   )}
@@ -214,7 +214,7 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
 
               <div className="sc-card-static">
                 <h3 style={{ fontWeight: 600, fontSize: 17, marginTop: 0, marginBottom: 16 }}>{tj.productInformation}</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: 16 }}>
                   <div>
                     <p className="sc-helper" style={{ margin: 0 }}>{tj.product}</p>
                     <p style={{ fontWeight: 600, margin: '4px 0 0' }}>{job.productSnapshot.name[lang] || job.productSnapshot.name.en}</p>

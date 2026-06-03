@@ -45,6 +45,12 @@ next-env.d.ts
 firebase-debug.log
 firebase-debug.*.log
 
+# server-side secrets — service account keys, never commit
+**/.secrets/
+*-service-account*.json
+*-adminsdk-*.json
+firebase-credentials.json
+
 # logs
 build.log
 

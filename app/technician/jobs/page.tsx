@@ -349,7 +349,7 @@ export default function MyJobsPage() {
                         <JobStatusBadge status={job.status} size="sm" />
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: 8 }}>
                         <div className="sc-row" style={{ alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--soft)' }}>
                           <MapPin className="w-4 h-4" />
                           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

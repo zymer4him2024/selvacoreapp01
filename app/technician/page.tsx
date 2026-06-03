@@ -145,7 +145,7 @@ export default function TechnicianDashboard() {
 
             <div>
               <div style={{ height: 28, width: 192, background: 'var(--off-paper)', borderRadius: 4, marginBottom: 24, opacity: 0.7 }} />
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 16 }}>
                 <JobCardSkeleton />
                 <JobCardSkeleton />
                 <JobCardSkeleton />
@@ -453,7 +453,7 @@ export default function TechnicianDashboard() {
               </div>
             ) : (
               <>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 16 }}>
                   {jobs.map((job) => (
                     <div
                       key={job.id}

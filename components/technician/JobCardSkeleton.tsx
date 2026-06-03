@@ -20,7 +20,7 @@ export function JobCardSkeleton({ variant = 'grid' }: JobCardSkeletonProps) {
               <div style={{ height: 20, width: '66%', marginBottom: 8, ...skeletonBg }} />
               <div style={{ height: 12, width: '33%', ...skeletonBg }} />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: 8 }}>
               <div style={{ height: 16, width: '75%', ...skeletonBg }} />
               <div style={{ height: 16, width: '66%', ...skeletonBg }} />
               <div style={{ height: 16, width: '50%', ...skeletonBg }} />

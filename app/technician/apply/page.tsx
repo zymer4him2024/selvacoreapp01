@@ -189,7 +189,7 @@ export default function TechnicianApplicationPage() {
 
         <div
           className="sc-grid"
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 32 }}
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: 16, marginBottom: 32 }}
         >
           <InfoTile
             icon={CheckCircle}

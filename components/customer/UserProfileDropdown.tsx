@@ -3,9 +3,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { User, Settings, LogOut, ShoppingCart, Globe, ChevronDown } from 'lucide-react';
+import { User, Settings, LogOut, ShoppingCart, Globe, ChevronDown, Shield } from 'lucide-react';
 import { auth } from '@/lib/firebase/config';
 import { useTranslation } from '@/hooks/useTranslation';
+import { isDualModeUser } from '@/lib/auth/dualMode';
 import toast from 'react-hot-toast';
 
 export default function UserProfileDropdown() {
@@ -59,6 +60,15 @@ export default function UserProfileDropdown() {
       label: t.customer.settings || 'Settings',
       action: () => router.push('/customer/settings'),
     },
+    ...(isDualModeUser(userData, user?.email)
+      ? [
+          {
+            icon: Shield,
+            label: 'Admin mode',
+            action: () => router.push('/admin'),
+          },
+        ]
+      : []),
   ];
 
   const getInitials = () => {

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { UserRole } from '@/types';
+import { isDualModeUser } from '@/lib/auth/dualMode';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -21,11 +22,18 @@ export default function ProtectedRoute({
   const { t } = useTranslation();
   const router = useRouter();
 
+  const isDualMode = isDualModeUser(userData);
+
   useEffect(() => {
     if (!loading) {
       if (!user) {
         router.push(redirectTo);
-      } else if (allowedRoles && userData && !allowedRoles.includes(userData.role)) {
+      } else if (
+        allowedRoles &&
+        userData &&
+        !allowedRoles.includes(userData.role) &&
+        !isDualMode
+      ) {
         const roleDashboards: Record<UserRole, string> = {
           admin: '/admin',
           'sub-admin': '/admin',
@@ -35,7 +43,7 @@ export default function ProtectedRoute({
         router.push(roleDashboards[userData.role]);
       }
     }
-  }, [user, userData, loading, allowedRoles, router, redirectTo]);
+  }, [user, userData, loading, allowedRoles, router, redirectTo, isDualMode]);
 
   if (loading) {
     return (
@@ -48,7 +56,13 @@ export default function ProtectedRoute({
     );
   }
 
-  if (!user || (allowedRoles && userData && !allowedRoles.includes(userData.role))) {
+  if (
+    !user ||
+    (allowedRoles &&
+      userData &&
+      !allowedRoles.includes(userData.role) &&
+      !isDualMode)
+  ) {
     return null;
   }
 

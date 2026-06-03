@@ -132,7 +132,7 @@ export default function LoginPage() {
             <p className="sc-helper" style={{ fontSize: 16, margin: 0 }}>{translations.en.home.selectLanguage}</p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 24 }}>
             {SUPPORTED_LANGUAGES.map((lang) => {
               const langTranslations = translations[lang.code as Language].home;
               return (

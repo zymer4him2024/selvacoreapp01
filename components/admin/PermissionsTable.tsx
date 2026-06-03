@@ -2,6 +2,8 @@
 
 import { ShieldCheck } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
+import { LOCKED, RoleKey } from '@/types/rolePermissions';
 
 type Level =
   | 'full'
@@ -58,9 +60,17 @@ const headerStyle: React.CSSProperties = {
 export default function PermissionsTable() {
   const { t } = useTranslation();
   const p = t.admin.settings.permissions;
+  const { visibility } = useRolePermissions();
 
   const featureLabel = (key: string): string =>
     (p as unknown as Record<string, string>)[key] ?? key;
+
+  const effectiveLevel = (feature: string, role: RoleKey, staticLevel: Level): Level => {
+    if (role === 'admin') return staticLevel;
+    if (LOCKED[feature]?.[role]) return staticLevel;
+    const visible = visibility[feature]?.[role] ?? true;
+    return visible ? staticLevel : 'none';
+  };
 
   const levelLabel = (level: Level): string => {
     const map: Record<Level, string> = {
@@ -97,6 +107,9 @@ export default function PermissionsTable() {
           <tbody>
             {ROWS.map((row, idx) => {
               const isLast = idx === ROWS.length - 1;
+              const subAdmin = effectiveLevel(row.feature, 'subAdmin', row.subAdmin);
+              const technician = effectiveLevel(row.feature, 'technician', row.technician);
+              const customer = effectiveLevel(row.feature, 'customer', row.customer);
               return (
                 <tr key={row.feature} style={{ borderBottom: isLast ? 'none' : '1px solid var(--hairline)' }}>
                   <td style={{ padding: '12px 16px', fontWeight: 500, color: 'var(--ink)', whiteSpace: 'nowrap' }}>
@@ -105,14 +118,14 @@ export default function PermissionsTable() {
                   <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', ...cellColor(row.admin) }}>
                     {levelLabel(row.admin)}
                   </td>
-                  <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', ...cellColor(row.subAdmin) }}>
-                    {levelLabel(row.subAdmin)}
+                  <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', ...cellColor(subAdmin) }}>
+                    {levelLabel(subAdmin)}
                   </td>
-                  <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', ...cellColor(row.technician) }}>
-                    {levelLabel(row.technician)}
+                  <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', ...cellColor(technician) }}>
+                    {levelLabel(technician)}
                   </td>
-                  <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', ...cellColor(row.customer) }}>
-                    {levelLabel(row.customer)}
+                  <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', ...cellColor(customer) }}>
+                    {levelLabel(customer)}
                   </td>
                 </tr>
               );
