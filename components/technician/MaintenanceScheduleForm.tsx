@@ -12,6 +12,9 @@ interface MaintenanceScheduleFormProps {
   onSubmit: (input: DeviceRegistrationInput) => void;
   onBack: () => void;
   submitting: boolean;
+  // When false, hide the "QR code scanned" confirmation card (used when the
+  // device id is auto-generated rather than scanned from a sticker).
+  showScannedCode?: boolean;
 }
 
 const INTERVAL_OPTIONS = [
@@ -32,6 +35,7 @@ export default function MaintenanceScheduleForm({
   onSubmit,
   onBack,
   submitting,
+  showScannedCode = true,
 }: MaintenanceScheduleFormProps) {
   const { t } = useTranslation();
   const [ezerInterval, setEzerInterval] = useState(180);
@@ -120,29 +124,31 @@ export default function MaintenanceScheduleForm({
         </div>
       </div>
 
-      <div className="sc-card-static" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 'var(--radius-sm)',
-            background: 'var(--brand-tint)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}
-        >
-          <QrCode className="w-5 h-5" style={{ color: 'var(--brand)' }} />
+      {showScannedCode && (
+        <div className="sc-card-static" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--brand-tint)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <QrCode className="w-5 h-5" style={{ color: 'var(--brand)' }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p className="sc-helper" style={{ margin: 0 }}>{t.components.maintenanceForm.qrCodeScanned}</p>
+            <p style={{ fontFamily: 'monospace', fontSize: 14, margin: 0, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {qrCodeData}
+            </p>
+          </div>
+          <Check className="w-5 h-5" style={{ color: 'var(--brand)', flexShrink: 0 }} />
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p className="sc-helper" style={{ margin: 0 }}>{t.components.maintenanceForm.qrCodeScanned}</p>
-          <p style={{ fontFamily: 'monospace', fontSize: 14, margin: 0, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {qrCodeData}
-          </p>
-        </div>
-        <Check className="w-5 h-5" style={{ color: 'var(--brand)', flexShrink: 0 }} />
-      </div>
+      )}
 
       <div className="sc-card-static">
         <h3 className="sc-h2" style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>

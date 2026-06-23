@@ -164,8 +164,10 @@ export default function TechnicianScanPage() {
           if (cached) {
             foundDevice = cached;
           } else {
-            toast.error(ts.qrNotLinked);
-            setStep('idle');
+            // Devices have no unique per-unit QR, so an unrecognized code isn't
+            // an error — fall back to the job picker where the technician can
+            // choose the site (and register it if it isn't registered yet).
+            await openDevicePicker();
             return;
           }
         }
@@ -482,8 +484,9 @@ export default function TechnicianScanPage() {
                         onClick={() => {
                           if (hasDevice) {
                             openForm(item.device!);
-                          } else {
-                            toast.error(ts.deviceNotRegisteredYet);
+                          } else if (item.order) {
+                            // Not registered yet — open this job's registration flow.
+                            router.push(`/technician/jobs/${item.order.id}?register=true`);
                           }
                         }}
                         style={{

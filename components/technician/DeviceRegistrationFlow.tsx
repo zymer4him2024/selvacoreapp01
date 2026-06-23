@@ -2,9 +2,7 @@
 
 import { useState } from 'react';
 import { CheckCircle, ArrowRight } from 'lucide-react';
-import QRScanner from './QRScanner';
 import MaintenanceScheduleForm from './MaintenanceScheduleForm';
-import { getDeviceByQrCode } from '@/lib/services/deviceService';
 import { useOfflineQueue } from '@/contexts/OfflineQueueContext';
 import { DeviceRegistrationInput } from '@/types/device';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -17,7 +15,18 @@ interface DeviceRegistrationFlowProps {
   onSkip: () => void;
 }
 
-type RegistrationStep = 'scan' | 'schedule' | 'done';
+type RegistrationStep = 'schedule' | 'done';
+
+// Devices have no unique per-unit QR sticker, so the device is identified by an
+// auto-generated id scoped to its order (one device per order is enforced
+// server-side). The technician picks the job and registers — no scan required.
+function generateDeviceId(orderId: string): string {
+  const rand =
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  return `device-${orderId}-${rand}`;
+}
 
 export default function DeviceRegistrationFlow({
   orderId,
@@ -25,32 +34,12 @@ export default function DeviceRegistrationFlow({
   onComplete,
   onSkip,
 }: DeviceRegistrationFlowProps) {
-  const [step, setStep] = useState<RegistrationStep>('scan');
-  const [scannedQrCode, setScannedQrCode] = useState<string | null>(null);
+  const [step, setStep] = useState<RegistrationStep>('schedule');
+  const [deviceId] = useState(() => generateDeviceId(orderId));
   const [submitting, setSubmitting] = useState(false);
   const { enqueue } = useOfflineQueue();
   const { t } = useTranslation();
   const td = t.technician.deviceRegistration;
-
-  const handleScan = async (data: string) => {
-    try {
-      // Duplicate check requires online — if offline, warn and bail
-      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-        toast.error(td.onlineRequired);
-        return;
-      }
-      const existing = await getDeviceByQrCode(data);
-      if (existing) {
-        toast.error(td.alreadyRegistered);
-        return;
-      }
-      setScannedQrCode(data);
-      setStep('schedule');
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : td.verifyError;
-      toast.error(message);
-    }
-  };
 
   const handleSubmit = async (input: DeviceRegistrationInput) => {
     try {
@@ -71,26 +60,15 @@ export default function DeviceRegistrationFlow({
     }
   };
 
-  if (step === 'scan') {
-    return (
-      <div>
-        <QRScanner
-          onScan={handleScan}
-          onCancel={onSkip}
-          onError={(err) => toast.error(err)}
-        />
-      </div>
-    );
-  }
-
-  if (step === 'schedule' && scannedQrCode) {
+  if (step === 'schedule') {
     return (
       <MaintenanceScheduleForm
-        qrCodeData={scannedQrCode}
+        qrCodeData={deviceId}
         orderId={orderId}
         onSubmit={handleSubmit}
-        onBack={() => setStep('scan')}
+        onBack={onSkip}
         submitting={submitting}
+        showScannedCode={false}
       />
     );
   }
