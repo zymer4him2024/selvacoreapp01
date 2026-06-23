@@ -9,8 +9,6 @@ import {
   Clock,
   MapPin,
   Check,
-  Pencil,
-  X,
   Info,
   Wrench,
   Droplet,
@@ -19,12 +17,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Product, Service, Address } from '@/types';
 import { getProductById } from '@/lib/services/productService';
 import { getServiceById } from '@/lib/services/serviceService';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/config';
 import { TIME_SLOTS } from '@/lib/utils/constants';
 import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import { useTranslation } from '@/hooks/useTranslation';
-import { getFallbackAddresses, saveFallbackAddress } from '@/lib/services/fallbackAddressService';
 import AddressAutocompleteField from '@/components/common/AddressAutocompleteField';
 import OrderProgressTracker from '@/components/customer/OrderProgressTracker';
 import toast from 'react-hot-toast';
@@ -37,14 +32,14 @@ const EMPTY_ADDRESS_FORM: AddressForm = {
   city: '',
   state: '',
   postalCode: '',
-  country: 'US',
+  country: '',
   landmark: '',
-  isDefault: true,
+  isDefault: false,
 };
 
 export default function OrderDetailsPage() {
   const router = useRouter();
-  const { user, userData } = useAuth();
+  const { userData } = useAuth();
   const { t } = useTranslation();
   const { formatCurrency } = useLocaleFormatters();
   const o = t.orders;
@@ -52,21 +47,12 @@ export default function OrderDetailsPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [service, setService] = useState<Service | null>(null);
   const [variationId, setVariationId] = useState<string | null>(null);
-  const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [selectedAddressId, setSelectedAddressId] = useState('');
+  // Installation address is entered fresh for each order (no saved address book).
+  const [installAddress, setInstallAddress] = useState<AddressForm>(EMPTY_ADDRESS_FORM);
   const [installationDate, setInstallationDate] = useState('');
   const [timeSlot, setTimeSlot] = useState('');
-
-  // One-off address override (not saved to address book)
-  const [overrideForAddressId, setOverrideForAddressId] = useState<string | null>(null);
-  const [overrideDraft, setOverrideDraft] = useState<AddressForm>(EMPTY_ADDRESS_FORM);
-  const [overrideSaved, setOverrideSaved] = useState<Address | null>(null);
-
-  // Inline address addition
-  const [showAddAddress, setShowAddAddress] = useState(false);
-  const [newAddress, setNewAddress] = useState<AddressForm>(EMPTY_ADDRESS_FORM);
 
   useEffect(() => {
     loadOrderData();
@@ -102,28 +88,6 @@ export default function OrderDetailsPage() {
           setService(null);
         }
       }
-
-      if (user) {
-        try {
-          const customerDoc = await getDoc(doc(db, 'customers', user.uid));
-          if (customerDoc.exists()) {
-            const firestoreAddresses: Address[] = customerDoc.data().addresses || [];
-            setAddresses(firestoreAddresses);
-            const defaultAddress = firestoreAddresses.find((a) => a.isDefault);
-            if (defaultAddress) setSelectedAddressId(defaultAddress.id);
-          } else {
-            throw new Error('No customer document found');
-          }
-        } catch {
-          const fallbackAddresses = getFallbackAddresses();
-          setAddresses(fallbackAddresses);
-          const defaultAddress = fallbackAddresses.find((a) => a.isDefault);
-          if (defaultAddress) setSelectedAddressId(defaultAddress.id);
-          if (fallbackAddresses.length === 0) {
-            toast(o.noAddressesPrompt);
-          }
-        }
-      }
     } catch {
       toast.error(o.loadOrderDetailsError);
     } finally {
@@ -131,68 +95,9 @@ export default function OrderDetailsPage() {
     }
   };
 
-  const handleAddAddress = () => {
-    if (!newAddress.street.trim() || !newAddress.city.trim()) {
-      toast.error(o.streetCityRequired);
-      return;
-    }
-    const address: Address = {
-      id: `temp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
-      ...newAddress,
-    };
-    saveFallbackAddress(address);
-    setAddresses((prev) => [...prev, address]);
-    setSelectedAddressId(address.id);
-    setShowAddAddress(false);
-    setNewAddress(EMPTY_ADDRESS_FORM);
-    toast.success(o.addressAdded);
-  };
-
-  const startOverride = (address: Address) => {
-    setSelectedAddressId(address.id);
-    setOverrideForAddressId(address.id);
-    setOverrideDraft({
-      label: address.label,
-      street: address.street,
-      city: address.city,
-      state: address.state,
-      postalCode: address.postalCode,
-      country: address.country,
-      landmark: address.landmark ?? '',
-      isDefault: address.isDefault,
-    });
-    setOverrideSaved(null);
-  };
-
-  const cancelOverride = () => {
-    setOverrideForAddressId(null);
-    setOverrideDraft(EMPTY_ADDRESS_FORM);
-    setOverrideSaved(null);
-  };
-
-  const saveOverride = () => {
-    if (!overrideForAddressId) return;
-    if (!overrideDraft.street.trim() || !overrideDraft.city.trim()) {
-      toast.error(o.streetCityRequired);
-      return;
-    }
-    const overrideAddress: Address = {
-      id: `override_${overrideForAddressId}`,
-      ...overrideDraft,
-    };
-    setOverrideSaved(overrideAddress);
-    setOverrideForAddressId(null);
-    toast.success(o.oneOffApplied);
-  };
-
-  const clearSavedOverride = () => {
-    setOverrideSaved(null);
-    toast(o.revertedToSaved);
-  };
-
   const handleContinue = () => {
-    if (!selectedAddressId) {
-      toast.error(t.orders.selectAddress);
+    if (!installAddress.street.trim() || !installAddress.city.trim()) {
+      toast.error(o.streetCityRequired);
       return;
     }
     if (!installationDate) {
@@ -204,22 +109,20 @@ export default function OrderDetailsPage() {
       return;
     }
 
-    // Resolve the full address object now so downstream steps don't need to
-    // hit Firestore or localStorage again. Override wins when present.
-    const resolvedAddress =
-      overrideSaved ?? addresses.find((a) => a.id === selectedAddressId) ?? null;
-    if (!resolvedAddress) {
-      toast.error(t.orders.selectAddress);
-      return;
-    }
+    // The installation address is entered fresh each order; resolve it now so
+    // downstream steps don't need another lookup.
+    const resolvedAddress: Address = {
+      id: `install_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+      ...installAddress,
+    };
 
     const orderData = JSON.parse(sessionStorage.getItem('orderData') || '{}');
     sessionStorage.setItem(
       'orderData',
       JSON.stringify({
         ...orderData,
-        addressId: selectedAddressId,
-        addressOverride: overrideSaved ?? null,
+        addressId: resolvedAddress.id,
+        addressOverride: null,
         resolvedAddress,
         installationDate,
         timeSlot,
@@ -239,9 +142,12 @@ export default function OrderDetailsPage() {
   if (!product) return null;
 
   const lang = userData?.preferredLanguage || 'en';
+  // Earliest selectable install date is tomorrow, in the user's LOCAL timezone.
+  // toISOString() returns UTC, which rolls over a day early for users behind UTC.
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  const minDate = tomorrow.toISOString().split('T')[0];
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const minDate = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth() + 1)}-${pad(tomorrow.getDate())}`;
 
   const variation = product.variations?.find((v) => v.id === variationId);
   const productImage = product.images?.[0];
@@ -389,189 +295,11 @@ export default function OrderDetailsPage() {
               <h2 className="sc-h2" style={{ margin: 0 }}>{t.orders.installationAddress}</h2>
             </div>
 
-            {overrideSaved && (
-              <div className="sc-row-between" style={{ marginBottom: 16, padding: 12, background: 'var(--warn-tint)', border: '1px solid var(--warn)', borderRadius: 'var(--radius-sm)', alignItems: 'flex-start', gap: 12 }}>
-                <div style={{ fontSize: 14 }}>
-                  <p style={{ fontWeight: 600, color: 'var(--warn)', margin: 0 }}>{t.orders.usingOneOffAddress}</p>
-                  <p className="sc-helper" style={{ marginTop: 2 }}>
-                    {overrideSaved.street}, {overrideSaved.city}
-                    {overrideSaved.state && `, ${overrideSaved.state}`} {overrideSaved.postalCode}
-                  </p>
-                  <p className="sc-helper" style={{ marginTop: 4, fontSize: 12 }}>{t.orders.savedAddressNotChanged}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={clearSavedOverride}
-                  style={{ fontSize: 12, color: 'var(--warn)', background: 'transparent', border: 'none', cursor: 'pointer', textDecoration: 'underline', whiteSpace: 'nowrap' }}
-                >
-                  {t.orders.revert}
-                </button>
-              </div>
-            )}
-
-            {addresses.length > 0 && (
-              <div className="sc-stack" style={{ gap: 12 }}>
-                {addresses.map((address) => {
-                  const selected = selectedAddressId === address.id;
-                  const editing = overrideForAddressId === address.id;
-                  const hasOverride = overrideSaved?.id === `override_${address.id}` && selected;
-
-                  return (
-                    <div
-                      key={address.id}
-                      style={{
-                        borderRadius: 'var(--radius-sm)',
-                        background: selected ? 'var(--brand-tint)' : 'var(--paper)',
-                        border: selected ? '2px solid var(--brand)' : '1px solid var(--hairline)',
-                        transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
-                      }}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => setSelectedAddressId(address.id)}
-                        style={{ width: '100%', padding: 16, textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--ink)' }}
-                      >
-                        <div className="sc-row-between" style={{ alignItems: 'flex-start', gap: 12 }}>
-                          <div style={{ minWidth: 0 }}>
-                            <div className="flex flex-wrap gap-2" style={{ alignItems: 'center', marginBottom: 8 }}>
-                              <span className="sc-badge-inline" style={{ textTransform: 'uppercase', fontWeight: 700 }}>
-                                {address.label}
-                              </span>
-                              {address.isDefault && (
-                                <span className="sc-badge-inline" style={{ color: 'var(--brand)', background: 'var(--brand-tint)' }}>
-                                  {o.defaultAddress}
-                                </span>
-                              )}
-                              {hasOverride && (
-                                <span className="sc-badge-inline" style={{ color: 'var(--warn)', background: 'var(--warn-tint)' }}>
-                                  {o.oneOffAddress}
-                                </span>
-                              )}
-                            </div>
-                            <p style={{ fontWeight: 600, margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{address.street}</p>
-                            <p style={{ fontSize: 14, color: 'var(--soft)', margin: 0 }}>
-                              {address.city}
-                              {address.state && `, ${address.state}`} {address.postalCode}
-                            </p>
-                            {address.landmark && (
-                              <p className="sc-row" style={{ fontSize: 12, marginTop: 4, color: 'var(--soft)', gap: 4, alignItems: 'center' }}>
-                                <MapPin className="w-3 h-3" aria-hidden />
-                                {address.landmark}
-                              </p>
-                            )}
-                          </div>
-                          {selected && (
-                            <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              <Check className="w-4 h-4" style={{ color: '#fff' }} />
-                            </div>
-                          )}
-                        </div>
-                      </button>
-
-                      {selected && !editing && (
-                        <div className="sc-row" style={{ padding: '0 16px 12px', justifyContent: 'flex-end' }}>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              startOverride(address);
-                            }}
-                            style={{ fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--brand)', background: 'transparent', border: 'none', cursor: 'pointer' }}
-                          >
-                            <Pencil className="w-3 h-3" />
-                            {hasOverride ? t.orders.editOneOff : t.orders.useOneOff}
-                          </button>
-                        </div>
-                      )}
-
-                      {editing && (
-                        <div className="sc-stack" style={{ padding: 16, gap: 12, background: 'var(--paper)', borderTop: '1px solid var(--hairline)', borderRadius: '0 0 var(--radius-sm) var(--radius-sm)' }}>
-                          <div className="sc-row-between">
-                            <h4 style={{ fontWeight: 600, fontSize: 14, margin: 0 }}>{t.orders.oneOffTitle}</h4>
-                            <button
-                              type="button"
-                              onClick={cancelOverride}
-                              style={{ color: 'var(--soft)', background: 'transparent', border: 'none', cursor: 'pointer' }}
-                              aria-label={o.closeAria}
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                          <p className="sc-helper" style={{ margin: 0 }}>{t.orders.oneOffDesc}</p>
-
-                          <AddressAutocompleteField
-                            value={overrideDraft}
-                            onChange={setOverrideDraft}
-                            showLabel={false}
-                          />
-
-                          <div className="sc-row" style={{ gap: 8 }}>
-                            <button
-                              type="button"
-                              onClick={saveOverride}
-                              className="sc-cta"
-                              style={{ flex: 1 }}
-                            >
-                              {t.orders.applyForInstallation}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={cancelOverride}
-                              className="sc-cta-ghost"
-                            >
-                              {t.common.cancel}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            <div style={{ marginTop: 16 }}>
-              {!showAddAddress ? (
-                <button
-                  type="button"
-                  onClick={() => setShowAddAddress(true)}
-                  className="sc-cta-ghost"
-                  style={{ width: '100%', borderStyle: 'dashed' }}
-                >
-                  {t.orders.addNewAddress}
-                </button>
-              ) : (
-                <div className="sc-stack" style={{ gap: 12, padding: 16, background: 'var(--off-paper)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--hairline)' }}>
-                  <h3 style={{ fontWeight: 600, margin: 0 }}>{t.orders.addSavedAddress}</h3>
-
-                  <AddressAutocompleteField
-                    value={newAddress}
-                    onChange={setNewAddress}
-                  />
-
-                  <div className="sc-row" style={{ gap: 8 }}>
-                    <button
-                      type="button"
-                      onClick={handleAddAddress}
-                      className="sc-cta"
-                      style={{ flex: 1 }}
-                    >
-                      {t.orders.saveAddress}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowAddAddress(false);
-                        setNewAddress(EMPTY_ADDRESS_FORM);
-                      }}
-                      className="sc-cta-ghost"
-                    >
-                      {t.common.cancel}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <AddressAutocompleteField
+              value={installAddress}
+              onChange={setInstallAddress}
+              showLabel={false}
+            />
           </div>
 
           <div className="sc-card-static">
@@ -623,7 +351,7 @@ export default function OrderDetailsPage() {
           <button
             type="button"
             onClick={handleContinue}
-            disabled={!selectedAddressId || !installationDate || !timeSlot}
+            disabled={!installAddress.street.trim() || !installAddress.city.trim() || !installationDate || !timeSlot}
             className="sc-cta"
             style={{ width: '100%', padding: '14px 24px', fontSize: 15 }}
           >

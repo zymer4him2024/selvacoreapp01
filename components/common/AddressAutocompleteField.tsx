@@ -15,11 +15,22 @@ interface AddressAutocompleteFieldProps {
   showLabel?: boolean;
   showCountry?: boolean;
   showLandmark?: boolean;
+  // Render the manual fields up front (in addition to the search box) instead of
+  // waiting for the user to start typing or click "Enter manually".
+  alwaysShowFields?: boolean;
 }
 
 interface MapsBundle {
   places: google.maps.PlacesLibrary;
   geocoding: google.maps.GeocodingLibrary;
+}
+
+// Normalized address component shape so the new Places API (longText/shortText)
+// and the legacy Geocoder (long_name/short_name) can share one parser.
+interface NormComponent {
+  long: string;
+  short: string;
+  types: string[];
 }
 
 let loaderPromise: Promise<MapsBundle> | null = null;
@@ -38,12 +49,30 @@ function loadGoogleMaps(): Promise<MapsBundle> {
   return loaderPromise;
 }
 
-function parseGooglePlace(
+function fromPlaceComponents(
+  components: google.maps.places.AddressComponent[]
+): NormComponent[] {
+  return components.map((c) => ({
+    long: c.longText ?? '',
+    short: c.shortText ?? '',
+    types: c.types,
+  }));
+}
+
+function fromGeocoderComponents(
   components: google.maps.GeocoderAddressComponent[]
-): Partial<AddressForm> {
+): NormComponent[] {
+  return components.map((c) => ({
+    long: c.long_name,
+    short: c.short_name,
+    types: c.types,
+  }));
+}
+
+function parseComponents(components: NormComponent[]): Partial<AddressForm> {
   const get = (type: string, short = false) => {
     const c = components.find((x) => x.types.includes(type));
-    return c ? (short ? c.short_name : c.long_name) : '';
+    return c ? (short ? c.short : c.long) : '';
   };
 
   const streetNumber = get('street_number');
@@ -67,11 +96,18 @@ export default function AddressAutocompleteField({
   showLabel = true,
   showCountry = true,
   showLandmark = true,
+  alwaysShowFields = false,
 }: AddressAutocompleteFieldProps) {
   const { t } = useTranslation();
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const placeElRef = useRef<google.maps.places.PlaceAutocompleteElement | null>(null);
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
+
+  // The gmp-select handler is registered once but needs the latest value/onChange.
+  const valueRef = useRef(value);
+  const onChangeRef = useRef(onChange);
+  valueRef.current = value;
+  onChangeRef.current = onChange;
 
   const [ready, setReady] = useState(false);
   const [manualMode, setManualMode] = useState(false);
@@ -79,33 +115,43 @@ export default function AddressAutocompleteField({
 
   useEffect(() => {
     let cancelled = false;
+    let placeEl: google.maps.places.PlaceAutocompleteElement | null = null;
+
+    const handleSelect = async (event: google.maps.places.PlacePredictionSelectEvent) => {
+      const place = event.placePrediction.toPlace();
+      try {
+        await place.fetchFields({ fields: ['addressComponents'] });
+      } catch {
+        toast.error(t.components.address.failedResolve);
+        return;
+      }
+      if (!place.addressComponents) return;
+      const parsed = parseComponents(fromPlaceComponents(place.addressComponents));
+      const current = valueRef.current;
+      onChangeRef.current({
+        ...current,
+        street: parsed.street ?? current.street,
+        city: parsed.city ?? current.city,
+        state: parsed.state ?? current.state,
+        postalCode: parsed.postalCode ?? current.postalCode,
+        country: parsed.country ?? current.country,
+      });
+    };
+
     loadGoogleMaps()
       .then((libs) => {
         if (cancelled) return;
-        if (!searchInputRef.current) {
-          setReady(true);
-          return;
-        }
-        const auto = new libs.places.Autocomplete(searchInputRef.current, {
-          types: ['address'],
-          fields: ['address_components', 'formatted_address'],
-        });
-        auto.addListener('place_changed', () => {
-          const place = auto.getPlace();
-          if (!place.address_components) return;
-          const parsed = parseGooglePlace(place.address_components);
-          onChange({
-            ...value,
-            street: parsed.street ?? value.street,
-            city: parsed.city ?? value.city,
-            state: parsed.state ?? value.state,
-            postalCode: parsed.postalCode ?? value.postalCode,
-            country: parsed.country ?? value.country,
-          });
-          setManualMode(false);
-        });
-        autocompleteRef.current = auto;
+        // Always create the geocoder — it powers postal-code autofill and
+        // "use my location", which work even when the search box is hidden.
         geocoderRef.current = new libs.geocoding.Geocoder();
+        if (containerRef.current) {
+          const el = new google.maps.places.PlaceAutocompleteElement({});
+          el.style.width = '100%';
+          el.addEventListener('gmp-select', handleSelect);
+          containerRef.current.appendChild(el);
+          placeEl = el;
+          placeElRef.current = el;
+        }
         setReady(true);
       })
       .catch(() => {
@@ -114,12 +160,14 @@ export default function AddressAutocompleteField({
         setManualMode(true);
         setReady(true);
       });
+
     return () => {
       cancelled = true;
-      if (autocompleteRef.current) {
-        google.maps?.event?.clearInstanceListeners(autocompleteRef.current);
-        autocompleteRef.current = null;
+      if (placeEl) {
+        placeEl.removeEventListener('gmp-select', handleSelect as unknown as EventListener);
+        placeEl.remove();
       }
+      placeElRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -145,7 +193,7 @@ export default function AddressAutocompleteField({
               toast.error(t.components.address.noAddrAtLocation);
               return;
             }
-            const parsed = parseGooglePlace(first.address_components);
+            const parsed = parseComponents(fromGeocoderComponents(first.address_components));
             onChange({
               ...value,
               street: parsed.street ?? value.street,
@@ -154,8 +202,8 @@ export default function AddressAutocompleteField({
               postalCode: parsed.postalCode ?? value.postalCode,
               country: parsed.country ?? value.country,
             });
-            if (searchInputRef.current) {
-              searchInputRef.current.value = first.formatted_address ?? '';
+            if (placeElRef.current) {
+              placeElRef.current.value = first.formatted_address ?? '';
             }
             toast.success(t.components.address.addrFilled);
           })
@@ -174,6 +222,31 @@ export default function AddressAutocompleteField({
     );
   };
 
+  // Auto-fill city/state/country by geocoding the postal code. Fires on blur of
+  // the postal field. Country (if already entered) narrows the lookup; otherwise
+  // the geocoder picks the best global match. Street is never overwritten.
+  const fillFromPostalCode = () => {
+    const code = value.postalCode.trim();
+    if (!code || !geocoderRef.current) return;
+    const query = [code, value.country.trim()].filter(Boolean).join(', ');
+    geocoderRef.current
+      .geocode({ address: query })
+      .then((res) => {
+        const first = res.results[0];
+        if (!first) return;
+        const parsed = parseComponents(fromGeocoderComponents(first.address_components));
+        onChange({
+          ...value,
+          city: parsed.city || value.city,
+          state: parsed.state || value.state,
+          country: parsed.country || value.country,
+        });
+      })
+      .catch(() => {
+        /* silent — leave whatever the user typed */
+      });
+  };
+
   const hasAddress =
     value.street.trim() || value.city.trim() || value.state.trim() || value.postalCode.trim();
 
@@ -187,7 +260,7 @@ export default function AddressAutocompleteField({
             onChange={(e) =>
               onChange({ ...value, label: e.target.value as 'home' | 'office' | 'other' })
             }
-            className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none text-sm"
+            className="sc-input"
           >
             <option value="home">Home</option>
             <option value="office">Office</option>
@@ -199,22 +272,16 @@ export default function AddressAutocompleteField({
       {!manualMode && (
         <div>
           <label className="block text-xs font-medium mb-1">{t.components.address.search}</label>
-          <div className="relative">
-            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary pointer-events-none" />
-            <input
-              ref={searchInputRef}
-              type="text"
-              placeholder={ready ? 'Start typing your address…' : 'Loading…'}
-              disabled={!ready}
-              className="w-full pl-9 pr-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none text-sm disabled:opacity-60"
-            />
-          </div>
+          <div ref={containerRef} className="sc-address-autocomplete" />
+          {!ready && (
+            <p className="text-xs text-soft mt-1">Loading…</p>
+          )}
           <div className="flex flex-wrap items-center gap-3 mt-2">
             <button
               type="button"
               onClick={handleUseMyLocation}
               disabled={!ready || locating}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary-hover disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-brand hover:text-brand-hover disabled:opacity-50"
             >
               {locating ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -226,7 +293,7 @@ export default function AddressAutocompleteField({
             <button
               type="button"
               onClick={() => setManualMode(true)}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-text-secondary hover:text-text-primary"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-soft hover:text-ink"
             >
               <Pencil className="w-3.5 h-3.5" />
               Enter manually
@@ -235,14 +302,14 @@ export default function AddressAutocompleteField({
         </div>
       )}
 
-      {(manualMode || hasAddress) && (
+      {(manualMode || hasAddress || alwaysShowFields) && (
         <div className="space-y-3">
           {manualMode && (
             <div className="flex justify-end">
               <button
                 type="button"
                 onClick={() => setManualMode(false)}
-                className="text-xs font-medium text-primary hover:text-primary-hover"
+                className="text-xs font-medium text-brand hover:text-brand-hover"
               >
                 Use address search instead
               </button>
@@ -256,7 +323,7 @@ export default function AddressAutocompleteField({
               value={value.street}
               onChange={(e) => onChange({ ...value, street: e.target.value })}
               placeholder={t.components.address.streetPlaceholder}
-              className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none text-sm"
+              className="sc-input"
             />
           </div>
 
@@ -267,7 +334,7 @@ export default function AddressAutocompleteField({
                 type="text"
                 value={value.city}
                 onChange={(e) => onChange({ ...value, city: e.target.value })}
-                className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none text-sm"
+                className="sc-input"
               />
             </div>
             <div>
@@ -276,7 +343,7 @@ export default function AddressAutocompleteField({
                 type="text"
                 value={value.state}
                 onChange={(e) => onChange({ ...value, state: e.target.value })}
-                className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none text-sm"
+                className="sc-input"
               />
             </div>
             <div>
@@ -285,7 +352,8 @@ export default function AddressAutocompleteField({
                 type="text"
                 value={value.postalCode}
                 onChange={(e) => onChange({ ...value, postalCode: e.target.value })}
-                className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none text-sm"
+                onBlur={fillFromPostalCode}
+                className="sc-input"
               />
             </div>
           </div>
@@ -297,7 +365,7 @@ export default function AddressAutocompleteField({
                 type="text"
                 value={value.country}
                 onChange={(e) => onChange({ ...value, country: e.target.value })}
-                className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none text-sm"
+                className="sc-input"
               />
             </div>
           )}
@@ -309,7 +377,7 @@ export default function AddressAutocompleteField({
                 type="text"
                 value={value.landmark ?? ''}
                 onChange={(e) => onChange({ ...value, landmark: e.target.value })}
-                className="w-full px-3 py-2 bg-surface border border-border rounded-apple focus:border-primary focus:outline-none text-sm"
+                className="sc-input"
               />
             </div>
           )}

@@ -206,6 +206,18 @@
   border-color: var(--brand);
   box-shadow: 0 0 0 3px var(--brand-tint);
 }
+/* Override the browser's autofill styling (dark background in OS dark mode) so
+   filled inputs keep the theme's paper/ink colors instead of going black. */
+.sc-input:-webkit-autofill,
+.sc-input:-webkit-autofill:hover,
+.sc-input:-webkit-autofill:focus,
+.sc-select:-webkit-autofill,
+.sc-textarea:-webkit-autofill {
+  -webkit-text-fill-color: var(--ink);
+  -webkit-box-shadow: 0 0 0 1000px var(--paper) inset;
+  box-shadow: 0 0 0 1000px var(--paper) inset;
+  caret-color: var(--ink);
+}
 .sc-label {
   display: block;
   font-size: 13px;
