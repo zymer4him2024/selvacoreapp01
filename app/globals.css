@@ -475,7 +475,10 @@
 html,
 body {
   max-width: 100vw;
-  overflow-x: hidden;
+  /* `clip` (not `hidden`) keeps pages from scrolling sideways without creating a
+     scroll container — `overflow-x: hidden` here breaks `position: sticky`
+     headers on mobile. */
+  overflow-x: clip;
   background-color: var(--background);
   color: var(--foreground);
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
