@@ -32,16 +32,30 @@ service cloud.firestore {
     // admin/sub-admin records — that's an admin-only identity boundary.
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin() || isSubAdmin();
+      // A new user creates their own doc on first sign-in. They may only
+      // self-assign a non-privileged role (admin/sub-admin stay admin-only).
       allow create: if isAdmin() ||
         (isSubAdmin() &&
          request.resource.data.role != 'admin' &&
+         request.resource.data.role != 'sub-admin') ||
+        (isOwner(userId) &&
+         request.resource.data.role != 'admin' &&
          request.resource.data.role != 'sub-admin');
-      allow update: if isOwner(userId) || isAdmin() ||
+      // Owners may edit their own doc (profile, role selection customer->
+      // technician, applying draft->pending) but may NOT self-assign a
+      // privileged role, nor self-approve (set technicianStatus to 'approved'
+      // when it wasn't already) — approval is an admin-only action.
+      allow update: if isAdmin() ||
         (isSubAdmin() &&
          resource.data.role != 'admin' &&
          resource.data.role != 'sub-admin' &&
          request.resource.data.role != 'admin' &&
-         request.resource.data.role != 'sub-admin');
+         request.resource.data.role != 'sub-admin') ||
+        (isOwner(userId) &&
+         request.resource.data.get('role', '') != 'admin' &&
+         request.resource.data.get('role', '') != 'sub-admin' &&
+         (request.resource.data.get('technicianStatus', '') == resource.data.get('technicianStatus', '') ||
+          request.resource.data.get('technicianStatus', '') != 'approved'));
       allow delete: if isAdmin() ||
         (isSubAdmin() &&
          resource.data.role != 'admin' &&

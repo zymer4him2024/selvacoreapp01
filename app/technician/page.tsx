@@ -268,6 +268,22 @@ export default function TechnicianDashboard() {
     );
   }
 
+  // Any other non-approved technician (e.g. selected the role but hasn't
+  // finished applying, or an old account with no status) shouldn't see the
+  // jobs dashboard they can't use — show the pending-approval notice instead.
+  if (userData && userData.technicianStatus !== 'approved') {
+    return (
+      <StatusCard
+        icon={Clock}
+        iconColor="var(--warn)"
+        iconBg="var(--warn-tint)"
+        title={td.pendingTitle}
+        message={td.pendingMessage}
+        footnote={td.needHelp}
+      />
+    );
+  }
+
   return (
     <div className="sc">
       <PullToRefreshIndicator pullDistance={pullDistance} progress={progress} refreshing={refreshing} />
