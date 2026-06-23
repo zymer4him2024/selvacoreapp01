@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Order } from '@/types/order';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOfflineQueue } from '@/contexts/OfflineQueueContext';
-import { declineJob } from '@/lib/services/technicianService';
+import { acceptJob, declineJob } from '@/lib/services/technicianService';
 import { X, MapPin, Calendar, Clock, DollarSign, User, Phone, Image as ImageIcon, Video, Loader2 } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils/formatters';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -48,11 +48,19 @@ export default function JobDetailModal({ job, onClose, onJobAccepted }: JobDetai
 
     setAccepting(true);
     try {
-      await enqueue('accept_job', {
-        orderId: job.id,
-        technicianId: user.uid,
-        technicianInfo,
-      });
+      // Accepting a job is contended (two technicians can race for the same
+      // job), so when online we run it synchronously and surface the real
+      // success/failure. Only when offline do we queue it optimistically.
+      const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+      if (offline) {
+        await enqueue('accept_job', {
+          orderId: job.id,
+          technicianId: user.uid,
+          technicianInfo,
+        });
+      } else {
+        await acceptJob(job.id, user.uid, technicianInfo);
+      }
       toast.success(tj.jobAccepted);
       onJobAccepted();
     } catch (error: unknown) {
