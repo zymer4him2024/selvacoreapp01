@@ -31,7 +31,7 @@ interface FallbackOrderDisplay {
 }
 import { collection, query, where, orderBy as firestoreOrderBy, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { getOrderStatusLabel } from '@/lib/utils/formatters';
+import { getOrderStatusLabel, parseLocalDate } from '@/lib/utils/formatters';
 import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import { getFallbackOrders } from '@/lib/services/fallbackOrderService';
 import toast from 'react-hot-toast';
@@ -91,7 +91,7 @@ export default function CustomerOrdersPage() {
         status: order.status as OrderStatus,
         createdAt: order.createdAt,
         isFallback: true,
-        installationDate: new Date(order.installationDate),
+        installationDate: parseLocalDate(order.installationDate),
         timeSlot: order.timeSlot,
         // Add minimal product info for display
         productSnapshot: {

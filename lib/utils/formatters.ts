@@ -30,6 +30,16 @@ export function formatCurrency(amount: number, currency: string = 'USD', locale:
 }
 
 /**
+ * Parse a plain "YYYY-MM-DD" date string as LOCAL midnight.
+ * `new Date("YYYY-MM-DD")` parses as UTC, which shifts the day for users behind
+ * UTC (e.g. a date picked as Jun 25 stores as Jun 24 in the Americas).
+ */
+export function parseLocalDate(value: string): Date {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+/**
  * Format date
  */
 export function formatDate(

@@ -9,7 +9,7 @@ import { getProductById } from '@/lib/services/productService';
 import { getServiceById } from '@/lib/services/serviceService';
 import { collection, doc, addDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { generateOrderNumber } from '@/lib/utils/formatters';
+import { generateOrderNumber, parseLocalDate } from '@/lib/utils/formatters';
 import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import { processAmazonPayment } from '@/lib/services/amazonPaymentService';
 import { logTransaction } from '@/lib/services/transactionService';
@@ -148,7 +148,7 @@ export default function PaymentPage() {
         } : null,
 
         installationAddress: selectedAddress,
-        installationDate: Timestamp.fromDate(new Date(orderData.installationDate)),
+        installationDate: Timestamp.fromDate(parseLocalDate(orderData.installationDate)),
         timeSlot: orderData.timeSlot,
 
         sitePhotos: {
