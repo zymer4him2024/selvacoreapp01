@@ -35,6 +35,12 @@ export function TechnicianActionButtons(props: Props) {
   const td = t.admin.technicianDetail;
   const status = technician.technicianStatus;
 
+  // "Not yet decided": a pending application, or an account that selected the
+  // technician role but never submitted (draft / no status). The admin can
+  // approve or decline any of these.
+  const canDecide =
+    status !== 'approved' && status !== 'declined' && status !== 'suspended';
+
   const hoverable = (baseColor: string, hoverColor: string) => ({
     onMouseEnter: (e: React.MouseEvent<HTMLButtonElement>) => {
       if (!disabled) e.currentTarget.style.background = hoverColor;
@@ -48,7 +54,7 @@ export function TechnicianActionButtons(props: Props) {
     <div className="sc-card-static">
       <h3 className="sc-h2" style={{ marginTop: 0, marginBottom: 16 }}>{td.actions}</h3>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-        {status === 'pending' && (
+        {canDecide && (
           <>
             <button
               onClick={onApprove}
