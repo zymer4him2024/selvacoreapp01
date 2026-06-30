@@ -94,11 +94,10 @@ async function getTechnicianJobStats(technicianId: string) {
     const totalEarnings = completedJobs.reduce((sum, job) => {
       return sum + (job.serviceSnapshot?.price || 0);
     }, 0);
-    
-    const ratedJobs = completedJobs.filter(job => job.rating && job.rating.score > 0);
-    const averageRating = ratedJobs.length > 0
-      ? ratedJobs.reduce((sum, job) => sum + (job.rating?.score || 0), 0) / ratedJobs.length
-      : 0;
+    // Note: averageRating is NOT computed here. It's denormalized onto the
+    // user doc by the review Cloud Function (from the reviews collection) and
+    // must not be overwritten with an order-derived value, which is always 0
+    // because the review flow does not write order.rating.
     
     // Get last job date
     const sortedJobs = jobs.sort((a, b) => {
@@ -114,7 +113,6 @@ async function getTechnicianJobStats(technicianId: string) {
     return {
       totalJobs: jobs.length,
       completedJobs: completedJobs.length,
-      averageRating: Math.round(averageRating * 10) / 10,
       totalEarnings,
       lastJobDate
     };
@@ -122,7 +120,6 @@ async function getTechnicianJobStats(technicianId: string) {
     return {
       totalJobs: 0,
       completedJobs: 0,
-      averageRating: 0,
       totalEarnings: 0
     };
   }
