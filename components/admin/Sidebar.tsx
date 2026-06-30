@@ -15,6 +15,8 @@ import {
   CalendarDays,
   Boxes,
   Star,
+  Gift,
+  HeartHandshake,
   LogOut,
   Menu,
   X,
@@ -47,6 +49,8 @@ const navigationItems: NavItem[] = [
   { key: 'users',        href: '/admin/users',        icon: Users,          featureKey: 'featureUsers' },
   { key: 'technicians',  href: '/admin/technicians',  icon: Users,          featureKey: 'featureUsers' },
   { key: 'orders',       href: '/admin/orders',       icon: ShoppingCart,   featureKey: 'featureOrders' },
+  { key: 'gifts',        href: '/admin/gifts',        icon: Gift,           adminOnly: true },
+  { key: 'beneficiaries', href: '/admin/beneficiaries', icon: HeartHandshake, adminOnly: true },
   { key: 'schedule',     href: '/admin/schedule',     icon: CalendarDays,   featureKey: 'featureOrders' },
   { key: 'inventory',    href: '/admin/inventory',    icon: Boxes,          adminOnly: true },
   { key: 'maintenance',  href: '/admin/maintenance',  icon: CalendarClock,  featureKey: 'featureMaintenance' },
@@ -139,20 +143,35 @@ export default function Sidebar() {
       >
         <div style={{ padding: 24, borderBottom: '1px solid var(--hairline)' }}>
           <Link href="/admin" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
-            <div style={{
-              width: 40,
-              height: 40,
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--brand)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
-              fontSize: 20,
-              fontWeight: 700,
-            }}>
-              S
-            </div>
+            {userData?.logoURL ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={userData.logoURL}
+                alt="Logo"
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 'var(--radius-md)',
+                  objectFit: 'cover',
+                  display: 'block',
+                }}
+              />
+            ) : (
+              <div style={{
+                width: 40,
+                height: 40,
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--brand)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#fff',
+                fontSize: 20,
+                fontWeight: 700,
+              }}>
+                S
+              </div>
+            )}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink)', margin: 0 }}>
