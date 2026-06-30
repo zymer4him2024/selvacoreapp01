@@ -102,14 +102,12 @@ export async function createReview(
   const technicianId = orderData.technicianId || '';
 
   // Denormalize names once at write time so admin views don't need a per-row user lookup.
-  // Missing user docs fall back to empty strings; the admin view has a fallback path.
-  const [customerSnap, technicianSnap] = await Promise.all([
-    getDoc(doc(db, 'users', customerId)),
-    technicianId ? getDoc(doc(db, 'users', technicianId)) : Promise.resolve(null),
-  ]);
-  const customerName = (customerSnap.exists() ? (customerSnap.data().displayName as string) : '') || '';
-  const technicianName =
-    (technicianSnap && technicianSnap.exists() ? (technicianSnap.data().displayName as string) : '') || '';
+  // Use the names already embedded on the order rather than reading user docs:
+  // a customer cannot read the technician's user doc (rules deny it), and the
+  // review name is a point-in-time snapshot anyway. The admin view has a
+  // read-through fallback for any missing names.
+  const customerName = orderData.customerInfo?.name || '';
+  const technicianName = orderData.technicianInfo?.name || '';
 
   // Document ID = orderId — guarantees one review per order at the Firestore level
   const reviewRef = doc(db, 'reviews', orderId);
