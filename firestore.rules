@@ -193,10 +193,13 @@ service cloud.firestore {
 
     // Reviews collection — customer ratings for orders
     match /reviews/{reviewId} {
-      // Customers see non-hidden reviews; technicians see reviews about them; admins + sub-admins see all
+      // Customers see non-hidden reviews; technicians see reviews about them; admins + sub-admins see all.
+      // `resource == null` allows reading a review doc that doesn't exist yet
+      // (the review page reads reviews/{orderId} before the customer submits) —
+      // a missing doc leaks nothing.
       allow read: if isAdmin() || isSubAdmin() ||
         (isTechnician() && resource.data.technicianId == request.auth.uid) ||
-        (isAuthenticated() && resource.data.hidden == false);
+        (isAuthenticated() && (resource == null || resource.data.hidden == false));
 
       // Customer can create a review for their own completed order.
       // Document ID must equal orderId — guarantees one review per order.
