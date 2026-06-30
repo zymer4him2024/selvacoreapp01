@@ -857,6 +857,7 @@ export const ko = {
       inactiveLabel: '비활성',
       moreSuffix: '명 더',
       unknown: '알 수 없음',
+      incomplete: '미완료',
     },
     technicianDetail: {
       title: '기술자 상세',

@@ -137,8 +137,11 @@ export default function TechniciansManagementPage() {
       case 'pending': return tc.pending;
       case 'declined': return tc.declined;
       case 'suspended': return tc.suspended;
-      default: return tc.unknown;
     }
+    // 'draft' is set at role-selection but isn't part of the typed status union:
+    // the technician picked the role but never submitted an application.
+    if ((status as string | undefined) === 'draft') return tc.incomplete;
+    return tc.unknown;
   };
 
   if (loading) {

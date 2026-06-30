@@ -878,6 +878,7 @@ export const en = {
       inactiveLabel: 'Inactive',
       moreSuffix: 'more',
       unknown: 'Unknown',
+      incomplete: 'Incomplete',
     },
     // Technician Detail
     technicianDetail: {

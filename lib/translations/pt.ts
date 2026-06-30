@@ -857,6 +857,7 @@ export const pt = {
       inactiveLabel: 'Inativo',
       moreSuffix: 'mais',
       unknown: 'Desconhecido',
+      incomplete: 'Incompleto',
     },
     technicianDetail: {
       title: 'Detalhes do Técnico',
