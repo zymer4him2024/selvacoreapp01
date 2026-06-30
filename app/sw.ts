@@ -33,21 +33,37 @@ const skipCacheRoute: RuntimeCaching = {
   handler: new NetworkOnly(),
 };
 
+// When the 3s NetworkFirst times out AND there is no cached response (e.g. the
+// first visit to an uncached dynamic route whose SSR is cold-starting), the
+// strategy would otherwise throw `no-response` and break the navigation. Wait
+// out a plain (untimed) network fetch instead; only if that also fails do we
+// let the error fall through to serwist's offline fallback.
+const waitOutNetworkOnError = {
+  handlerDidError: async ({ request }: { request: Request }) => {
+    try {
+      return await fetch(request);
+    } catch {
+      return undefined;
+    }
+  },
+};
+
 // Fast-timeout HTML / RSC routes: on slow mobile networks, fall back to cached
 // shell after 3s instead of waiting indefinitely on serwist's default NetworkFirst.
 // Matchers mirror defaultCache's HTML+RSC entries; first match wins, so these
 // take precedence over the unbounded defaults below.
 const fastHtmlRoute: RuntimeCaching = {
+  // Match hard navigations via request.mode, not Content-Type: a GET navigation
+  // has no request body, so the Content-Type header is absent and never matched.
   matcher: ({ request, url: { pathname }, sameOrigin }) =>
-    request.headers.get('Content-Type')?.includes('text/html') === true &&
-    sameOrigin &&
-    !pathname.startsWith('/api/'),
+    request.mode === 'navigate' && sameOrigin && !pathname.startsWith('/api/'),
   handler: new NetworkFirst({
     cacheName: 'pages',
     networkTimeoutSeconds: 3,
     plugins: [
       new ExpirationPlugin({ maxEntries: 32, maxAgeSeconds: 24 * 60 * 60 }),
       new CacheableResponsePlugin({ statuses: [200] }),
+      waitOutNetworkOnError,
     ],
   }),
 };
@@ -61,6 +77,7 @@ const fastRscRoute: RuntimeCaching = {
     plugins: [
       new ExpirationPlugin({ maxEntries: 32, maxAgeSeconds: 24 * 60 * 60 }),
       new CacheableResponsePlugin({ statuses: [200] }),
+      waitOutNetworkOnError,
     ],
   }),
 };
@@ -90,6 +107,17 @@ const serwist = new Serwist({
   navigationPreload: true,
   runtimeCaching,
   disableDevLogs: true,
+  // Serve the precached offline page when a document navigation fails (network
+  // unreachable / timed out AND no cache hit). Without this, NetworkFirst throws
+  // "no-response" and the page breaks instead of degrading gracefully.
+  fallbacks: {
+    entries: [
+      {
+        url: '/~offline',
+        matcher: ({ request }) => request.destination === 'document',
+      },
+    ],
+  },
 });
 
 serwist.addEventListeners();
