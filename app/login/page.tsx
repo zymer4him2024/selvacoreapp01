@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { SUPPORTED_LANGUAGES } from '@/lib/utils/constants';
@@ -9,10 +9,13 @@ import { translations, Language } from '@/lib/translations';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
-  const { user, userData, signInWithGoogle, signInWithEmail, signUpWithEmail, loading } = useAuth();
+  const { user, userData, signInWithGoogle, signInWithEmail, signUpWithEmail, updateUserData, signOut, loading } = useAuth();
   const router = useRouter();
   const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [showLanguageSelection, setShowLanguageSelection] = useState(false);
+  const [intendedRole, setIntendedRole] = useState<'customer' | 'technician'>('customer');
+  const [isAdminLogin, setIsAdminLogin] = useState(false);
+  const finalizingRef = useRef(false);
   const [authMode, setAuthMode] = useState<'signIn' | 'signUp'>('signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,23 +31,73 @@ export default function LoginPage() {
       setSelectedLanguage(savedLanguage);
       changeLanguage(savedLanguage as Language);
     }
+
+    const savedRole = localStorage.getItem('intendedRole');
+    if (savedRole === 'customer' || savedRole === 'technician') {
+      setIntendedRole(savedRole);
+    }
+
+    const redirect = new URLSearchParams(window.location.search).get('redirect') || '';
+    if (redirect.startsWith('/admin')) {
+      setIsAdminLogin(true);
+    }
   }, []);
 
   useEffect(() => {
-    if (user && userData) {
-      if (userData.role === 'customer' && userData.roleSelected === false) {
-        router.push(`/select-role?lang=${selectedLanguage}`);
-      } else if (userData.role) {
-        const roleDashboards: Record<string, string> = {
-          'admin': '/admin',
-          'sub-admin': '/admin',
-          'technician': '/technician',
-          'customer': '/customer',
-        };
-        router.push(roleDashboards[userData.role] || '/');
+    if (!user || !userData) return;
+
+    // Brand-new user: apply the role chosen on the login page, then route.
+    if (userData.roleSelected === false) {
+      if (finalizingRef.current) return;
+      finalizingRef.current = true;
+      // Admin accounts are provisioned, never self-registered — reject unknown
+      // accounts on the admin login instead of creating a customer profile.
+      if (isAdminLogin) {
+        toast.error(t.login.noAdminAccess);
+        (async () => {
+          try {
+            await signOut();
+          } finally {
+            finalizingRef.current = false;
+          }
+        })();
+        return;
       }
+      (async () => {
+        try {
+          if (intendedRole === 'technician') {
+            await updateUserData({
+              role: 'technician',
+              roleSelected: true,
+              active: false,
+              preferredLanguage: selectedLanguage as Language,
+            });
+            router.push('/technician/apply');
+          } else {
+            await updateUserData({
+              role: 'customer',
+              roleSelected: true,
+              active: true,
+              preferredLanguage: selectedLanguage as Language,
+            });
+            router.push('/customer/register');
+          }
+        } catch (error: unknown) {
+          finalizingRef.current = false;
+          toast.error(error instanceof Error ? error.message : t.login.error);
+        }
+      })();
+      return;
     }
-  }, [user, userData, router, selectedLanguage]);
+
+    const roleDashboards: Record<string, string> = {
+      'admin': '/admin',
+      'sub-admin': '/admin',
+      'technician': '/technician',
+      'customer': '/customer',
+    };
+    router.push(roleDashboards[userData.role] || '/');
+  }, [user, userData, router, selectedLanguage, intendedRole, isAdminLogin, updateUserData, signOut, t]);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -113,6 +166,11 @@ export default function LoginPage() {
     );
   }
 
+  const handleRoleSelect = (role: 'customer' | 'technician') => {
+    setIntendedRole(role);
+    localStorage.setItem('intendedRole', role);
+  };
+
   const handleLanguageSelect = (languageCode: string) => {
     setSelectedLanguage(languageCode);
     changeLanguage(languageCode as Language);
@@ -170,6 +228,62 @@ export default function LoginPage() {
             <p style={{ fontSize: 16, color: 'var(--soft)', margin: 0 }}>{selectedLang?.name || 'English'}</p>
           </div>
         </div>
+
+        {isAdminLogin ? (
+          <div
+            style={{
+              padding: 16,
+              borderRadius: 'var(--radius-md)',
+              textAlign: 'center',
+              background: 'var(--brand-tint)',
+              border: '2px solid var(--brand)',
+              color: 'var(--ink)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <span style={{ fontSize: 28 }}>🛡️</span>
+            <span style={{ fontWeight: 600, fontSize: 15 }}>{t.login.adminTitle}</span>
+            <span style={{ fontSize: 11, color: 'var(--soft)', lineHeight: 1.3 }}>{t.login.adminDescription}</span>
+          </div>
+        ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          {([
+            { value: 'customer', icon: '🏠', label: t.selectRole.customer.label, description: t.selectRole.customer.description },
+            { value: 'technician', icon: '🔧', label: t.selectRole.technician.label, description: t.selectRole.technician.description },
+          ] as const).map((role) => {
+            const isSelected = intendedRole === role.value;
+            return (
+              <button
+                key={role.value}
+                type="button"
+                onClick={() => handleRoleSelect(role.value)}
+                aria-pressed={isSelected}
+                style={{
+                  padding: 16,
+                  borderRadius: 'var(--radius-md)',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  background: isSelected ? 'var(--brand-tint)' : 'var(--off-paper)',
+                  border: isSelected ? '2px solid var(--brand)' : '1px solid var(--hairline)',
+                  color: 'var(--ink)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <span style={{ fontSize: 28 }}>{role.icon}</span>
+                <span style={{ fontWeight: 600, fontSize: 15 }}>{role.label}</span>
+                <span style={{ fontSize: 11, color: 'var(--soft)', lineHeight: 1.3 }}>{role.description}</span>
+              </button>
+            );
+          })}
+        </div>
+        )}
 
         <div className="sc-card-static" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div style={{ textAlign: 'center' }}>
@@ -254,6 +368,7 @@ export default function LoginPage() {
             </button>
           </form>
 
+          {!isAdminLogin && (
           <button
             type="button"
             onClick={() => setAuthMode(authMode === 'signIn' ? 'signUp' : 'signIn')}
@@ -273,6 +388,7 @@ export default function LoginPage() {
               ? t.login.dontHaveAccount
               : t.login.alreadyHaveAccount}
           </button>
+          )}
         </div>
 
         <div style={{ textAlign: 'center' }}>
