@@ -7,6 +7,7 @@ import { ProductVariation, MultiLanguageText, MaintenanceTemplateFilter } from '
 import { createProduct, updateProduct, uploadProductImage } from '@/lib/services/productService';
 import { PRODUCT_CATEGORIES, SUPPORTED_LANGUAGES } from '@/lib/utils/constants';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatureAccess } from '@/hooks/useRolePermissions';
 import toast from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -16,13 +17,14 @@ export default function NewProductPage() {
   const pn = t.admin.productNew;
   const router = useRouter();
   const { userData } = useAuth();
+  const { canEdit, loading: accessLoading } = useFeatureAccess('featureProducts');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (userData && userData.role !== 'admin') {
+    if (userData && userData.role !== 'admin' && !accessLoading && !canEdit) {
       router.replace('/admin/products');
     }
-  }, [userData, router]);
+  }, [userData, router, accessLoading, canEdit]);
 
   const [name, setName] = useState<MultiLanguageText>({ en: '', pt: '', es: '', ko: '' });
   const [description, setDescription] = useState<MultiLanguageText>({ en: '', pt: '', es: '', ko: '' });
@@ -56,7 +58,7 @@ export default function NewProductPage() {
   const [specKey, setSpecKey] = useState('');
   const [specValue, setSpecValue] = useState('');
 
-  if (userData && userData.role !== 'admin') return null;
+  if (userData && userData.role !== 'admin' && !accessLoading && !canEdit) return null;
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);

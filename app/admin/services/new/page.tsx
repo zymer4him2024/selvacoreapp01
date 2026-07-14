@@ -7,6 +7,7 @@ import { MultiLanguageText } from '@/types';
 import { createService } from '@/lib/services/serviceService';
 import { SUPPORTED_LANGUAGES, SERVICE_CATEGORIES } from '@/lib/utils/constants';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatureAccess } from '@/hooks/useRolePermissions';
 import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
@@ -15,13 +16,14 @@ export default function NewServicePage() {
   const sn = t.admin.serviceNew;
   const router = useRouter();
   const { userData } = useAuth();
+  const { canEdit, loading: accessLoading } = useFeatureAccess('featureServices');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (userData && userData.role !== 'admin') {
+    if (userData && userData.role !== 'admin' && !accessLoading && !canEdit) {
       router.replace('/admin/services');
     }
-  }, [userData, router]);
+  }, [userData, router, accessLoading, canEdit]);
 
   const [name, setName] = useState<MultiLanguageText>({ en: '', pt: '', es: '', ko: '' });
   const [description, setDescription] = useState<MultiLanguageText>({ en: '', pt: '', es: '', ko: '' });
@@ -33,7 +35,7 @@ export default function NewServicePage() {
   const [includeInput, setIncludeInput] = useState('');
   const [active, setActive] = useState(true);
 
-  if (userData && userData.role !== 'admin') return null;
+  if (userData && userData.role !== 'admin' && !accessLoading && !canEdit) return null;
 
   const addInclude = () => {
     if (includeInput.trim() && !includes.includes(includeInput.trim())) {

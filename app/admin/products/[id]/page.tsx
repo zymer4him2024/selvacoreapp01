@@ -13,6 +13,7 @@ import {
 } from '@/lib/services/productService';
 import ImageGalleryManager from '@/components/admin/ImageGalleryManager';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatureAccess } from '@/hooks/useRolePermissions';
 import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -23,6 +24,7 @@ export default function EditProductPage() {
   const params = useParams();
   const productId = params.id as string;
   const { userData } = useAuth();
+  const { canEdit, loading: accessLoading } = useFeatureAccess('featureProducts');
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,10 +33,10 @@ export default function EditProductPage() {
   const [deletingImage, setDeletingImage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (userData && userData.role !== 'admin') {
+    if (userData && userData.role !== 'admin' && !accessLoading && !canEdit) {
       router.replace('/admin/products');
     }
-  }, [userData, router]);
+  }, [userData, router, accessLoading, canEdit]);
 
   useEffect(() => {
     loadProduct();
@@ -133,7 +135,7 @@ export default function EditProductPage() {
     }
   };
 
-  if (userData && userData.role !== 'admin') return null;
+  if (userData && userData.role !== 'admin' && !accessLoading && !canEdit) return null;
 
   if (loading) {
     return (
