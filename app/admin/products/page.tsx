@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatureAccess } from '@/hooks/useRolePermissions';
 
 const PAGE_SIZE = 20;
 
@@ -26,6 +27,8 @@ export default function ProductsPage() {
   const { formatCurrency } = useLocaleFormatters();
   const { userData } = useAuth();
   const isSubAdmin = userData?.role === 'sub-admin';
+  const { canEdit } = useFeatureAccess('featureProducts');
+  const canManage = !isSubAdmin || canEdit;
   const p = t.admin.products;
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,9 +110,9 @@ export default function ProductsPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <div>
           <h1 className="sc-h1" style={{ margin: 0, marginBottom: 8 }}>{p.title}</h1>
-          <p className="sc-helper" style={{ margin: 0 }}>{isSubAdmin ? p.subtitleSubAdmin : p.subtitle}</p>
+          <p className="sc-helper" style={{ margin: 0 }}>{canManage ? p.subtitle : p.subtitleSubAdmin}</p>
         </div>
-        {!isSubAdmin && (
+        {canManage && (
           <Link
             href="/admin/products/new"
             className="sc-cta"
@@ -150,9 +153,9 @@ export default function ProductsPage() {
           <Package className="w-16 h-16" style={{ margin: '0 auto 16px', color: 'var(--soft)' }} />
           <h3 style={{ fontSize: 20, fontWeight: 600, marginBottom: 8, color: 'var(--ink)' }}>{p.noProducts}</h3>
           <p className="sc-helper" style={{ marginBottom: 24 }}>
-            {searchTerm ? p.tryDifferent : (isSubAdmin ? '' : p.getStarted)}
+            {searchTerm ? p.tryDifferent : (canManage ? p.getStarted : '')}
           </p>
-          {!searchTerm && !isSubAdmin && (
+          {!searchTerm && canManage && (
             <Link
               href="/admin/products/new"
               className="sc-cta"
@@ -289,7 +292,7 @@ export default function ProductsPage() {
                   )}
                 </div>
 
-                {!isSubAdmin && (
+                {canManage && (
                   <div style={{ display: 'flex', gap: 8, paddingTop: 12, borderTop: '1px solid var(--hairline)' }}>
                     <Link
                       href={`/admin/products/${product.id}`}
@@ -644,7 +647,7 @@ export default function ProductsPage() {
                 </div>
               )}
 
-              {!isSubAdmin && (
+              {canManage && (
                 <div style={{ display: 'flex', gap: 12, paddingTop: 16, borderTop: '1px solid var(--hairline)' }}>
                   <Link
                     href={`/admin/products/${selectedProduct.id}`}

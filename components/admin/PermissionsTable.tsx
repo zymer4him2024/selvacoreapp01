@@ -68,8 +68,13 @@ export default function PermissionsTable() {
   const effectiveLevel = (feature: string, role: RoleKey, staticLevel: Level): Level => {
     if (role === 'admin') return staticLevel;
     if (LOCKED[feature]?.[role]) return staticLevel;
-    const visible = visibility[feature]?.[role] ?? true;
-    return visible ? staticLevel : 'none';
+    const level = visibility[feature]?.[role] ?? 'edit';
+    if (level === 'hidden') return 'none';
+    if (level === 'read') return staticLevel === 'readSelf' ? 'readSelf' : 'readOnly';
+    // 'edit': cells whose static rules level was read-only or none are now
+    // dynamically granted full access via subAdminCanEdit in firestore.rules.
+    if (staticLevel === 'readOnly' || staticLevel === 'none') return 'full';
+    return staticLevel;
   };
 
   const levelLabel = (level: Level): string => {

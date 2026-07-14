@@ -11,6 +11,7 @@ import { getSecondaryAuth, disposeSecondaryApp } from '@/lib/firebase/secondary'
 import { getActiveSubContractors } from '@/lib/services/subContractorService';
 import { SubContractor, User, UserRole } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatureAccess } from '@/hooks/useRolePermissions';
 import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -18,6 +19,7 @@ export default function NewUserPage() {
   const router = useRouter();
   const { t } = useTranslation();
   const { userData } = useAuth();
+  const { canEdit: canEditUsers } = useFeatureAccess('featureUsers');
   const u = t.admin.users;
   const isSubAdmin = userData?.role === 'sub-admin';
 
@@ -53,6 +55,10 @@ export default function NewUserPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (isSubAdmin && !canEditUsers) {
+      toast.error(u.readOnlyToast);
+      return;
+    }
     if (!email.trim() || !password || !displayName.trim()) {
       toast.error(u.requiredFieldsToast);
       return;

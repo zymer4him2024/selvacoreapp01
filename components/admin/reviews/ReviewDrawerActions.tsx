@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import type { Review } from '@/types';
 import { flagReview, hideReview, restoreReview } from '@/lib/services/reviewService';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatureAccess } from '@/hooks/useRolePermissions';
 import { useTranslation } from '@/hooks/useTranslation';
 
 interface Props {
@@ -31,10 +32,13 @@ const actionBtnStyle = (color: string, textColor: string, disabled: boolean): Re
 
 export function ReviewDrawerActions({ review, onChanged }: Props) {
   const { userData } = useAuth();
+  const { canEdit } = useFeatureAccess('featureReviews');
   const { t } = useTranslation();
   const r = t.admin.reviews;
   const [flagReason, setFlagReason] = useState('');
   const [busy, setBusy] = useState(false);
+
+  if (!canEdit) return null;
 
   const run = async (action: () => Promise<void>, okMsg: string) => {
     if (!userData) return;

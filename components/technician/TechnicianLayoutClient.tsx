@@ -47,7 +47,7 @@ export default function TechnicianLayoutClient({
   ];
 
   const navigation = allNavigation.filter(
-    (item) => !item.feature || visibility[item.feature]?.technician !== false,
+    (item) => !item.feature || visibility[item.feature]?.technician !== 'hidden',
   );
 
   return (

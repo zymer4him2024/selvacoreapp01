@@ -75,6 +75,7 @@ export default function SubAdminsPage() {
   }, []);
 
   const toggleActive = async (user: User) => {
+    if (userData?.role !== 'admin') return;
     const next = !user.active;
     const confirmMsg = (next ? sa.confirmActivateFormat : sa.confirmDeactivateFormat)
       .replace('{name}', user.displayName);

@@ -11,6 +11,7 @@ import { InventoryItem, StockAdjustment, getInventoryStatus, AdjustmentType } fr
 import InventoryFormModal, { InventoryFormData } from '@/components/admin/InventoryFormModal';
 import StockAdjustmentModal from '@/components/admin/StockAdjustmentModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatureAccess } from '@/hooks/useRolePermissions';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import toast from 'react-hot-toast';
@@ -40,6 +41,7 @@ export default function InventoryDetailPage() {
   const params = useParams();
   const itemId = params.id as string;
   const { user, userData } = useAuth();
+  const { visible, canEdit, loading: accessLoading } = useFeatureAccess('featureInventory');
   const { t } = useTranslation();
   const { formatCurrency, formatDate } = useLocaleFormatters();
   const inv = t.admin.inventory;
@@ -65,10 +67,10 @@ export default function InventoryDetailPage() {
   };
 
   useEffect(() => {
-    if (userData && userData.role !== 'admin') {
+    if (userData && userData.role !== 'admin' && !accessLoading && !visible) {
       router.replace('/admin');
     }
-  }, [userData, router]);
+  }, [userData, router, accessLoading, visible]);
 
   useEffect(() => {
     loadData();
@@ -125,7 +127,7 @@ export default function InventoryDetailPage() {
     router.push('/admin/inventory');
   };
 
-  if (userData && userData.role !== 'admin') return null;
+  if (userData && userData.role !== 'admin' && !accessLoading && !visible) return null;
 
   if (loading) {
     return (
@@ -178,6 +180,7 @@ export default function InventoryDetailPage() {
           </div>
         </div>
 
+        {canEdit && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             onClick={() => setShowAdjustModal(true)}
@@ -215,6 +218,7 @@ export default function InventoryDetailPage() {
             <Trash2 size={16} />
           </button>
         </div>
+        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>

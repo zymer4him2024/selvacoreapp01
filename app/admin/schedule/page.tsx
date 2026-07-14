@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { DndContext, DragOverlay, DragStartEvent, DragEndEvent, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatureAccess } from '@/hooks/useRolePermissions';
 import { useScheduleData } from '@/hooks/useScheduleData';
 import { useDragHandlers } from '@/hooks/useDragHandlers';
 import { useScheduleKeyboard } from '@/hooks/useScheduleKeyboard';
@@ -28,11 +29,12 @@ export default function SchedulePage() {
 
   const adminId = user?.uid || 'admin';
   const labels = { success: s.scheduleSuccess, fail: s.scheduleFailed };
+  const { canEdit } = useFeatureAccess('featureOrders');
   const { handleDragEnd } = useDragHandlers(data, adminId, labels);
   const { focusedDayIdx } = useScheduleKeyboard(data.weekDays, data.prevWeek, data.nextWeek);
 
   const onDragStart = (e: DragStartEvent) => setActiveOrder((e.active.data.current as { order: Order })?.order ?? null);
-  const onDragEnd = (e: DragEndEvent) => { handleDragEnd(e); setActiveOrder(null); };
+  const onDragEnd = (e: DragEndEvent) => { if (canEdit) handleDragEnd(e); setActiveOrder(null); };
 
   const filteredTechs = scFilter === 'all'
     ? data.technicians
@@ -65,7 +67,7 @@ export default function SchedulePage() {
         labels={{ today: s.today, weekOf: s.weekOf, allSubContractors: s.allSubContractors, independent: s.independent, printWeek: s.printWeek }}
       />
 
-      <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+      <DndContext sensors={canEdit ? sensors : []} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div style={{ display: 'flex', gap: 16 }}>
           <div style={{ flex: 1, minWidth: 0 }} className="schedule-print-area">
             <ScheduleGrid
@@ -73,7 +75,7 @@ export default function SchedulePage() {
               focusedDayIdx={focusedDayIdx}
               noTechsLink={s.manageTechnicians}
               labels={{ noTechnicians: s.noTechnicians, noOrders: s.noOrders, timeTbd: s.timeTbd, reschedule: s.reschedule, unassign: s.unassign, workload: s.workload }}
-              onUnassign={(order) => data.handleUnschedule(order, adminId, { success: s.unscheduleSuccess, fail: s.scheduleFailed })}
+              onUnassign={canEdit ? (order) => data.handleUnschedule(order, adminId, { success: s.unscheduleSuccess, fail: s.scheduleFailed }) : undefined}
             />
           </div>
           <UnscheduledJobsSidebar

@@ -12,6 +12,7 @@ import { InventoryItem, InventoryCategory, StockAdjustment, AdjustmentType, getI
 import InventoryFormModal, { InventoryFormData } from '@/components/admin/InventoryFormModal';
 import StockAdjustmentModal from '@/components/admin/StockAdjustmentModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatureAccess } from '@/hooks/useRolePermissions';
 import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
@@ -64,6 +65,7 @@ const statTileStyle: React.CSSProperties = {
 export default function InventoryPage() {
   const router = useRouter();
   const { user, userData } = useAuth();
+  const { visible, canEdit, loading: accessLoading } = useFeatureAccess('featureInventory');
   const { t } = useTranslation();
   const { formatCurrency, formatDateTime } = useLocaleFormatters();
   const inv = t.admin.inventory;
@@ -106,10 +108,10 @@ export default function InventoryPage() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
 
   useEffect(() => {
-    if (userData && userData.role !== 'admin') {
+    if (userData && userData.role !== 'admin' && !accessLoading && !visible) {
       router.replace('/admin');
     }
-  }, [userData, router]);
+  }, [userData, router, accessLoading, visible]);
 
   useEffect(() => {
     loadData();
@@ -217,7 +219,7 @@ export default function InventoryPage() {
     return true;
   });
 
-  if (userData && userData.role !== 'admin') return null;
+  if (userData && userData.role !== 'admin' && !accessLoading && !visible) return null;
 
   if (loading) {
     return (
@@ -237,7 +239,7 @@ export default function InventoryPage() {
           <h1 className="sc-h1" style={{ marginBottom: 8 }}>{inv.title}</h1>
           <p className="sc-helper">{inv.subtitle}</p>
         </div>
-        {activeTab === 'items' && (
+        {activeTab === 'items' && canEdit && (
           <button
             onClick={handleAddItem}
             className="sc-cta"
@@ -441,6 +443,7 @@ export default function InventoryPage() {
                       </div>
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                        {canEdit && (<>
                         <button
                           onClick={() => setAdjustingItem(item)}
                           style={{
@@ -481,6 +484,7 @@ export default function InventoryPage() {
                         >
                           <Pencil size={16} />
                         </button>
+                        </>)}
                         <button
                           onClick={() => router.push(`/admin/inventory/${item.id}`)}
                           style={{

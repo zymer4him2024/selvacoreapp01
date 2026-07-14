@@ -334,8 +334,8 @@ export default function AdminDashboard() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
         {(() => {
-          const showProducts = !isSubAdmin || visibility.featureProducts?.subAdmin !== false;
-          const showServices = !isSubAdmin || visibility.featureServices?.subAdmin !== false;
+          const showProducts = !isSubAdmin || visibility.featureProducts?.subAdmin !== 'hidden';
+          const showServices = !isSubAdmin || visibility.featureServices?.subAdmin !== 'hidden';
           const showSubContractors = !isSubAdmin;
           const showAnalytics = !isSubAdmin;
           return (

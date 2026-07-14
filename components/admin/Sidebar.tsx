@@ -36,7 +36,7 @@ interface NavItem {
   key: string;
   href: string;
   icon: LucideIcon;
-  // If set, sub-admin sees this item only when visibility[featureKey].subAdmin === true.
+  // If set, sub-admin sees this item unless visibility[featureKey].subAdmin is 'hidden'.
   // If `adminOnly` is true, sub-admin never sees it.
   featureKey?: string;
   adminOnly?: boolean;
@@ -52,10 +52,10 @@ const navigationItems: NavItem[] = [
   { key: 'gifts',        href: '/admin/gifts',        icon: Gift,           adminOnly: true },
   { key: 'beneficiaries', href: '/admin/beneficiaries', icon: HeartHandshake, adminOnly: true },
   { key: 'schedule',     href: '/admin/schedule',     icon: CalendarDays,   featureKey: 'featureOrders' },
-  { key: 'inventory',    href: '/admin/inventory',    icon: Boxes,          adminOnly: true },
+  { key: 'inventory',    href: '/admin/inventory',    icon: Boxes,          featureKey: 'featureInventory' },
   { key: 'maintenance',  href: '/admin/maintenance',  icon: CalendarClock,  featureKey: 'featureMaintenance' },
   { key: 'reviews',      href: '/admin/reviews',      icon: Star,           featureKey: 'featureReviews' },
-  { key: 'transactions', href: '/admin/transactions', icon: Receipt,        adminOnly: true },
+  { key: 'transactions', href: '/admin/transactions', icon: Receipt,        featureKey: 'featureTransactions' },
   { key: 'analytics',    href: '/admin/analytics',    icon: BarChart3,      adminOnly: true },
   { key: 'settings',     href: '/admin/settings',     icon: Settings },
 ];
@@ -74,7 +74,7 @@ export default function Sidebar() {
   const visibleItems = navigationItems.filter((item) => {
     if (!isSubAdmin) return true;
     if (item.adminOnly) return false;
-    if (item.featureKey) return visibility[item.featureKey]?.subAdmin !== false;
+    if (item.featureKey) return visibility[item.featureKey]?.subAdmin !== 'hidden';
     return true;
   });
 

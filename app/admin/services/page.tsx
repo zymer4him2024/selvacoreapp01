@@ -8,6 +8,7 @@ import { getAllServices, deleteService } from '@/lib/services/serviceService';
 import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatureAccess } from '@/hooks/useRolePermissions';
 import toast from 'react-hot-toast';
 
 export default function ServicesPage() {
@@ -15,6 +16,8 @@ export default function ServicesPage() {
   const { formatCurrency } = useLocaleFormatters();
   const { userData } = useAuth();
   const isSubAdmin = userData?.role === 'sub-admin';
+  const { canEdit } = useFeatureAccess('featureServices');
+  const canManage = !isSubAdmin || canEdit;
   const sv = t.admin.services;
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,9 +74,9 @@ export default function ServicesPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <div>
           <h1 className="sc-h1" style={{ margin: 0, marginBottom: 8 }}>{sv.title}</h1>
-          <p className="sc-helper" style={{ margin: 0 }}>{isSubAdmin ? sv.subtitleSubAdmin : sv.subtitle}</p>
+          <p className="sc-helper" style={{ margin: 0 }}>{canManage ? sv.subtitle : sv.subtitleSubAdmin}</p>
         </div>
-        {!isSubAdmin && (
+        {canManage && (
           <Link
             href="/admin/services/new"
             className="sc-cta"
@@ -114,9 +117,9 @@ export default function ServicesPage() {
           <Wrench className="w-16 h-16" style={{ margin: '0 auto 16px', color: 'var(--soft)' }} />
           <h3 className="sc-h2" style={{ margin: 0, marginBottom: 8, fontSize: 20 }}>{sv.noServices}</h3>
           <p className="sc-helper" style={{ margin: 0, marginBottom: 24 }}>
-            {searchTerm ? sv.tryDifferent : (isSubAdmin ? '' : sv.getStarted)}
+            {searchTerm ? sv.tryDifferent : (canManage ? sv.getStarted : '')}
           </p>
-          {!searchTerm && !isSubAdmin && (
+          {!searchTerm && canManage && (
             <Link
               href="/admin/services/new"
               className="sc-cta"
@@ -224,7 +227,7 @@ export default function ServicesPage() {
                   </div>
                 </div>
 
-                {!isSubAdmin && (
+                {canManage && (
                   <div style={{ display: 'flex', gap: 8, marginLeft: 16, flexShrink: 0 }}>
                     <Link
                       href={`/admin/services/${service.id}`}

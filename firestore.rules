@@ -26,6 +26,21 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'sub-admin';
     }
 
+    // Sub-admin access is configurable by the super-admin in
+    // config/rolePermissions (Admin Settings → Customize Access by Role).
+    // Levels: 'hidden' | 'read' | 'edit'. Missing doc/field fails closed.
+    function subAdminLevel(feature) {
+      return get(/databases/$(database)/documents/config/rolePermissions).data.visibility[feature].subAdmin;
+    }
+
+    function subAdminCanRead(feature) {
+      return isSubAdmin() && subAdminLevel(feature) in ['read', 'edit'];
+    }
+
+    function subAdminCanEdit(feature) {
+      return isSubAdmin() && subAdminLevel(feature) == 'edit';
+    }
+
     // Users collection - sub-admin is platform-wide (Selvacore staff), not
     // scoped to a sub-contractor. Sub-admin can read all users and edit
     // operational users (technician/customer), but cannot create or modify
@@ -62,10 +77,11 @@ service cloud.firestore {
          resource.data.role != 'sub-admin');
     }
 
-    // Products collection - public catalog read, admin write
+    // Products collection - public catalog read; admin writes, sub-admin
+    // writes when granted 'edit' in config/rolePermissions
     match /products/{productId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() || subAdminCanEdit('featureProducts');
     }
 
     // Customers collection
@@ -103,26 +119,28 @@ service cloud.firestore {
         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['scheduledAt', 'estimatedDurationMinutes']);
     }
 
-    // Sub-contractors collection - sub-admin reads all (platform-wide visibility),
-    // but only admin can create/edit/delete contractors (org-structure boundary).
+    // Sub-contractors collection - sub-admin reads all (platform-wide visibility);
+    // contractor create/edit/delete is admin, or sub-admin when granted 'edit'.
     match /subContractors/{contractorId} {
       allow read: if isAdmin() || isSubAdmin();
-      allow write: if isAdmin();
+      allow write: if isAdmin() || subAdminCanEdit('featureSubContractors');
     }
 
-    // Transactions collection - validated create, admin manage
+    // Transactions collection - validated create, admin manage; sub-admin
+    // reads/manages when granted in config/rolePermissions
     match /transactions/{transactionId} {
-      allow read: if isAdmin();
+      allow read: if isAdmin() || subAdminCanRead('featureTransactions');
       // Enforce performedBy matches the authenticated user
       allow create: if isAuthenticated() &&
         request.resource.data.performedBy == request.auth.uid;
-      allow update, delete: if isAdmin();
+      allow update, delete: if isAdmin() || subAdminCanEdit('featureTransactions');
     }
 
-    // Services collection - public read, admin write
+    // Services collection - public read; admin writes, sub-admin writes
+    // when granted 'edit' in config/rolePermissions
     match /services/{serviceId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() || subAdminCanEdit('featureServices');
     }
 
     // Customer History collection
@@ -245,14 +263,16 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Inventory collection — admin only
+    // Inventory collection — admin, or sub-admin per config/rolePermissions
     match /inventory/{itemId} {
-      allow read, write: if isAdmin();
+      allow read: if isAdmin() || subAdminCanRead('featureInventory');
+      allow write: if isAdmin() || subAdminCanEdit('featureInventory');
     }
 
-    // Stock Adjustments collection — admin only
+    // Stock Adjustments collection — follows the inventory feature grant
     match /stockAdjustments/{adjustmentId} {
-      allow read, write: if isAdmin();
+      allow read: if isAdmin() || subAdminCanRead('featureInventory');
+      allow write: if isAdmin() || subAdminCanEdit('featureInventory');
     }
 
     // QR Codes collection — admin only

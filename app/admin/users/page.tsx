@@ -37,6 +37,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatureAccess } from '@/hooks/useRolePermissions';
 
 type Tab = 'all' | 'sub-admins' | 'sub-contractors';
 type RoleFilter = 'all' | UserRole;
@@ -46,6 +47,8 @@ export default function UsersPage() {
   const { formatCurrency } = useLocaleFormatters();
   const { user: authUser, userData } = useAuth();
   const isSubAdmin = userData?.role === 'sub-admin';
+  const { canEdit: canEditContractors } = useFeatureAccess('featureSubContractors');
+  const canManageContractors = !isSubAdmin || canEditContractors;
   const u = t.admin.users;
   const sa = t.admin.subAdmins;
   const sc = t.admin.subContractors;
@@ -311,7 +314,7 @@ export default function UsersPage() {
           <h1 className="sc-h1" style={{ margin: 0, marginBottom: 8 }}>{u.pageTitle}</h1>
           <p className="sc-helper" style={{ margin: 0 }}>{isSubAdmin ? u.pageSubtitleSubAdmin : u.pageSubtitle}</p>
         </div>
-        {!isSubAdmin && renderHeaderAction()}
+        {(tab === 'sub-contractors' ? canManageContractors : !isSubAdmin) && renderHeaderAction()}
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, borderBottom: '1px solid var(--hairline)' }}>
@@ -679,7 +682,7 @@ export default function UsersPage() {
               <p className="sc-helper" style={{ margin: 0, marginBottom: 24 }}>
                 {scSearch ? sc.tryDifferent : sc.getStarted}
               </p>
-              {!scSearch && !isSubAdmin && (
+              {!scSearch && canManageContractors && (
                 <Link
                   href="/admin/sub-contractors/new"
                   className="sc-cta"
@@ -764,7 +767,7 @@ export default function UsersPage() {
                         </div>
                       </div>
 
-                      {!isSubAdmin && (
+                      {canManageContractors && (
                         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
                           <Link
                             href={`/admin/sub-contractors/${item.id}`}

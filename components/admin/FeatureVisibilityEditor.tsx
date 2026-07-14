@@ -8,13 +8,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { saveRolePermissions } from '@/lib/services/rolePermissionsService';
 import {
-  DEFAULT_VISIBILITY,
-  FeatureVisibility,
+  AccessLevel,
+  DEFAULT_ACCESS,
+  FeatureAccess,
   LOCKED,
   RoleKey,
+  maxLevel,
 } from '@/types/rolePermissions';
 
-const FEATURES: string[] = Object.keys(DEFAULT_VISIBILITY);
+const FEATURES: string[] = Object.keys(DEFAULT_ACCESS);
 const ROLES: RoleKey[] = ['admin', 'subAdmin', 'technician', 'customer'];
 
 const headerStyle: React.CSSProperties = {
@@ -30,7 +32,7 @@ export default function FeatureVisibilityEditor() {
   const { t } = useTranslation();
   const { user, userData } = useAuth();
   const { visibility: serverVisibility, loading } = useRolePermissions();
-  const [draft, setDraft] = useState<Record<string, FeatureVisibility>>(serverVisibility);
+  const [draft, setDraft] = useState<Record<string, FeatureAccess>>(serverVisibility);
   const [saving, setSaving] = useState(false);
 
   const e = t.admin.settings.permissionsEditor;
@@ -45,15 +47,13 @@ export default function FeatureVisibilityEditor() {
   const isLocked = (feature: string, role: RoleKey): boolean =>
     LOCKED[feature]?.[role] === true;
 
-  const isAdminColumn = (role: RoleKey): boolean => role === 'admin';
-
-  const toggle = (feature: string, role: RoleKey) => {
-    if (isLocked(feature, role) || isAdminColumn(role)) return;
+  const setLevel = (feature: string, role: RoleKey, level: AccessLevel) => {
+    if (role === 'admin' || isLocked(feature, role)) return;
     setDraft((prev) => ({
       ...prev,
       [feature]: {
-        ...(prev[feature] ?? DEFAULT_VISIBILITY[feature]),
-        [role]: !(prev[feature]?.[role] ?? DEFAULT_VISIBILITY[feature][role]),
+        ...(prev[feature] ?? DEFAULT_ACCESS[feature]),
+        [role]: level,
       },
     }));
   };
@@ -91,6 +91,49 @@ export default function FeatureVisibilityEditor() {
       case 'customer':
         return p.colCustomer;
     }
+  };
+
+  const levelLabel = (level: AccessLevel): string => {
+    switch (level) {
+      case 'hidden':
+        return e.levelHidden;
+      case 'read':
+        return e.levelRead;
+      case 'edit':
+        return e.levelEdit;
+    }
+  };
+
+  const segment = (
+    feature: string,
+    role: RoleKey,
+    level: AccessLevel,
+    current: AccessLevel,
+    disabled: boolean,
+  ) => {
+    const selected = current === level;
+    return (
+      <button
+        key={level}
+        type="button"
+        onClick={() => setLevel(feature, role, level)}
+        disabled={disabled || saving || loading}
+        aria-pressed={selected}
+        style={{
+          padding: '4px 10px',
+          fontSize: 12,
+          fontWeight: selected ? 600 : 400,
+          border: 'none',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          background: selected ? 'var(--brand)' : 'transparent',
+          color: selected ? '#fff' : disabled ? 'var(--soft)' : 'var(--ink)',
+          opacity: disabled && !selected ? 0.45 : 1,
+          transition: 'background 0.15s ease, color 0.15s ease',
+        }}
+      >
+        {levelLabel(level)}
+      </button>
+    );
   };
 
   return (
@@ -145,45 +188,42 @@ export default function FeatureVisibilityEditor() {
                   </td>
                   {ROLES.map((role) => {
                     const locked = isLocked(feature, role);
-                    const adminCol = isAdminColumn(role);
-                    const checked = locked
-                      ? false
+                    const adminCol = role === 'admin';
+                    const cap = maxLevel(feature, role);
+                    const current: AccessLevel = locked
+                      ? 'hidden'
                       : adminCol
-                      ? true
-                      : draft[feature]?.[role] ?? DEFAULT_VISIBILITY[feature][role];
+                      ? 'edit'
+                      : draft[feature]?.[role] ?? DEFAULT_ACCESS[feature][role];
                     return (
-                      <td key={role} style={{ padding: '12px 16px', textAlign: 'center' }}>
-                        <label
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: locked || adminCol ? 'not-allowed' : 'pointer',
-                          }}
+                      <td key={role} style={{ padding: '10px 12px', textAlign: 'center' }}>
+                        <span
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                           title={
                             locked
                               ? e.lockedTooltip
                               : adminCol
                               ? e.adminLockedTooltip
+                              : cap === 'read'
+                              ? e.cappedTooltip
                               : undefined
                           }
                         >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            disabled={locked || adminCol || saving || loading}
-                            onChange={() => toggle(feature, role)}
+                          <span
                             style={{
-                              width: 20,
-                              height: 20,
-                              accentColor: 'var(--brand)',
-                              opacity: locked || adminCol ? 0.5 : 1,
+                              display: 'inline-flex',
+                              borderRadius: 8,
+                              border: '1px solid var(--hairline)',
+                              overflow: 'hidden',
                             }}
-                          />
-                          {locked && (
-                            <Lock size={14} color="var(--soft)" style={{ marginLeft: 6 }} />
-                          )}
-                        </label>
+                          >
+                            {segment(feature, role, 'hidden', current, locked || adminCol)}
+                            {segment(feature, role, 'read', current, locked || adminCol)}
+                            {(adminCol || cap === 'edit') &&
+                              segment(feature, role, 'edit', current, locked || adminCol)}
+                          </span>
+                          {locked && <Lock size={14} color="var(--soft)" />}
+                        </span>
                       </td>
                     );
                   })}
@@ -195,10 +235,11 @@ export default function FeatureVisibilityEditor() {
       </div>
 
       <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px solid var(--hairline)', display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12, color: 'var(--soft)' }}>
-        <p style={{ margin: 0 }}>{e.helpVisible}</p>
-        <p style={{ margin: 0 }}>{e.helpHidden}</p>
+        <p style={{ margin: 0 }}>{e.helpHiddenLevel}</p>
+        <p style={{ margin: 0 }}>{e.helpReadLevel}</p>
+        <p style={{ margin: 0 }}>{e.helpEditLevel}</p>
         <p style={{ margin: 0 }}>{e.helpLocked}</p>
-        <p style={{ margin: 0 }}>{e.helpRules}</p>
+        <p style={{ margin: 0 }}>{e.helpCapped}</p>
       </div>
     </div>
   );

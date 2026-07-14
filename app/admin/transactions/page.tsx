@@ -35,6 +35,7 @@ import { formatOptionalString, getOrderStatusLabel } from '@/lib/utils/formatter
 import { QueryDocumentSnapshot, DocumentData, Timestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatureAccess } from '@/hooks/useRolePermissions';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
 
@@ -140,15 +141,16 @@ const pillStyle = (color: string, bg: string): React.CSSProperties => ({
 export default function TransactionsPage() {
   const { t } = useTranslation();
   const { userData } = useAuth();
+  const { visible, loading: accessLoading } = useFeatureAccess('featureTransactions');
   const router = useRouter();
   const tr = t.admin.transactions;
   const [activeTab, setActiveTab] = useState<MainTab>('orders');
 
   useEffect(() => {
-    if (userData && userData.role !== 'admin') {
+    if (userData && userData.role !== 'admin' && !accessLoading && !visible) {
       router.replace('/admin');
     }
-  }, [userData, router]);
+  }, [userData, router, accessLoading, visible]);
 
   const [summary, setSummary] = useState({
     totalOrders: 0,
@@ -199,7 +201,7 @@ export default function TransactionsPage() {
     loadSummary();
   }, [loadSummary]);
 
-  if (userData && userData.role !== 'admin') return null;
+  if (userData && userData.role !== 'admin' && !accessLoading && !visible) return null;
 
   return (
     <div className="sc" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>

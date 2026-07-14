@@ -57,6 +57,7 @@ export default function NewSubAdminPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (userData?.role !== 'admin') return;
     if (!email.trim() || !password || !displayName.trim()) {
       toast.error(sn.requiredFieldsToast);
       return;

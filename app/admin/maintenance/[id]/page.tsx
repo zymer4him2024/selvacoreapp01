@@ -10,6 +10,7 @@ import { getDeviceById } from '@/lib/services/deviceService';
 import { getSchedulesByDeviceId, completeMaintenance, getVisitsByDeviceId } from '@/lib/services/maintenanceService';
 import { Device, MaintenanceSchedule, MaintenanceVisit } from '@/types/device';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatureAccess } from '@/hooks/useRolePermissions';
 import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLocaleFormatters } from '@/hooks/useLocaleFormatters';
@@ -27,6 +28,7 @@ export default function DeviceDetailPage() {
   const params = useParams();
   const deviceId = params.id as string;
   const { user } = useAuth();
+  const { canEdit } = useFeatureAccess('featureMaintenance');
   const { t } = useTranslation();
   const { formatDate } = useLocaleFormatters();
   const md = t.admin.maintenanceDetail;
@@ -296,6 +298,7 @@ export default function DeviceDetailPage() {
                 </div>
               )}
 
+              {canEdit && (
               <div style={{ paddingTop: 16, borderTop: '1px solid var(--hairline)' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
                   <div style={{ flex: 1, minWidth: 200 }}>
@@ -322,6 +325,7 @@ export default function DeviceDetailPage() {
                   </button>
                 </div>
               </div>
+              )}
             </div>
           );
         })}
