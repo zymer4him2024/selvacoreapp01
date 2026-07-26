@@ -889,6 +889,10 @@
 html,
 body {
   max-width: 100vw;
+  /* Native form controls (inputs, selects, dropdown option lists, scrollbars)
+     follow color-scheme; without this they render dark on an OS set to dark,
+     even though the app is light. App is light-only, so pin it to light. */
+  color-scheme: light;
   /* `clip` (not `hidden`) keeps pages from scrolling sideways without creating a
      scroll container — `overflow-x: hidden` here breaks `position: sticky`
      headers on mobile. */
