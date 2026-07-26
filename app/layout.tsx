@@ -42,11 +42,11 @@ export const metadata: Metadata = {
   },
 }
 
-// No-flash inline script: resolves the user's theme choice and sets data-theme on
-// <html> BEFORE first paint, preventing FOUC. Explicit palette choices
-// (light/forest/meadow/dark) apply as-is; an explicit 'system' choice follows the
-// OS preference; anything absent/unknown defaults to light (matches ThemeContext).
-const noFlashScript = `(function(){try{var s=localStorage.getItem('selvacore-theme');var sys=window.matchMedia('(prefers-color-scheme: dark)').matches;var t=(s==='light'||s==='dark'||s==='forest'||s==='meadow')?s:(s==='system'?(sys?'dark':'light'):'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`
+// No-flash inline script: sets data-theme on <html> BEFORE first paint, preventing
+// FOUC. Light-only for now (matches ThemeContext.resolve): only the green
+// light-family palettes forest/meadow are honored; everything else — including a
+// saved 'dark'/'system' preference — collapses to light.
+const noFlashScript = `(function(){try{var s=localStorage.getItem('selvacore-theme');var t=(s==='forest'||s==='meadow')?s:'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`
 
 export default function RootLayout({
   children,

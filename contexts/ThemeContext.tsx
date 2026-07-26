@@ -42,8 +42,12 @@ function systemPrefersDark(): boolean {
 }
 
 function resolve(choice: Theme): ResolvedTheme {
-  if (choice === 'system') return systemPrefersDark() ? 'dark' : 'light';
-  return choice;
+  // Light-only for now: the app ships in light mode, so 'dark' and 'system'
+  // collapse to light (this also overrides any previously-saved dark/system
+  // preference). The green light-family palettes forest/meadow still apply.
+  // To re-enable dark, restore: if (choice === 'system') return systemPrefersDark() ? 'dark' : 'light'; return choice;
+  if (choice === 'forest' || choice === 'meadow') return choice;
+  return 'light';
 }
 
 function applyDataTheme(resolved: ResolvedTheme) {
