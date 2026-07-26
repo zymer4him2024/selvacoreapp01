@@ -40,6 +40,13 @@ const config: Config = {
         hairline: 'var(--hairline)',
         warn: 'var(--warn)',
         'warn-tint': 'var(--warn-tint)',
+
+        // Liquid Glass (crystal) tokens — theme-aware via data-theme on <html>
+        accent: 'var(--accent)',
+        'on-accent': 'var(--on-accent)',
+        headline: 'var(--headline)',
+        body: 'var(--body)',
+        muted: 'var(--muted)',
       },
       fontFamily: {
         sans: [
@@ -79,6 +86,10 @@ const config: Config = {
         'sc-sm': 'var(--radius-sm)',
         'sc-md': 'var(--radius-md)',
         'sc-full': 'var(--radius-full)',
+        // Liquid Glass radii
+        'glass': '28px',
+        'glass-lg': '40px',
+        'glass-sm': '18px',
       },
       boxShadow: {
         'apple-sm': '0 2px 8px rgba(0, 0, 0, 0.12)',
@@ -88,6 +99,13 @@ const config: Config = {
         'sc-sm': 'var(--shadow-sm)',
         'sc-lg': 'var(--shadow-lg)',
         'sc-focus': '0 0 0 3px var(--brand-tint)',
+        // Liquid Glass depth ramp
+        'glass-sm': 'var(--glass-shadow-sm)',
+        'glass-md': 'var(--glass-shadow-md)',
+        'glass': 'var(--glass-shadow-lg)',
+      },
+      backdropBlur: {
+        glass: '32px',
       },
       animation: {
         'fade-in': 'fadeIn 0.3s ease-in-out',

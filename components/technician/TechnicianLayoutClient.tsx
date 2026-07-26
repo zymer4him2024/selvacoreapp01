@@ -53,36 +53,31 @@ export default function TechnicianLayoutClient({
   return (
     <ProtectedRoute allowedRoles={['technician']}>
       <OfflineQueueProvider>
-        <div className="sc" style={{ minHeight: '100vh', background: 'var(--paper)' }}>
+        <div className="sc" style={{ minHeight: '100vh' }}>
           <nav
+            className="glass-topbar"
             style={{
               position: 'sticky',
               top: 0,
               zIndex: 40,
-              background: 'var(--paper)',
-              backdropFilter: 'blur(20px)',
-              borderBottom: '1px solid var(--line)',
             }}
           >
             <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div
+                    className="glass-badge"
                     style={{
                       width: 40,
                       height: 40,
-                      background: 'var(--brand)',
-                      borderRadius: 'var(--radius-sm)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      fontSize: 20,
                     }}
                   >
-                    <span style={{ color: '#fff', fontWeight: 700, fontSize: 20 }}>S</span>
+                    <span>S</span>
                   </div>
                   <div>
-                    <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>Selvacore</h1>
-                    <p style={{ margin: 0, fontSize: 12, color: 'var(--soft)' }}>{tl.portalSubtitle}</p>
+                    <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--headline)' }}>Selvacore</h1>
+                    <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)' }}>{tl.portalSubtitle}</p>
                   </div>
                 </div>
 
@@ -93,6 +88,7 @@ export default function TechnicianLayoutClient({
                       <button
                         key={item.name}
                         onClick={() => router.push(item.href)}
+                        className={`glass-nav-item${item.current ? ' glass-nav-item--active' : ''}`}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -101,22 +97,7 @@ export default function TechnicianLayoutClient({
                           borderRadius: 'var(--radius-sm)',
                           fontWeight: 500,
                           border: 'none',
-                          background: item.current ? 'var(--brand)' : 'transparent',
-                          color: item.current ? '#fff' : 'var(--soft)',
                           cursor: 'pointer',
-                          transition: 'all 0.15s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!item.current) {
-                            e.currentTarget.style.background = 'var(--off-paper)';
-                            e.currentTarget.style.color = 'var(--ink)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!item.current) {
-                            e.currentTarget.style.background = 'transparent';
-                            e.currentTarget.style.color = 'var(--soft)';
-                          }
                         }}
                       >
                         <Icon className="w-5 h-5" />

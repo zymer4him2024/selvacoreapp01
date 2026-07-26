@@ -20,16 +20,13 @@ export default function BottomNav({ items }: BottomNavProps) {
 
   return (
     <nav
-      className="sc-nav-mobile"
+      className="sc-nav-mobile glass-bottom-nav"
       style={{
         position: 'fixed',
         bottom: 0,
         left: 0,
         right: 0,
         zIndex: 40,
-        background: 'var(--paper)',
-        backdropFilter: 'blur(20px)',
-        borderTop: '1px solid var(--hairline)',
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}
     >
@@ -59,8 +56,8 @@ export default function BottomNav({ items }: BottomNavProps) {
                 minHeight: 52,
                 borderRadius: 'var(--radius-sm)',
                 border: 'none',
-                background: item.active ? 'var(--brand)' : 'transparent',
-                color: item.active ? '#fff' : 'var(--soft)',
+                background: item.active ? 'var(--accent)' : 'transparent',
+                color: item.active ? 'var(--on-accent)' : 'var(--muted)',
                 cursor: 'pointer',
                 transition: 'transform 0.15s ease',
               }}

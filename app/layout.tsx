@@ -5,6 +5,7 @@ import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { LanguageProvider } from '@/contexts/LanguageContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
+import { CrystalBg } from '@/components/common/glass'
 import { Toaster } from 'react-hot-toast'
 
 const inter = Inter({
@@ -42,8 +43,10 @@ export const metadata: Metadata = {
 }
 
 // No-flash inline script: resolves the user's theme choice (or system preference)
-// and sets data-theme on <html> BEFORE first paint, preventing FOUC.
-const noFlashScript = `(function(){try{var s=localStorage.getItem('selvacore-theme');var sys=window.matchMedia('(prefers-color-scheme: dark)').matches;var t=(s==='light'||s==='dark')?s:(s==='system'?(sys?'dark':'light'):(sys?'dark':'light'));document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`
+// and sets data-theme on <html> BEFORE first paint, preventing FOUC. Palette
+// choices (light/forest/meadow/dark) apply as-is; 'system' and any unknown/absent
+// value fall back to the OS light/dark preference.
+const noFlashScript = `(function(){try{var s=localStorage.getItem('selvacore-theme');var sys=window.matchMedia('(prefers-color-scheme: dark)').matches;var t=(s==='light'||s==='dark'||s==='forest'||s==='meadow')?s:(sys?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`
 
 export default function RootLayout({
   children,
@@ -57,6 +60,7 @@ export default function RootLayout({
         <Script id="theme-no-flash" strategy="beforeInteractive">{noFlashScript}</Script>
       </head>
       <body className="bg-background text-text-primary antialiased">
+        <CrystalBg />
         <AuthProvider>
           <LanguageProvider>
             <ThemeProvider>

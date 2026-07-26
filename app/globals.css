@@ -60,6 +60,371 @@
 }
 
 /* ============================================================
+   Liquid Glass (crystal) design tokens — additive layer.
+   Three green light palettes (Sage default / Deep Forest / Meadow) + Dark,
+   selected via data-theme on <html>. This rides on the SAME data-theme switch
+   the sc-* system already uses: unqualified :root = Sage (applies in light),
+   data-theme="dark" = the dark palette, and "forest"/"meadow" are opt-in values
+   the theme switcher wires up in a later phase.
+   Every variable here is namespaced (--bg-*, --orb-*, --accent, --headline,
+   --body, --muted, --glass-*) so it never collides with the --brand/--ink/--paper
+   sc-* tokens. Note: glass depth shadows are --glass-shadow-* on purpose — the
+   sc-* system already owns --shadow-lg, and reusing that name would repaint
+   existing cards. Adding these tokens is inert: nothing consumes them until
+   CrystalBg / the primitives land in later phases.
+   ============================================================ */
+:root {
+  --bg-1: #f4f7f1;
+  --bg-2: #e5ede4;
+  --orb-1: #7fd1a8;
+  --orb-2: #6bc7c0;
+  --orb-3: #a9e0b0;
+  --accent: #2fa36b;
+  --on-accent: #ffffff;
+  --headline: #10312a;
+  --body: #3b4a44;
+  --muted: #6e7c74;
+
+  --glass-fill-top: rgba(255, 255, 255, 0.72);
+  --glass-fill-bot: rgba(255, 255, 255, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.75);
+
+  --glass-shadow-sm: 0 8px 20px -12px rgba(15, 42, 36, 0.25);
+  --glass-shadow-md: 0 18px 40px -18px rgba(15, 42, 36, 0.3);
+  --glass-shadow-lg: 0 34px 70px -24px rgba(15, 42, 36, 0.32);
+}
+
+[data-theme='forest'] {
+  --bg-1: #eef3ec;
+  --bg-2: #dbe6da;
+  --orb-1: #3e8e6e;
+  --orb-2: #2f7d74;
+  --orb-3: #6fb07a;
+  --accent: #1f7a54;
+  --headline: #0e2a20;
+  --body: #354940;
+  --muted: #5f7166;
+}
+
+[data-theme='meadow'] {
+  --bg-1: #f5f8ee;
+  --bg-2: #e6efd6;
+  --orb-1: #9ad46a;
+  --orb-2: #7fc77e;
+  --orb-3: #c6e38a;
+  --accent: #57a03e;
+  --headline: #1b2e12;
+  --body: #3e4f35;
+  --muted: #74856a;
+}
+
+/* Glass dark palette. Shares the data-theme="dark" selector the sc-* dark block
+   above uses; the two blocks cascade together (distinct variable names).
+   Orbs keep their light hues here and are dimmed to ~60% opacity by CrystalBg. */
+[data-theme='dark'] {
+  --bg-1: #0f211b;
+  --bg-2: #0a1712;
+  --glass-fill-top: rgba(255, 255, 255, 0.1);
+  --glass-fill-bot: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.18);
+  --headline: #eaf3ee;
+  --body: #b9c8c0;
+  --muted: #7e9088;
+}
+
+/* ============================================================
+   Liquid Glass component layer.
+   Recipes ported 1:1 from design_handoff_liquid_glass/glass.jsx, with the
+   prototype's palette literals + hexA()/shade() helpers replaced by CSS vars +
+   color-mix() so every surface re-tints from the data-theme tokens above.
+   Consumed by the typed components in components/common/glass/.
+   ============================================================ */
+
+/* Fixed page background + blurred color orbs (CrystalBg). */
+.crystal-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: linear-gradient(158deg, var(--bg-1), var(--bg-2));
+}
+.crystal-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  will-change: transform;
+}
+.crystal-orb--1 {
+  top: -14%;
+  left: -10%;
+  width: 760px;
+  height: 760px;
+  background: radial-gradient(circle at 32% 30%, var(--orb-1), transparent 70%);
+}
+.crystal-orb--2 {
+  bottom: -20%;
+  right: -12%;
+  width: 680px;
+  height: 680px;
+  background: radial-gradient(circle at 32% 30%, var(--orb-2), transparent 70%);
+}
+.crystal-orb--3 {
+  top: 34%;
+  right: 18%;
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle at 32% 30%, var(--orb-3), transparent 70%);
+}
+.crystal-bg--strong .crystal-orb--1 { width: 900px; height: 900px; }
+.crystal-bg--strong .crystal-orb--2 { width: 820px; height: 820px; }
+.crystal-bg--strong .crystal-orb--3 { width: 520px; height: 520px; }
+/* Dim orbs in dark so they read as a glow, not a spotlight. */
+[data-theme='dark'] .crystal-orb { opacity: 0.6; }
+
+/* Frosted translucent card — the workhorse surface (GlassCard). */
+.glass-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 28px;
+  background: linear-gradient(135deg, var(--glass-fill-top), var(--glass-fill-bot));
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    var(--glass-shadow-lg),
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.95),
+    inset 0 -2px 3px rgba(255, 255, 255, 0.25);
+  color: var(--body);
+}
+/* Accent-tinted card for primary / CTA surfaces. */
+.glass-card--tint {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 90%, transparent),
+    color-mix(in srgb, var(--accent) 62%, transparent)
+  );
+  border-color: rgba(255, 255, 255, 0.45);
+  color: var(--on-accent);
+}
+/* Specular sheen — top highlight band. Rendered as a child element. */
+.glass-sheen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 46%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), transparent);
+  pointer-events: none;
+}
+.glass-card > .glass-content { position: relative; }
+/* Interactive cards lift on hover; static cards stay put. */
+.glass-card--interactive {
+  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glass-card--interactive:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    var(--glass-shadow-md),
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.95),
+    inset 0 -2px 3px rgba(255, 255, 255, 0.25);
+}
+
+/* Pill button (GlassButton). */
+.glass-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 18px 32px;
+  min-height: 44px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glass-btn--sm { padding: 11px 20px; font-size: 14px; gap: 8px; }
+.glass-btn--accent {
+  color: var(--on-accent);
+  background: linear-gradient(
+    180deg,
+    var(--accent),
+    color-mix(in srgb, var(--accent) 80%, black)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 14px 30px -8px color-mix(in srgb, var(--accent) 60%, transparent),
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.55);
+}
+.glass-btn--glass {
+  color: var(--headline);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.64));
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 12px 26px -10px rgba(15, 42, 36, 0.35),
+    inset 0 1.5px 1px rgba(255, 255, 255, 1);
+}
+.glass-btn:hover { transform: translateY(-1px); }
+.glass-btn--accent:hover {
+  box-shadow:
+    0 18px 36px -8px color-mix(in srgb, var(--accent) 65%, transparent),
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.55);
+}
+.glass-btn--glass:hover {
+  box-shadow:
+    0 16px 30px -10px rgba(15, 42, 36, 0.42),
+    inset 0 1.5px 1px rgba(255, 255, 255, 1);
+}
+.glass-btn:active { transform: translateY(0); }
+.glass-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg-1), 0 0 0 4px var(--accent);
+}
+.glass-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* Chip / tag (GlassChip). */
+.glass-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 20px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--headline);
+  white-space: nowrap;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.5));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 6px 16px -8px rgba(15, 42, 36, 0.3),
+    inset 0 1px 1px rgba(255, 255, 255, 1);
+}
+.glass-chip__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+/* Number / status badge — molded squircle (GlassBadge). */
+.glass-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 30%;
+  color: var(--on-accent);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  flex-shrink: 0;
+  background: linear-gradient(160deg, var(--accent), color-mix(in srgb, var(--accent) 80%, black));
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 18px 34px -12px color-mix(in srgb, var(--accent) 65%, transparent),
+    inset 0 2px 2px rgba(255, 255, 255, 0.55),
+    inset 0 -3px 5px rgba(0, 0, 0, 0.18);
+}
+
+/* In dark mode the pure-white glass fills / specular highlights read too hot;
+   the token-driven --glass-fill-* already dim the card, but the button/chip
+   literals need toning down to match. */
+[data-theme='dark'] .glass-btn--glass {
+  color: var(--headline);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06));
+  border-color: rgba(255, 255, 255, 0.2);
+}
+[data-theme='dark'] .glass-chip {
+  color: var(--headline);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.05));
+  border-color: rgba(255, 255, 255, 0.2);
+}
+[data-theme='dark'] .glass-sheen {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent);
+}
+
+/* Motion & transparency accessibility fallbacks. */
+@media (prefers-reduced-motion: reduce) {
+  .glass-btn,
+  .glass-card--interactive {
+    transition: none;
+  }
+  .glass-btn:hover,
+  .glass-card--interactive:hover {
+    transform: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass-card,
+  .glass-btn,
+  .glass-chip {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .glass-card { background: var(--bg-1) !important; }
+  .glass-btn--glass,
+  .glass-chip { background: var(--bg-2) !important; }
+  .glass-sheen { display: none; }
+}
+
+/* ============================================================
+   Glass app-shell chrome (Phase 3).
+   Frosted translucent nav surfaces that let CrystalBg refract through.
+   Theme-aware via the glass tokens (near-white frost in light palettes,
+   subtle white-on-dark frost in dark).
+   ============================================================ */
+.glass-topbar,
+.glass-rail,
+.glass-bottom-nav {
+  background: linear-gradient(180deg, var(--glass-fill-top), var(--glass-fill-bot));
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+.glass-topbar { border-bottom: 1px solid var(--glass-border); }
+.glass-rail { border-right: 1px solid var(--glass-border); }
+.glass-bottom-nav { border-top: 1px solid var(--glass-border); }
+
+/* Shared nav-item behavior for the shell chrome. Active = accent fill so the
+   selected palette visibly re-tints the navigation. */
+.glass-nav-item {
+  color: var(--muted);
+  background: transparent;
+  transition: background 150ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glass-nav-item:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--headline);
+}
+.glass-nav-item--active {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.glass-nav-item--active:hover {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass-topbar,
+  .glass-rail,
+  .glass-bottom-nav {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: var(--bg-1) !important;
+  }
+}
+
+/* ============================================================
    Selvacore .sc-* utility classes (customer portal).
    These consume the tokens above and respond automatically to
    light/dark via data-theme on <html>. Wrap a page in <div className="sc">.
@@ -67,7 +432,9 @@
 
 .sc {
   min-height: 100vh;
-  background: var(--paper);
+  /* Transparent so the fixed CrystalBg shows through the portal shells.
+     (Phase 3: app background is now the crystal gradient.) */
+  background: transparent;
   color: var(--ink);
   font-family: var(--font-inter), system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-size: 14px;
@@ -81,10 +448,10 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  background: var(--nav-bg);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 1px solid var(--hairline);
+  background: linear-gradient(180deg, var(--glass-fill-top), var(--glass-fill-bot));
+  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  border-bottom: 1px solid var(--glass-border);
 }
 .sc-nav-inner {
   max-width: 1200px;

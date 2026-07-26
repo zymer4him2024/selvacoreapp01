@@ -16,7 +16,7 @@ export interface User {
   phone: string;
   whatsapp?: string; // WhatsApp number for communication (can be different from phone)
   preferredLanguage: Language;
-  preferredTheme?: 'light' | 'dark' | 'system';
+  preferredTheme?: 'light' | 'dark' | 'system' | 'forest' | 'meadow';
   subContractorId?: string | null;
   active: boolean;
   emailVerified: boolean;

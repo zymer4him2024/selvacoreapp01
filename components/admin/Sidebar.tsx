@@ -94,7 +94,7 @@ export default function Sidebar() {
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         aria-label={isMobileMenuOpen ? s.closeMenu : s.openMenu}
         aria-expanded={isMobileMenuOpen}
-        className="lg:hidden"
+        className="lg:hidden glass-topbar"
         style={{
           position: 'fixed',
           top: 16,
@@ -102,9 +102,8 @@ export default function Sidebar() {
           zIndex: 50,
           padding: 8,
           borderRadius: 'var(--radius-md)',
-          background: 'var(--paper)',
-          border: '1px solid var(--hairline)',
-          color: 'var(--ink)',
+          border: '1px solid var(--glass-border)',
+          color: 'var(--headline)',
           cursor: 'pointer',
           transition: 'background 0.15s ease',
         }}
@@ -126,15 +125,13 @@ export default function Sidebar() {
       )}
 
       <aside
-        className={`${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+        className={`glass-rail ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
         style={{
           position: 'fixed',
           top: 0,
           left: 0,
           height: '100vh',
           width: 256,
-          background: 'var(--paper)',
-          borderRight: '1px solid var(--hairline)',
           display: 'flex',
           flexDirection: 'column',
           zIndex: 40,
@@ -157,18 +154,7 @@ export default function Sidebar() {
                 }}
               />
             ) : (
-              <div style={{
-                width: 40,
-                height: 40,
-                borderRadius: 'var(--radius-md)',
-                background: 'var(--brand)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                fontSize: 20,
-                fontWeight: 700,
-              }}>
+              <div className="glass-badge" style={{ width: 40, height: 40, fontSize: 20 }}>
                 S
               </div>
             )}
@@ -219,22 +205,22 @@ export default function Sidebar() {
                   textDecoration: 'none',
                   fontWeight: 500,
                   fontSize: 14,
-                  background: isActive ? 'var(--brand-tint)' : 'transparent',
-                  color: isActive ? 'var(--brand)' : 'var(--soft)',
-                  borderLeft: isActive ? '3px solid var(--brand)' : '3px solid transparent',
+                  background: isActive ? 'color-mix(in srgb, var(--accent) 14%, transparent)' : 'transparent',
+                  color: isActive ? 'var(--accent)' : 'var(--muted)',
+                  borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
                   paddingLeft: isActive ? 13 : 16,
                   transition: 'all 0.15s ease',
                 }}
                 onMouseEnter={(e) => {
                   if (!isActive) {
                     e.currentTarget.style.background = 'var(--hover-bg)';
-                    e.currentTarget.style.color = 'var(--ink)';
+                    e.currentTarget.style.color = 'var(--headline)';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!isActive) {
                     e.currentTarget.style.background = 'transparent';
-                    e.currentTarget.style.color = 'var(--soft)';
+                    e.currentTarget.style.color = 'var(--muted)';
                   }
                 }}
               >

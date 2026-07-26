@@ -5,8 +5,16 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type Theme = 'light' | 'dark' | 'system';
-export type ResolvedTheme = 'light' | 'dark';
+// User-selectable themes. 'light' renders the Sage glass palette; 'forest' and
+// 'meadow' are the other two green light-family palettes; 'dark' is the dark
+// palette; 'system' follows the OS light/dark preference.
+export type Theme = 'light' | 'dark' | 'system' | 'forest' | 'meadow';
+// The concrete value written to <html data-theme>. Forest/meadow are their own
+// values; the sc-* token system has no block for them, so it falls back to its
+// bare :root (light) values while the glass tokens re-tint.
+export type ResolvedTheme = 'light' | 'dark' | 'forest' | 'meadow';
+
+const SELECTABLE: Theme[] = ['light', 'dark', 'system', 'forest', 'meadow'];
 
 interface ThemeContextValue {
   theme: Theme;
@@ -18,10 +26,14 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 const STORAGE_KEY = 'selvacore-theme';
 
+function isTheme(value: unknown): value is Theme {
+  return typeof value === 'string' && SELECTABLE.includes(value as Theme);
+}
+
 function readStoredTheme(): Theme | null {
   if (typeof window === 'undefined') return null;
   const stored = window.localStorage.getItem(STORAGE_KEY);
-  return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : null;
+  return isTheme(stored) ? stored : null;
 }
 
 function systemPrefersDark(): boolean {
@@ -68,7 +80,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (window.localStorage.getItem(STORAGE_KEY)) return;
 
     const profileTheme = userData?.preferredTheme;
-    if (profileTheme === 'light' || profileTheme === 'dark' || profileTheme === 'system') {
+    if (isTheme(profileTheme)) {
       setThemeState(profileTheme);
       window.localStorage.setItem(STORAGE_KEY, profileTheme);
       const r = resolve(profileTheme);
