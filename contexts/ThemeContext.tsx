@@ -53,7 +53,9 @@ function applyDataTheme(resolved: ResolvedTheme) {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const { user, userData } = useAuth();
-  const [theme, setThemeState] = useState<Theme>('system');
+  // Default to the light 'Sage' palette (not 'system') so the crystal skin
+  // shows in light by default; users can still pick dark/system/forest/meadow.
+  const [theme, setThemeState] = useState<Theme>('light');
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>('light');
   const userPickedRef = useRef<boolean>(false);
 
@@ -67,7 +69,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setResolvedTheme(r);
       applyDataTheme(r);
     } else {
-      const r = resolve('system');
+      // No stored choice → default to light (not OS preference).
+      const r = resolve('light');
       setResolvedTheme(r);
       applyDataTheme(r);
     }
