@@ -10,11 +10,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Apple-style color palette (legacy — admin/technician)
-        background: '#000000',
-        surface: '#1c1c1e',
-        'surface-elevated': '#2c2c2e',
-        'surface-secondary': '#3a3a3c',
+        // Apple-style palette (legacy — admin/technician). Neutrals bridged to
+        // the theme-aware crystal tokens so these classes render light in light
+        // mode instead of forcing dark surfaces. Semantic action/status colors
+        // (primary/secondary/success/warning/error) stay fixed.
+        background: 'var(--background)',
+        surface: 'var(--paper)',
+        'surface-elevated': 'var(--paper)',
+        'surface-secondary': 'var(--off-paper)',
         primary: '#0a84ff',
         'primary-hover': '#0071e3',
         secondary: '#5e5ce6',
@@ -22,12 +25,12 @@ const config: Config = {
         warning: '#ff9f0a',
         error: '#ff453a',
         text: {
-          primary: '#ffffff',
-          secondary: '#98989d',
-          tertiary: '#636366',
+          primary: 'var(--foreground)',
+          secondary: 'var(--muted)',
+          tertiary: 'var(--muted)',
         },
-        border: '#38383a',
-        'border-light': '#48484a',
+        border: 'var(--hairline)',
+        'border-light': 'var(--glass-border)',
 
         // Selvacore design system (theme-aware, CSS-variable-backed)
         brand: 'var(--brand)',

@@ -871,10 +871,13 @@
 .sc-section { margin-bottom: 32px; }
 .sc-hairline { border-bottom: 1px solid var(--hairline); padding-bottom: 16px; margin-bottom: 16px; }
 
-/* Apple-style global styles (legacy — still in use by admin/technician portals) */
+/* Apple-style global styles (legacy — still in use by admin/technician portals).
+   --background/--foreground were hardcoded black/white (fine only in dark mode);
+   now bridged to the theme-aware crystal tokens so the page background follows
+   the light palette instead of forcing a black page behind the glass. */
 :root {
-  --background: #000000;
-  --foreground: #ffffff;
+  --background: var(--bg-1);
+  --foreground: var(--headline);
 }
 
 * {
